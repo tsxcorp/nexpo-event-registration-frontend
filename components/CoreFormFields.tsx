@@ -57,29 +57,29 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
       </div>
 
       {/* Email */}
-<div>
-  <label className="block font-medium mb-1">
-    {t.email || "Email"}
-  </label>
-  <input
-    type="email"
-    {...register("email", {
-      required: true,
-      pattern: {
-        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-        message: "Invalid email format.",
-      },
-    })}
-    className="w-full px-4 py-3 border border-gray-300 rounded-lg"
-  />
-  {errors.email && (
-    <p className="text-red-500 text-sm mt-1">
-    {typeof errors.email?.message === "string"
-      ? errors.email.message
-      : "This field is required."}
-  </p>
-  )}
-</div>
+      <div>
+        <label className="block font-medium mb-1">
+          {t.email || "Email"}
+        </label>
+        <input
+          type="email"
+          {...register("email", {
+            required: true,
+            pattern: {
+              value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+              message: "Invalid email format.",
+            },
+          })}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+        />
+        {errors.email && (
+          <p className="text-red-500 text-sm mt-1">
+          {typeof errors.email?.message === "string"
+            ? errors.email.message
+            : "This field is required."}
+        </p>
+        )}
+      </div>
 
       {/* Mobile Number */}
       <div>
