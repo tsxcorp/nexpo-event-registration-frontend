@@ -14,7 +14,7 @@ export default function DynamicFormFields({ fields, register, errors }: Props) {
   const renderField = (field: FormField, index: number) => {
     const key = `${field.label}-${index}`;
     const fieldType = field.type.toLowerCase();
-    const isRequired = field.Required || false; // ✅ lấy đúng biến từ Zoho
+    const isRequired = field.required || false; // ✅ lấy đúng biến từ Zoho
 
     const baseClass = "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500";
 
