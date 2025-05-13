@@ -62,7 +62,9 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
           className="w-full px-4 py-3 border border-gray-300 rounded-lg"
         />
         {errors.email && (
-          <p className="text-red-500 text-sm mt-1">{errors.email.message || "This field is required."}</p>
+          <p className="text-red-500 text-sm mt-1">
+          {errors.email?.message ?? "This field is required."}
+        </p>
         )}
       </div>
 
