@@ -74,10 +74,10 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
   />
   {errors.email && (
     <p className="text-red-500 text-sm mt-1">
-      {typeof errors.email?.message === "string"
-        ? errors.email.message
-        : "This field is required."}
-    </p>
+    {typeof errors.email?.message === "string"
+      ? errors.email.message
+      : "This field is required."}
+  </p>
   )}
 </div>
 
