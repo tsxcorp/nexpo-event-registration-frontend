@@ -59,7 +59,7 @@ export default function DynamicFormFields({ fields, register, errors }: Props) {
           <div className="relative">
             <select
               {...register(field.label, { 
-                required: field.Required || false,
+                required: field.required || false,
                 validate: (val) => val !== "" || "This field is required",
             })}
               className="appearance-none w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg bg-white text-gray-800 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -144,7 +144,7 @@ export default function DynamicFormFields({ fields, register, errors }: Props) {
         <div key={idx}>
           <label className="block font-medium text-gray-700 mb-1">
             {field.label}
-            {field.Required && <span className="text-red-500 ml-1">*</span>}
+            {field.required && <span className="text-red-500 ml-1">*</span>}
           </label>
           {renderField(field, idx)}
           {errors[field.label] && (
