@@ -3,18 +3,22 @@ import { useEffect, useState } from 'react';
 
 export default function MatchingRequestPage() {
   const router = useRouter();
-  const { company_name, visid } = router.query;
+  const { company_name, visid, exhid } = router.query;
 
   const [iframeUrl, setIframeUrl] = useState('');
 
   useEffect(() => {
-    if (company_name && visid) {
+    if (company_name && visid && exhid) {
       const baseUrl = 'https://creatorapp.zohopublic.com/tsxcorp/nxp/page-embed/Business_Matching_Request/PzADH5Jf0ZPuzTGyeWXp8XjbuH3S0uCY9DdzXFCTTm74qXfXuJJBDaGEjGNEbSHPxZNj86rAmDWCaCmj26ODjrGSeFPySxzjdM1q';
-      const fullUrl = `${baseUrl}?company_name=${encodeURIComponent(Array.isArray(company_name) ? company_name[0] : company_name)}&visid=${encodeURIComponent(Array.isArray(visid) ? visid[0] : visid)}`;
+      
+      const getParam = (p: string | string[] | undefined) =>
+        encodeURIComponent(Array.isArray(p) ? p[0] : p || '');
+
+      const fullUrl = `${baseUrl}?company_name=${getParam(company_name)}&visid=${getParam(visid)}&exhid=${getParam(exhid)}`;
 
       setIframeUrl(fullUrl);
     }
-  }, [company_name, visid]);
+  }, [company_name, visid, exhid]);
 
   if (!iframeUrl) return <p className="text-center mt-20">Loading...</p>;
 
