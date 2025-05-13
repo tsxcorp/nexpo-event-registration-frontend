@@ -15,21 +15,26 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
           {t.title || "Title"}
         </label>
         <div className="relative">
-  <select
-    {...register("title", { required: true })}
-    className="appearance-none w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg bg-white text-gray-800 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-  >
-    <option value="">-- Select --</option>
-    <option value="Mr.">Mr.</option>
-    <option value="Ms.">Ms.</option>
-    <option value="Mrs.">Mrs.</option>
-  </select>
-  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400">
-    ▼
-  </div>
-</div>
-
-        {errors.title && <p className="text-red-500 text-sm mt-1">This field is required.</p>}
+          <select
+            {...register("title", { required: true })}
+            className="appearance-none w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg bg-white text-gray-800 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          >
+            <option value="">-- Select --</option>
+            <option value="Mr.">Mr.</option>
+            <option value="Ms.">Ms.</option>
+            <option value="Mrs.">Mrs.</option>
+          </select>
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400">
+            ▼
+          </div>
+        </div>
+        {errors.title && (
+          <p className="text-red-500 text-sm mt-1">
+            {typeof errors.title?.message === "string"
+              ? errors.title.message
+              : "This field is required."}
+          </p>
+        )}
       </div>
 
       {/* Full Name */}
@@ -42,7 +47,13 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
           {...register("full_name", { required: true })}
           className="w-full px-4 py-3 border border-gray-300 rounded-lg"
         />
-        {errors.full_name && <p className="text-red-500 text-sm mt-1">This field is required.</p>}
+        {errors.full_name && (
+          <p className="text-red-500 text-sm mt-1">
+            {typeof errors.full_name?.message === "string"
+              ? errors.full_name.message
+              : "This field is required."}
+          </p>
+        )}
       </div>
 
       {/* Email */}
@@ -63,8 +74,10 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
         />
         {errors.email && (
           <p className="text-red-500 text-sm mt-1">
-          {errors.email?.message ?? "This field is required."}
-        </p>
+            {typeof errors.email?.message === "string"
+              ? errors.email.message
+              : "This field is required."}
+          </p>
         )}
       </div>
 
@@ -85,7 +98,11 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
           className="w-full px-4 py-3 border border-gray-300 rounded-lg"
         />
         {errors.mobile_number && (
-          <p className="text-red-500 text-sm mt-1">{errors.mobile_number.message || "This field is required."}</p>
+          <p className="text-red-500 text-sm mt-1">
+            {typeof errors.mobile_number?.message === "string"
+              ? errors.mobile_number.message
+              : "This field is required."}
+          </p>
         )}
       </div>
     </>
