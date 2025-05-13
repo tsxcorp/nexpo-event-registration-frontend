@@ -1,0 +1,31 @@
+{
+    "name": "nexpo-event-registration-frontend",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev -p 3001",
+        "build": "next build",
+        "start": "next start"
+    },
+    "dependencies": {
+        "@tailwindcss/typography": "^0.5.16",
+        "autoprefixer": "^10.4.14",
+        "file-saver": "^2.0.5",
+        "next": "^15.3.1",
+        "papaparse": "^5.5.2",
+        "postcss": "^8.4.21",
+        "qrcode.react": "^4.2.0",
+        "react": "18.2.0",
+        "react-dom": "18.2.0",
+        "react-hook-form": "^7.43.9",
+        "react-qr-code": "^2.0.15",
+        "tailwindcss": "^3.3.2",
+        "typescript": "^5.2.2",
+        "xlsx": "^0.18.5"
+    },
+    "devDependencies": {
+        "@types/node": "22.14.1",
+        "@types/react": "^18.0.28",
+        "@types/react-dom": "^18.0.11"
+    }
+}
