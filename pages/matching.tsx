@@ -10,7 +10,8 @@ export default function MatchingRequestPage() {
   useEffect(() => {
     if (company_name && visid) {
       const baseUrl = 'https://creatorapp.zohopublic.com/tsxcorp/nxp/page-embed/Business_Matching_Request/PzADH5Jf0ZPuzTGyeWXp8XjbuH3S0uCY9DdzXFCTTm74qXfXuJJBDaGEjGNEbSHPxZNj86rAmDWCaCmj26ODjrGSeFPySxzjdM1q';
-      const fullUrl = `${baseUrl}?company_name=${encodeURIComponent(company_name)}&visid=${encodeURIComponent(visid)}`;
+      const fullUrl = `${baseUrl}?company_name=${encodeURIComponent(Array.isArray(company_name) ? company_name[0] : company_name)}&visid=${encodeURIComponent(Array.isArray(visid) ? visid[0] : visid)}`;
+
       setIframeUrl(fullUrl);
     }
   }, [company_name, visid]);
