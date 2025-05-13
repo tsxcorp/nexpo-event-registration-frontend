@@ -118,13 +118,13 @@ export default function DynamicFormFields({ fields, register, errors }: Props) {
                     />
                   )}
             
-                  {errors[field.label] && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {typeof errors[field.label]?.message === "string"
-                        ? errors[field.label]?.message
-                        : "This field is required."}
-                    </p>
-                  )}
+            {errors[field.label] && (
+  <p className="text-red-500 text-sm mt-1">
+    {typeof errors[field.label]?.message === "string"
+      ? errors[field.label].message
+      : "This field is required."}
+  </p>
+)}
                 </>
               );
             
