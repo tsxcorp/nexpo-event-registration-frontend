@@ -18,7 +18,7 @@ export interface FormField {
   }
   
   export const fetchEventInfo = async (eventId: string): Promise<{ event: EventData }> => {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/event-info?eventId=${eventId}`);
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/event-info?eventId=${eventId}`);
     if (!res.ok) throw new Error("Failed to fetch event info");
     return res.json();
   };
