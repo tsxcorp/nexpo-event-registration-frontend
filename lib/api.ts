@@ -4,7 +4,7 @@ export interface FormField {
     required: boolean;
     default: string;
     helptext: string;
-    values?: string[];
+    values?: string | string[];
   }
   
   export interface EventData {
