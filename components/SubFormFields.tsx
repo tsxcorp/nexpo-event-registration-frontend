@@ -1,12 +1,15 @@
 import { FieldErrors, UseFormRegister } from 'react-hook-form';
+import { FormField } from '../lib/api';
+import DynamicFormFields from './DynamicFormFields';
 
 type Props = {
   register: UseFormRegister<any>;
   errors: FieldErrors;
   namePrefix: string;
+  fields?: FormField[];
 };
 
-export default function SubFormFields({ register, errors, namePrefix }: Props) {
+export default function SubFormFields({ register, errors, namePrefix, fields = [] }: Props) {
   const getError = (field: string) => errors?.[namePrefix]?.[field];
 
   return (
@@ -82,6 +85,12 @@ export default function SubFormFields({ register, errors, namePrefix }: Props) {
           <p className="text-red-500 text-sm mt-1">This field is required.</p>
         )}
       </div>
+
+      {fields.length > 0 && (
+        <div className="mt-6">
+          <DynamicFormFields fields={fields} prefix={namePrefix} />
+        </div>
+      )}
     </>
   );
 }

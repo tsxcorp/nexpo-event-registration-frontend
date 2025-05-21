@@ -5,6 +5,7 @@ export interface FormField {
     default: string;
     helptext: string;
     values?: string | string[];
+    groupmember?: boolean;
   }
   
   export interface EventData {

@@ -13,7 +13,6 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
       <div>
         <label className="block font-medium mb-1">
           {t.title || "Title"}
-          <span className="text-red-500 ml-1">*</span>
         </label>
         <div className="relative">
           <select
@@ -42,7 +41,6 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
       <div>
         <label className="block font-medium mb-1">
           {t.full_name || "Full Name"}
-          <span className="text-red-500 ml-1">*</span>
         </label>
         <input
           type="text"
@@ -62,7 +60,6 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
       <div>
         <label className="block font-medium mb-1">
           {t.email || "Email"}
-          <span className="text-red-500 ml-1">*</span>
         </label>
         <input
           type="email"
@@ -77,10 +74,10 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
         />
         {errors.email && (
           <p className="text-red-500 text-sm mt-1">
-            {typeof errors.email?.message === "string"
-              ? errors.email.message
-              : "This field is required."}
-          </p>
+          {typeof errors.email?.message === "string"
+            ? errors.email.message
+            : "This field is required."}
+        </p>
         )}
       </div>
 
@@ -88,14 +85,13 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
       <div>
         <label className="block font-medium mb-1">
           {t.mobile_number || "Mobile Number"}
-          <span className="text-red-500 ml-1">*</span>
         </label>
         <input
           type="tel"
           {...register("mobile_number", {
             required: true,
             pattern: {
-              value: /^0\\d{9}$/,
+              value: /^0\d{9}$/,
               message: "Invalid phone number.",
             },
           })}

@@ -1,18 +1,26 @@
+
 import { useState } from 'react';
 import { FormField } from '../lib/api';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 type Props = {
   fields: FormField[];
+  prefix?: string;
 };
 
-export default function DynamicFormFields({ fields }: Props) {
+export default function DynamicFormFields({ fields, prefix }: Props) {
   const [imagePreviews, setImagePreviews] = useState<Record<string, string>>({});
   const {
     register,
     formState: { errors },
     control,
   } = useFormContext();
+
+  const getFieldName = (label: string) => (prefix ? `${prefix}.${label}` : label);
+  const getFieldError = (label: string) => {
+    const path = prefix ? errors?.[prefix]?.[label] : errors?.[label];
+    return path;
+  };
 
   const getErrorMessage = (error: any) =>
     typeof error?.message === 'string' ? error.message : 'This field is required.';
@@ -21,7 +29,9 @@ export default function DynamicFormFields({ fields }: Props) {
     const key = `${field.label}-${index}`;
     const fieldType = field.type;
     const isRequired = field.required;
-    const fieldError = errors[field.label];
+    const fieldName = getFieldName(field.label);
+    const fieldError = getFieldError(field.label);
+
     const baseClass =
       'w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500';
 
@@ -33,9 +43,10 @@ export default function DynamicFormFields({ fields }: Props) {
           <>
             <input
               type={
-                fieldType === 'Email' ? 'email' : fieldType === 'Number' ? 'tel' : 'text'
+                fieldType === 'Email' ? 'email' :
+                fieldType === 'Number' ? 'tel' : 'text'
               }
-              {...register(field.label, {
+              {...register(fieldName, {
                 required: isRequired,
                 ...(fieldType === 'Email' && {
                   pattern: {
@@ -63,7 +74,7 @@ export default function DynamicFormFields({ fields }: Props) {
           <>
             <textarea
               rows={4}
-              {...register(field.label, { required: isRequired })}
+              {...register(fieldName, { required: isRequired })}
               className={baseClass}
             />
             {fieldError && (
@@ -83,10 +94,9 @@ export default function DynamicFormFields({ fields }: Props) {
           <>
             <div className="relative">
               <select
-                {...register(field.label, {
+                {...register(fieldName, {
                   required: isRequired,
-                  validate: val =>
-                    !isRequired || val !== '' || 'This field is required.',
+                  validate: val => !isRequired || val !== '' || 'This field is required.',
                 })}
                 defaultValue=""
                 className="appearance-none w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg bg-white text-gray-800 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -118,7 +128,7 @@ export default function DynamicFormFields({ fields }: Props) {
           ? field.values.split(',').map(s => s.trim())
           : [];
 
-        const selected = useWatch({ name: field.label, control });
+        const selected = useWatch({ name: fieldName, control });
 
         return (
           <>
@@ -128,7 +138,7 @@ export default function DynamicFormFields({ fields }: Props) {
                   <input
                     type="checkbox"
                     value={opt}
-                    {...register(field.label)}
+                    {...register(fieldName)}
                     className="text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <span className="text-gray-800">{opt}</span>
@@ -152,7 +162,7 @@ export default function DynamicFormFields({ fields }: Props) {
               key={key}
               type="file"
               accept={fieldType === 'Image' ? 'image/*' : undefined}
-              {...register(field.label, {
+              {...register(fieldName, {
                 required: isRequired,
                 validate: {
                   sizeLimit: (value: FileList) => {
@@ -174,7 +184,7 @@ export default function DynamicFormFields({ fields }: Props) {
                     reader.onload = () => {
                       setImagePreviews(prev => ({
                         ...prev,
-                        [field.label]: reader.result as string,
+                        [fieldName]: reader.result as string,
                       }));
                     };
                     reader.readAsDataURL(file);
@@ -183,9 +193,9 @@ export default function DynamicFormFields({ fields }: Props) {
               })}
               className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700"
             />
-            {imagePreviews[field.label] && (
+            {imagePreviews[fieldName] && (
               <img
-                src={imagePreviews[field.label]}
+                src={imagePreviews[fieldName]}
                 alt="Preview"
                 className="mt-2 rounded-lg max-h-[200px] object-contain border"
               />
@@ -201,7 +211,7 @@ export default function DynamicFormFields({ fields }: Props) {
           <>
             <input
               type="text"
-              {...register(field.label, { required: isRequired })}
+              {...register(fieldName, { required: isRequired })}
               className={baseClass}
             />
             {fieldError && (
@@ -221,11 +231,9 @@ export default function DynamicFormFields({ fields }: Props) {
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </label>
           {renderField(field, idx)}
-
-          {/* ✅ Hiển thị helptext nếu có */}
           {field.helptext && (
             <p className="text-sm text-gray-500 mb-1 mt-1">{field.helptext}</p>
-          )}          
+          )}
         </div>
       ))}
     </>

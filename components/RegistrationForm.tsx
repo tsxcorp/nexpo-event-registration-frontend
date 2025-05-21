@@ -1,3 +1,5 @@
+// ✅ RegistrationForm.tsx đã cập nhật để truyền fields group_members vào SubFormFields
+
 import { useForm, FormProvider, useFieldArray } from 'react-hook-form';
 import { useRouter } from 'next/router';
 import { useState, Fragment } from 'react';
@@ -48,6 +50,7 @@ export default function RegistrationForm({ fields }: Props) {
   });
 
   const coreKeys = ['title', 'full_name', 'email', 'mobile_number'];
+  const groupCustomFields = fields.filter(f => f.groupmember);
 
   const onSubmit = async (data: any) => {
     const coreData: Record<string, any> = {};
@@ -127,11 +130,11 @@ export default function RegistrationForm({ fields }: Props) {
         `group_members.${editIndex}.title`,
         `group_members.${editIndex}.full_name`,
         `group_members.${editIndex}.email`,
-        `group_members.${editIndex}.mobile_number`
+        `group_members.${editIndex}.mobile_number`,
+        ...groupCustomFields.map(f => `group_members.${editIndex}.${f.label}`)
       ]);
       if (!isValid) return;
 
-      // ✅ ép cập nhật lại giá trị hiển thị
       const latest = getValues(`group_members.${editIndex}`);
       update(editIndex, latest);
     }
@@ -188,12 +191,13 @@ export default function RegistrationForm({ fields }: Props) {
           <Dialog as="div" className="relative z-50" onClose={handleCloseDialog}>
             <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" aria-hidden="true" />
             <div className="fixed inset-0 flex items-center justify-center p-4">
-              <DialogPanel className="w-full max-w-md transform overflow-hidden rounded-xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+<DialogPanel className="w-full max-w-md max-h-[90vh] overflow-y-auto transform overflow-hidden rounded-xl bg-white p-6 text-left align-middle shadow-xl transition-all">
                 {editIndex !== null && (
                   <SubFormFields
                     namePrefix={`group_members.${editIndex}`}
                     register={register}
                     errors={errors}
+                    fields={groupCustomFields}
                   />
                 )}
 
