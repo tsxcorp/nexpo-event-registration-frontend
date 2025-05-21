@@ -39,7 +39,7 @@ export default function ImportExcelPage() {
     setReportDetails([]);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/import-excel`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/imports`, {
         method: 'POST',
         body: formData,
       });

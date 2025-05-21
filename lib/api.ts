@@ -3,6 +3,8 @@ export interface FormField {
     type: string;
     required: boolean;
     default: string;
+    helptext: string;
+    values?: string[];
   }
   
   export interface EventData {
@@ -18,7 +20,7 @@ export interface FormField {
   }
   
   export const fetchEventInfo = async (eventId: string): Promise<{ event: EventData }> => {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/event-info?eventId=${eventId}`);
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/events?eventId=${eventId}`);
     if (!res.ok) throw new Error("Failed to fetch event info");
     return res.json();
   };

@@ -1,65 +1,64 @@
 import { useState } from 'react';
 import { FormField } from '../lib/api';
-import { UseFormRegister, FieldErrors } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
 
 type Props = {
   fields: FormField[];
-  register: UseFormRegister<any>;
-  errors: FieldErrors;
 };
 
-export default function DynamicFormFields({ fields, register, errors }: Props) {
+export default function DynamicFormFields({ fields }: Props) {
   const [imagePreviews, setImagePreviews] = useState<Record<string, string>>({});
+  const {
+    register,
+    formState: { errors },
+    control,
+  } = useFormContext();
 
   const getErrorMessage = (error: any) =>
-    typeof error?.message === "string" ? error.message : "This field is required.";
+    typeof error?.message === 'string' ? error.message : 'This field is required.';
 
   const renderField = (field: FormField, index: number) => {
     const key = `${field.label}-${index}`;
-    const fieldType = field.type.toLowerCase();
-    const isRequired = field.required || false;
+    const fieldType = field.type;
+    const isRequired = field.required;
     const fieldError = errors[field.label];
-
     const baseClass =
-      "w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500";
+      'w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500';
 
     switch (fieldType) {
-      case 'text':
-      case 'email':
-      case 'number':
+      case 'Text':
+      case 'Email':
+      case 'Number':
         return (
           <>
             <input
               type={
-                fieldType === 'email' ? 'email' :
-                fieldType === 'number' ? 'tel' : 'text'
+                fieldType === 'Email' ? 'email' : fieldType === 'Number' ? 'tel' : 'text'
               }
               {...register(field.label, {
                 required: isRequired,
-                ...(fieldType === "email" && {
+                ...(fieldType === 'Email' && {
                   pattern: {
                     value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "Invalid email format.",
-                  }
+                    message: 'Invalid email format.',
+                  },
                 }),
-                ...(fieldType === "number" && {
+                ...(fieldType === 'Number' && {
                   pattern: {
                     value: /^[0-9]+$/,
-                    message: "Only numeric values are allowed.",
-                  }
+                    message: 'Only numeric values are allowed.',
+                  },
                 }),
               })}
               className={baseClass}
             />
             {fieldError && (
-              <p className="text-red-500 text-sm mt-1">
-                {getErrorMessage(fieldError)}
-              </p>
+              <p className="text-red-500 text-sm mt-1">{getErrorMessage(fieldError)}</p>
             )}
           </>
         );
 
-      case 'textarea':
+      case 'Textarea':
         return (
           <>
             <textarea
@@ -68,28 +67,37 @@ export default function DynamicFormFields({ fields, register, errors }: Props) {
               className={baseClass}
             />
             {fieldError && (
-              <p className="text-red-500 text-sm mt-1">
-                {getErrorMessage(fieldError)}
-              </p>
+              <p className="text-red-500 text-sm mt-1">{getErrorMessage(fieldError)}</p>
             )}
           </>
         );
 
-      case 'select':
-        const options = field.default?.split(',') || [];
+      case 'Select': {
+        const selectOptions: string[] = Array.isArray(field.values)
+          ? field.values
+          : typeof field.values === 'string'
+          ? field.values.split(',').map(s => s.trim())
+          : [];
+
         return (
           <>
             <div className="relative">
               <select
                 {...register(field.label, {
                   required: isRequired,
-                  validate: (val) => val !== "" || "This field is required",
+                  validate: val =>
+                    !isRequired || val !== '' || 'This field is required.',
                 })}
+                defaultValue=""
                 className="appearance-none w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg bg-white text-gray-800 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
               >
-                <option disabled value="">-- Select --</option>
-                {options.map((opt, i) => (
-                  <option key={i} value={opt.trim()}>{opt.trim()}</option>
+                <option disabled value="">
+                  -- Select --
+                </option>
+                {selectOptions.map((opt, i) => (
+                  <option key={i} value={opt}>
+                    {opt}
+                  </option>
                 ))}
               </select>
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-400">
@@ -97,37 +105,74 @@ export default function DynamicFormFields({ fields, register, errors }: Props) {
               </div>
             </div>
             {fieldError && (
+              <p className="text-red-500 text-sm mt-1">{getErrorMessage(fieldError)}</p>
+            )}
+          </>
+        );
+      }
+
+      case 'Multi Select': {
+        const multiOptions: string[] = Array.isArray(field.values)
+          ? field.values
+          : typeof field.values === 'string'
+          ? field.values.split(',').map(s => s.trim())
+          : [];
+
+        const selected = useWatch({ name: field.label, control });
+
+        return (
+          <>
+            <div className="space-y-2">
+              {multiOptions.map((opt, i) => (
+                <label key={i} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    value={opt}
+                    {...register(field.label)}
+                    className="text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="text-gray-800">{opt}</span>
+                </label>
+              ))}
+            </div>
+            {isRequired && (!selected || selected.length === 0) && (
               <p className="text-red-500 text-sm mt-1">
-                {getErrorMessage(fieldError)}
+                At least one option is required.
               </p>
             )}
           </>
         );
+      }
 
-      case 'file':
-      case 'image':
+      case 'File':
+      case 'Image':
         return (
           <>
             <input
               key={key}
               type="file"
-              accept={fieldType === 'image' ? "image/*" : undefined}
+              accept={fieldType === 'Image' ? 'image/*' : undefined}
               {...register(field.label, {
                 required: isRequired,
                 validate: {
                   sizeLimit: (value: FileList) => {
-                    if (!value || value.length === 0) return true;
+                    if (!value || value.length === 0)
+                      return !isRequired || 'This field is required.';
                     const file = value[0];
-                    const maxSize = fieldType === 'image' ? 5 * 1024 * 1024 : 30 * 1024 * 1024;
-                    return file.size <= maxSize || `❌ File size exceeds limit (${fieldType === 'image' ? '5MB' : '30MB'})`;
-                  }
+                    const maxSize =
+                      fieldType === 'Image' ? 5 * 1024 * 1024 : 30 * 1024 * 1024;
+                    return (
+                      file.size <= maxSize ||
+                      `❌ File size exceeds limit (${fieldType === 'Image' ? '5MB' : '30MB'})`
+                    );
+                  },
                 },
-                onChange: (e) => {
+                onChange: e => {
                   const file = e.target.files?.[0];
                   if (file) {
                     const reader = new FileReader();
                     reader.onload = () => {
-                      setImagePreviews((prev) => ({
+                      setImagePreviews(prev => ({
                         ...prev,
                         [field.label]: reader.result as string,
                       }));
@@ -146,9 +191,7 @@ export default function DynamicFormFields({ fields, register, errors }: Props) {
               />
             )}
             {fieldError && (
-              <p className="text-red-500 text-sm mt-1">
-                {getErrorMessage(fieldError)}
-              </p>
+              <p className="text-red-500 text-sm mt-1">{getErrorMessage(fieldError)}</p>
             )}
           </>
         );
@@ -162,9 +205,7 @@ export default function DynamicFormFields({ fields, register, errors }: Props) {
               className={baseClass}
             />
             {fieldError && (
-              <p className="text-red-500 text-sm mt-1">
-                {getErrorMessage(fieldError)}
-              </p>
+              <p className="text-red-500 text-sm mt-1">{getErrorMessage(fieldError)}</p>
             )}
           </>
         );
@@ -180,6 +221,11 @@ export default function DynamicFormFields({ fields, register, errors }: Props) {
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </label>
           {renderField(field, idx)}
+
+          {/* ✅ Hiển thị helptext nếu có */}
+          {field.helptext && (
+            <p className="text-sm text-gray-500 mb-1 mt-1">{field.helptext}</p>
+          )}          
         </div>
       ))}
     </>
