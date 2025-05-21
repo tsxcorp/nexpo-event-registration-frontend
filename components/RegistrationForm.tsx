@@ -126,13 +126,15 @@ export default function RegistrationForm({ fields }: Props) {
 
   const handleConfirmDialog = async () => {
     if (editIndex !== null) {
-      const isValid = await trigger([
-        `group_members.${editIndex}.title`,
-        `group_members.${editIndex}.full_name`,
-        `group_members.${editIndex}.email`,
-        `group_members.${editIndex}.mobile_number`,
-        ...groupCustomFields.map(f => `group_members.${editIndex}.${f.label}`)
-      ]);
+      const isValid = await trigger(
+  [
+    `group_members.${editIndex}.title`,
+    `group_members.${editIndex}.full_name`,
+    `group_members.${editIndex}.email`,
+    `group_members.${editIndex}.mobile_number`,
+    ...groupCustomFields.map(f => `group_members.${editIndex}.${f.label}`)
+  ] as any
+);
       if (!isValid) return;
 
       const latest = getValues(`group_members.${editIndex}`);
