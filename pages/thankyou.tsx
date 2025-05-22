@@ -1,29 +1,39 @@
+// ✅ Updated thankyou.tsx to support both individual and group registration
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import QRCode from 'react-qr-code';
+
+type Member = {
+  ID: string;
+  full_name: string;
+  email?: string;
+};
 
 export default function ThankYouPage() {
   const router = useRouter();
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [recordId, setRecordId] = useState<string | null>(null);
+  const [groupId, setGroupId] = useState<string | null>(null);
+  const [groupMembers, setGroupMembers] = useState<Member[]>([]);
 
   useEffect(() => {
     if (router.query.data) {
       try {
         const parsed = JSON.parse(router.query.data as string);
-  
-        // Chuyển đổi key thành lowercase để đảm bảo đúng với JSON truyền vào
-        const { zoho_record_id, ...rest } = parsed;
+        const { zoho_record_id, group_id, group_members, ...rest } = parsed;
+
         setFormData(rest);
-        if (zoho_record_id) {
-          setRecordId(zoho_record_id);
-        }
+        setRecordId(zoho_record_id || null);
+        setGroupId(group_id || null);
+        setGroupMembers(Array.isArray(group_members) ? group_members : []);
       } catch (err) {
         console.error("Invalid data in thank you page.");
       }
     }
   }, [router.query.data]);
-  
+
+  const isGroup = !!groupId;
+
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-br from-blue-100 to-blue-50 px-4">
       <div className="bg-white p-10 rounded-xl shadow-md max-w-xl w-full animate-fadeIn">
@@ -34,11 +44,11 @@ export default function ThankYouPage() {
           Thank you for registering! Please present this QR at the event.
         </p>
 
-        {recordId && (
+        {(groupId || recordId) && (
           <div className="flex justify-center mb-6">
             <div className="bg-white p-3 rounded shadow-lg border border-blue-500">
               <QRCode
-                value={recordId}
+                value={groupId || recordId!}
                 size={160}
                 bgColor="#ffffff"
                 fgColor="#000000"
@@ -62,6 +72,23 @@ export default function ThankYouPage() {
             ))}
           </tbody>
         </table>
+
+        {isGroup && groupMembers.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-xl font-bold text-blue-700 mb-4">👥 Group Members</h2>
+            <div className="space-y-4">
+              {groupMembers.map((m, idx) => (
+                <div key={m.ID || idx} className="border rounded p-4 shadow-sm bg-gray-50">
+                  <div className="font-semibold text-gray-800">{m.full_name}</div>
+                  {m.email && <div className="text-sm text-gray-500">{m.email}</div>}
+                  <div className="mt-2">
+                    <QRCode value={m.ID} size={100} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <button
           onClick={() => router.push('/')}

@@ -1,4 +1,4 @@
-// ✅ RegistrationForm.tsx đã cập nhật để truyền fields group_members vào SubFormFields
+// ✅ RegistrationForm.tsx đã cập nhật để truyền fields group_members vào SubFormFields và xử lý phản hồi đúng từ backend
 
 import { useForm, FormProvider, useFieldArray } from 'react-hook-form';
 import { useRouter } from 'next/router';
@@ -57,7 +57,7 @@ export default function RegistrationForm({ fields }: Props) {
     const customData: Record<string, any> = {};
 
     for (const key in data) {
-      if (key === 'group_members') continue;
+      if (key === 'group_members' || key === 'event_info') continue;
       const value = data[key];
       if (value instanceof FileList) continue;
       if (coreKeys.includes(key)) {
@@ -73,32 +73,37 @@ export default function RegistrationForm({ fields }: Props) {
       custom_fields_value: customData,
       Event_Info: eventId
     };
+    console.log("👥 Group members before submit:", getValues('group_members'));
 
     try {
       setLoading(true);
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/registrations`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
       const responseData = await response.json();
+      console.log("✅ FULL responseData from backend:", responseData);
 
-      if (response.ok && responseData?.zoho_record_id) {
+      const result = responseData.success === false ? responseData.zohoResponse : responseData;
+      const zohoRecordId = result.zoho_record_id;
+
+      if (response.ok && zohoRecordId) {
         router.push({
           pathname: '/thankyou',
           query: {
             data: JSON.stringify({
               ...coreData,
               ...customData,
-              zoho_record_id: responseData.zoho_record_id
+              zoho_record_id: zohoRecordId,
+              group_id: result.group_id,
+              group_members: result.group_members || []
             })
           }
         });
       } else {
-        console.error('❌ Backend error:', responseData.error);
+        console.error('❌ Backend error (frontend check failed):', responseData);
         alert('Submission failed.');
       }
     } catch (err) {
@@ -126,15 +131,14 @@ export default function RegistrationForm({ fields }: Props) {
 
   const handleConfirmDialog = async () => {
     if (editIndex !== null) {
-      const isValid = await trigger(
-  [
-    `group_members.${editIndex}.title`,
-    `group_members.${editIndex}.full_name`,
-    `group_members.${editIndex}.email`,
-    `group_members.${editIndex}.mobile_number`,
-    ...groupCustomFields.map(f => `group_members.${editIndex}.${f.label}`)
-  ] as any
-);
+      const isValid = await trigger([
+        `group_members.${editIndex}.title`,
+        `group_members.${editIndex}.full_name`,
+        `group_members.${editIndex}.email`,
+        `group_members.${editIndex}.mobile_number`,
+        ...groupCustomFields.map(f => `group_members.${editIndex}.${f.label}`)
+      ] as any);
+
       if (!isValid) return;
 
       const latest = getValues(`group_members.${editIndex}`);
@@ -152,7 +156,6 @@ export default function RegistrationForm({ fields }: Props) {
 
         <div className="mt-8 space-y-3">
           <h3 className="text-lg font-semibold mb-2">Thành viên trong nhóm</h3>
-
           <div className="space-y-2">
             {groupMembers.map((member, index) => (
               <div
@@ -193,7 +196,7 @@ export default function RegistrationForm({ fields }: Props) {
           <Dialog as="div" className="relative z-50" onClose={handleCloseDialog}>
             <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" aria-hidden="true" />
             <div className="fixed inset-0 flex items-center justify-center p-4">
-<DialogPanel className="w-full max-w-md max-h-[90vh] overflow-y-auto transform overflow-hidden rounded-xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+              <DialogPanel className="w-full max-w-md max-h-[90vh] overflow-y-auto transform overflow-hidden rounded-xl bg-white p-6 text-left align-middle shadow-xl transition-all">
                 {editIndex !== null && (
                   <SubFormFields
                     namePrefix={`group_members.${editIndex}`}
@@ -202,7 +205,6 @@ export default function RegistrationForm({ fields }: Props) {
                     fields={groupCustomFields}
                   />
                 )}
-
                 <div className="flex justify-end gap-3 mt-6">
                   <button
                     type="button"
