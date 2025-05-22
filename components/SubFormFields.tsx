@@ -16,10 +16,10 @@ export default function SubFormFields({ register, errors, namePrefix, fields = [
     <>
       <div>
         <label className="block font-medium mb-1">
-          Title <span className="text-red-500">*</span>
+          Salutation <span className="text-red-500">*</span>
         </label>
         <select
-          {...register(`${namePrefix}.title`, { required: true })}
+          {...register(`${namePrefix}.Salutation`, { required: true })}
           className="w-full px-4 py-2 border rounded"
         >
           <option value="">-- Select --</option>
@@ -27,7 +27,7 @@ export default function SubFormFields({ register, errors, namePrefix, fields = [
           <option value="Ms.">Ms.</option>
           <option value="Mrs.">Mrs.</option>
         </select>
-        {getError('title') && (
+        {getError('Salutation') && (
           <p className="text-red-500 text-sm mt-1">This field is required.</p>
         )}
       </div>
@@ -38,10 +38,10 @@ export default function SubFormFields({ register, errors, namePrefix, fields = [
         </label>
         <input
           type="text"
-          {...register(`${namePrefix}.full_name`, { required: true })}
+          {...register(`${namePrefix}.Full_Name`, { required: true })}
           className="w-full px-4 py-2 border rounded"
         />
-        {getError('full_name') && (
+        {getError('Full_Name') && (
           <p className="text-red-500 text-sm mt-1">This field is required.</p>
         )}
       </div>
@@ -52,7 +52,7 @@ export default function SubFormFields({ register, errors, namePrefix, fields = [
         </label>
         <input
           type="email"
-          {...register(`${namePrefix}.email`, {
+          {...register(`${namePrefix}.Email`, {
             required: true,
             pattern: {
               value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
@@ -61,18 +61,18 @@ export default function SubFormFields({ register, errors, namePrefix, fields = [
           })}
           className="w-full px-4 py-2 border rounded"
         />
-        {getError('email') && (
+        {getError('Email') && (
           <p className="text-red-500 text-sm mt-1">This field is required.</p>
         )}
       </div>
 
       <div>
         <label className="block font-medium mb-1">
-          Mobile Number <span className="text-red-500">*</span>
+          Phone Number <span className="text-red-500">*</span>
         </label>
         <input
           type="tel"
-          {...register(`${namePrefix}.mobile_number`, {
+          {...register(`${namePrefix}.Phone_Number`, {
             required: true,
             pattern: {
               value: /^0\d{9}$/,
@@ -81,7 +81,7 @@ export default function SubFormFields({ register, errors, namePrefix, fields = [
           })}
           className="w-full px-4 py-2 border rounded"
         />
-        {getError('mobile_number') && (
+        {getError('Phone_Number') && (
           <p className="text-red-500 text-sm mt-1">This field is required.</p>
         )}
       </div>

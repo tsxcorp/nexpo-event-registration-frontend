@@ -1,9 +1,11 @@
-// pages/index.tsx
 export default function Home() {
-    return (
-      <div className="p-8 text-center text-gray-600">
-        <h1 className="text-2xl font-semibold">🚀 Welcome to Nexpo Frontend</h1>
-      </div>
-    );
-  }
-  
+  return (
+    <div className="w-screen h-screen overflow-hidden">
+      <iframe
+        src="https://nexpo.vn/app"
+        className="w-full h-full border-none"
+        allowFullScreen
+      ></iframe>
+    </div>
+  );
+}

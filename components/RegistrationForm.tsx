@@ -10,7 +10,7 @@ import SubFormFields from './SubFormFields';
 import { Dialog, DialogPanel, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 
-const emptyMember = { title: '', full_name: '', email: '', mobile_number: '' };
+const emptyMember = { Salutation: '', Full_Name: '', Email: '', Phone_Number: '' };
 
 type Props = {
   fields: FormField[];
@@ -25,10 +25,10 @@ export default function RegistrationForm({ fields }: Props) {
 
   const methods = useForm({
     defaultValues: {
-      title: '',
-      full_name: '',
-      email: '',
-      mobile_number: '',
+      Salutation: '',
+      Full_Name: '',
+      Email: '',
+      Phone_Number: '',
       group_members: [],
       ...Object.fromEntries(fields.map(field => [field.label, field.default || '']))
     }
@@ -49,7 +49,8 @@ export default function RegistrationForm({ fields }: Props) {
     name: 'group_members'
   });
 
-  const coreKeys = ['title', 'full_name', 'email', 'mobile_number'];
+  const coreKeys = ['Salutation', 'Full_Name', 'Email', 'Phone_Number'];
+
   const groupCustomFields = fields.filter(f => f.groupmember);
 
   const onSubmit = async (data: any) => {
@@ -70,7 +71,7 @@ export default function RegistrationForm({ fields }: Props) {
     const payload = {
       ...coreData,
       group_members: data.group_members,
-      custom_fields_value: customData,
+      Custom_Fields_Value: customData,
       Event_Info: eventId
     };
     console.log("👥 Group members before submit:", getValues('group_members'));
@@ -91,17 +92,20 @@ export default function RegistrationForm({ fields }: Props) {
 
       if (response.ok && zohoRecordId) {
         router.push({
-          pathname: '/thankyou',
-          query: {
-            data: JSON.stringify({
-              ...coreData,
-              ...customData,
-              zoho_record_id: zohoRecordId,
-              group_id: result.group_id,
-              group_members: result.group_members || []
-            })
-          }
-        });
+  pathname: '/thankyou',
+  query: {
+    data: JSON.stringify({
+      Salutation: coreData.Salutation,
+      Full_Name: coreData.Full_Name,
+      Email: coreData.Email,
+      Phone_Number: coreData.Phone_Number,
+      ...customData,
+      zoho_record_id: zohoRecordId,
+      group_id: result.group_id,
+      group_members: result.group_members || []
+    })
+  }
+});
       } else {
         console.error('❌ Backend error (frontend check failed):', responseData);
         alert('Submission failed.');
@@ -132,10 +136,10 @@ export default function RegistrationForm({ fields }: Props) {
   const handleConfirmDialog = async () => {
     if (editIndex !== null) {
       const isValid = await trigger([
-        `group_members.${editIndex}.title`,
-        `group_members.${editIndex}.full_name`,
-        `group_members.${editIndex}.email`,
-        `group_members.${editIndex}.mobile_number`,
+        `group_members.${editIndex}.Salutation`,
+        `group_members.${editIndex}.Full_Name`,
+        `group_members.${editIndex}.Email`,
+        `group_members.${editIndex}.Phone_Number`,
         ...groupCustomFields.map(f => `group_members.${editIndex}.${f.label}`)
       ] as any);
 
@@ -164,9 +168,9 @@ export default function RegistrationForm({ fields }: Props) {
                 onClick={() => setEditIndex(index)}
               >
                 <div className="text-sm text-gray-700">
-                  <div className="font-medium">{member.full_name || 'Chưa đặt tên'}</div>
+                  <div className="font-medium">{member.Full_Name || 'Chưa đặt tên'}</div>
                   <div className="text-xs text-gray-500">
-                    {member.email || member.mobile_number || 'Chưa có liên hệ'}
+                    {member.Email || member.Phone_Number || 'Chưa có liên hệ'}
                   </div>
                 </div>
                 <button

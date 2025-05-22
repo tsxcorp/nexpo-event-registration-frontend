@@ -9,14 +9,14 @@ type Props = {
 export default function CoreFormFields({ register, errors, t = {} }: Props) {
   return (
     <>
-      {/* Title */}
+      {/* Salutation */}
       <div>
         <label className="block font-medium mb-1">
-          {t.title || "Title"}
+          {t.Salutation || "Salutation"}
         </label>
         <div className="relative">
           <select
-            {...register("title", { required: true })}
+            {...register("Salutation", { required: true })}
             className="appearance-none w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg bg-white text-gray-800 shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
           >
             <option value="">-- Select --</option>
@@ -28,10 +28,10 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
             ▼
           </div>
         </div>
-        {errors.title && (
+        {errors.Salutation && (
           <p className="text-red-500 text-sm mt-1">
-            {typeof errors.title?.message === "string"
-              ? errors.title.message
+            {typeof errors.Salutation?.message === "string"
+              ? errors.Salutation.message
               : "This field is required."}
           </p>
         )}
@@ -40,17 +40,17 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
       {/* Full Name */}
       <div>
         <label className="block font-medium mb-1">
-          {t.full_name || "Full Name"}
+          {t.Full_Name || "Full Name"}
         </label>
         <input
           type="text"
-          {...register("full_name", { required: true })}
+          {...register("Full_Name", { required: true })}
           className="w-full px-4 py-3 border border-gray-300 rounded-lg"
         />
-        {errors.full_name && (
+        {errors.Full_Name && (
           <p className="text-red-500 text-sm mt-1">
-            {typeof errors.full_name?.message === "string"
-              ? errors.full_name.message
+            {typeof errors.Full_Name?.message === "string"
+              ? errors.Full_Name.message
               : "This field is required."}
           </p>
         )}
@@ -59,11 +59,11 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
       {/* Email */}
       <div>
         <label className="block font-medium mb-1">
-          {t.email || "Email"}
+          {t.Email || "Email"}
         </label>
         <input
           type="email"
-          {...register("email", {
+          {...register("Email", {
             required: true,
             pattern: {
               value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
@@ -72,23 +72,23 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
           })}
           className="w-full px-4 py-3 border border-gray-300 rounded-lg"
         />
-        {errors.email && (
+        {errors.Email && (
           <p className="text-red-500 text-sm mt-1">
-          {typeof errors.email?.message === "string"
-            ? errors.email.message
-            : "This field is required."}
-        </p>
+            {typeof errors.Email?.message === "string"
+              ? errors.Email.message
+              : "This field is required."}
+          </p>
         )}
       </div>
 
-      {/* Mobile Number */}
+      {/* Phone Number */}
       <div>
         <label className="block font-medium mb-1">
-          {t.mobile_number || "Mobile Number"}
+          {t.Phone_Number || "Phone Number"}
         </label>
         <input
           type="tel"
-          {...register("mobile_number", {
+          {...register("Phone_Number", {
             required: true,
             pattern: {
               value: /^0\d{9}$/,
@@ -97,10 +97,10 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
           })}
           className="w-full px-4 py-3 border border-gray-300 rounded-lg"
         />
-        {errors.mobile_number && (
+        {errors.Phone_Number && (
           <p className="text-red-500 text-sm mt-1">
-            {typeof errors.mobile_number?.message === "string"
-              ? errors.mobile_number.message
+            {typeof errors.Phone_Number?.message === "string"
+              ? errors.Phone_Number.message
               : "This field is required."}
           </p>
         )}

@@ -1,4 +1,3 @@
-// ✅ Updated thankyou.tsx to support both individual and group registration
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import QRCode from 'react-qr-code';
@@ -6,7 +5,7 @@ import QRCode from 'react-qr-code';
 type Member = {
   ID: string;
   full_name: string;
-  email?: string;
+  Email?: string;
 };
 
 export default function ThankYouPage() {
@@ -32,7 +31,7 @@ export default function ThankYouPage() {
     }
   }, [router.query.data]);
 
-  const isGroup = !!groupId;
+  const isGroup = groupMembers.length > 1;
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-br from-blue-100 to-blue-50 px-4">
@@ -44,18 +43,34 @@ export default function ThankYouPage() {
           Thank you for registering! Please present this QR at the event.
         </p>
 
-        {(groupId || recordId) && (
-          <div className="flex justify-center mb-6">
-            <div className="bg-white p-3 rounded shadow-lg border border-blue-500">
-              <QRCode
-                value={groupId || recordId!}
-                size={160}
-                bgColor="#ffffff"
-                fgColor="#000000"
-                style={{ height: 'auto', maxWidth: '100%', width: '160px' }}
-              />
+        {recordId && !isGroup && (
+          <>
+            <h2 className="text-lg font-semibold text-center text-gray-800 mb-2">Your QR Code</h2>
+            <div className="flex justify-center mb-6">
+              <div className="bg-white p-3 rounded shadow-lg border border-blue-500">
+                <QRCode
+                  value={recordId}
+                  size={160}
+                  style={{ height: 'auto', maxWidth: '100%', width: '160px' }}
+                />
+              </div>
             </div>
-          </div>
+          </>
+        )}
+
+        {groupId && isGroup && (
+          <>
+            <h2 className="text-lg font-semibold text-center text-gray-800 mb-2">Group QR Code</h2>
+            <div className="flex justify-center mb-6">
+              <div className="bg-white p-3 rounded shadow-lg border border-blue-500">
+                <QRCode
+                  value={groupId}
+                  size={160}
+                  style={{ height: 'auto', maxWidth: '100%', width: '160px' }}
+                />
+              </div>
+            </div>
+          </>
         )}
 
         <table className="w-full text-sm border-t border-b border-gray-200 divide-y divide-gray-100">
@@ -80,7 +95,7 @@ export default function ThankYouPage() {
               {groupMembers.map((m, idx) => (
                 <div key={m.ID || idx} className="border rounded p-4 shadow-sm bg-gray-50">
                   <div className="font-semibold text-gray-800">{m.full_name}</div>
-                  {m.email && <div className="text-sm text-gray-500">{m.email}</div>}
+                  {m.Email && <div className="text-sm text-gray-500">{m.Email}</div>}
                   <div className="mt-2">
                     <QRCode value={m.ID} size={100} />
                   </div>
