@@ -1,29 +1,47 @@
+'use client';
+
 // ✅ RegistrationForm.tsx đã cập nhật để truyền fields group_members vào SubFormFields và xử lý phản hồi đúng từ backend
 
-import { useForm, FormProvider, useFieldArray } from 'react-hook-form';
-import { useRouter } from 'next/router';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, Fragment } from 'react';
-import { FormField } from '../lib/api';
+import { useForm, FormProvider, useFieldArray } from 'react-hook-form';
+import { FormField } from '@/lib/api/events';
 import CoreFormFields from './CoreFormFields';
 import DynamicFormFields from './DynamicFormFields';
 import SubFormFields from './SubFormFields';
 import { Dialog, DialogPanel, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 
+interface FormData {
+  Salutation: string;
+  Full_Name: string;
+  Email: string;
+  Phone_Number: string;
+  group_members: Array<{
+    Salutation: string;
+    Full_Name: string;
+    Email: string;
+    Phone_Number: string;
+    [key: string]: string;
+  }>;
+  [key: string]: any;
+}
+
 const emptyMember = { Salutation: '', Full_Name: '', Email: '', Phone_Number: '' };
 
-type Props = {
+interface Props {
   fields: FormField[];
-};
+}
 
 export default function RegistrationForm({ fields }: Props) {
   const router = useRouter();
-  const eventId = router.query.Event_Info as string;
+  const searchParams = useSearchParams();
+  const eventId = searchParams.get('Event_Info');
   const [loading, setLoading] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [isNew, setIsNew] = useState(false);
 
-  const methods = useForm({
+  const methods = useForm<FormData>({
     defaultValues: {
       Salutation: '',
       Full_Name: '',
@@ -53,7 +71,7 @@ export default function RegistrationForm({ fields }: Props) {
 
   const groupCustomFields = fields.filter(f => f.groupmember);
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: FormData) => {
     const coreData: Record<string, any> = {};
     const customData: Record<string, any> = {};
 
@@ -74,7 +92,6 @@ export default function RegistrationForm({ fields }: Props) {
       Custom_Fields_Value: customData,
       Event_Info: eventId
     };
-    console.log("👥 Group members before submit:", getValues('group_members'));
 
     try {
       setLoading(true);
@@ -85,29 +102,34 @@ export default function RegistrationForm({ fields }: Props) {
       });
 
       const responseData = await response.json();
-      console.log("✅ FULL responseData from backend:", responseData);
-
       const result = responseData.success === false ? responseData.zohoResponse : responseData;
       const zohoRecordId = result.zoho_record_id;
 
       if (response.ok && zohoRecordId) {
-        router.push({
-  pathname: '/thankyou',
-  query: {
-    data: JSON.stringify({
-      Salutation: coreData.Salutation,
-      Full_Name: coreData.Full_Name,
-      Email: coreData.Email,
-      Phone_Number: coreData.Phone_Number,
-      ...customData,
-      zoho_record_id: zohoRecordId,
-      group_id: result.group_id,
-      group_members: result.group_members || []
-    })
-  }
-});
+        const registrationData = {
+          Salutation: coreData.Salutation,
+          Full_Name: coreData.Full_Name,
+          Email: coreData.Email,
+          Phone_Number: coreData.Phone_Number,
+          ...customData,
+          zoho_record_id: zohoRecordId,
+          group_id: result.group_id,
+          group_members: result.group_members || [],
+          Event_Info: eventId
+        };
+        
+        console.log('Registration data being passed:', registrationData); // Debug log
+        
+        const queryParams = new URLSearchParams({
+          data: JSON.stringify(registrationData)
+        });
+        
+        const thankyouUrl = `/thankyou?${queryParams.toString()}`;
+        console.log('Thankyou URL:', thankyouUrl); // Debug log
+        
+        router.push(thankyouUrl);
       } else {
-        console.error('❌ Backend error (frontend check failed):', responseData);
+        console.error('❌ Backend error:', responseData);
         alert('Submission failed.');
       }
     } catch (err) {
