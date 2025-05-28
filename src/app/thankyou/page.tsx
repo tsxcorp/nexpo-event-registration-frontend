@@ -1,5 +1,5 @@
 'use client';
-
+import { Suspense } from 'react';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import RegistrationLayout from '@/components/layouts/RegistrationLayout';
@@ -25,6 +25,14 @@ interface RegistrationData {
 }
 
 export default function ThankYouPage() {
+  return (
+    <Suspense fallback={<p className="text-center mt-16 text-gray-500">Đang tải dữ liệu...</p>}>
+      <ThankYouContent />
+    </Suspense>
+  );
+}
+
+function ThankYouContent() {
   const searchParams = useSearchParams();
   const [registrationData, setRegistrationData] = useState<RegistrationData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,7 +47,6 @@ export default function ThankYouPage() {
 
     try {
       const parsedData = JSON.parse(dataParam);
-      console.log('Parsed registration data:', parsedData);
       setRegistrationData(parsedData);
     } catch (error) {
       console.error('Error parsing registration data:', error);
@@ -51,7 +58,7 @@ export default function ThankYouPage() {
   if (loading) return <p className="text-center mt-16 text-gray-500">Đang tải dữ liệu...</p>;
   if (!registrationData) return <p className="text-center mt-16 text-red-500">Không tìm thấy thông tin đăng ký.</p>;
 
-  const isGroup = registrationData.group_members && registrationData.group_members.length > 0;
+  const isGroup = registrationData.group_members && registrationData.group_members.length > 1;
 
   return (
     <RegistrationLayout>
@@ -121,7 +128,7 @@ export default function ThankYouPage() {
           </div>
 
           {/* Group Members Section */}
-          {registrationData.group_members && registrationData.group_members.length > 1 && (
+          {isGroup && registrationData.group_members && registrationData.group_members.length > 1 && (
             <div className="mb-8">
               <h3 className="text-xl font-semibold mb-4">Danh sách thành viên nhóm</h3>
               <div className="bg-gray-50 rounded-lg p-4">
