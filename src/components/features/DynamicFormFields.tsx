@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { FormField } from '../lib/api';
+import { FormField } from '@/lib/api/events';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 type Props = {
