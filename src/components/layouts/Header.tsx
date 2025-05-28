@@ -4,7 +4,7 @@ import { Fragment, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { ChevronDownIcon } from '@heroicons/react/24/solid';
+import { ChevronDownIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/solid';
 
 // Sample event data - this will be replaced with data from Zoho Creator
 const sampleEvents = [
@@ -40,7 +40,6 @@ interface MenuItem {
 }
 
 const menu: MenuItem[] = [
-  { label: 'HOME', href: '/', type: 'button' },
   { label: 'AGENDA', href: '/agenda' },
   { label: 'SPEAKERS', href: '/speakers' },
   { label: 'DISCUSSIONS', href: '/discussions' },
@@ -79,20 +78,21 @@ export default function Header() {
               <Image src="/nexpo-logo.png" alt="Nexpo Logo" width={120} height={60} className="object-contain" />
             </Link>
           </div>
-          <ul className="flex items-center gap-5">
+          {/* Hamburger button - chỉ hiện trên mobile */}
+          <button
+            className="sm:hidden ml-2 p-2 rounded focus:outline-none"
+            onClick={() => setIsMenuOpen((open) => !open)}
+            aria-label="Open menu"
+          >
+            {isMenuOpen ? (
+              <XMarkIcon className="w-7 h-7 text-blue-700" />
+            ) : (
+              <Bars3Icon className="w-7 h-7 text-blue-700" />
+            )}
+          </button>
+          {/* Desktop menu */}
+          <ul className="hidden sm:flex items-center gap-5">
             {menu.map((item) => {
-              if (item.label === 'HOME' && item.href) {
-                return (
-                  <li key={item.label}>
-                    <Link
-                      href={item.href}
-                      className="rounded-xl bg-blue-700 px-5 py-1.5 text-white font-extrabold text-sm tracking-wide uppercase shadow-sm hover:bg-blue-700 transition-all"
-                    >
-                      {item.label}
-                    </Link>
-                  </li>
-                );
-              }
               if (item.label === 'EXHIBITORS' && item.dropdown) {
                 return (
                   <li key={item.label} className="relative">
@@ -143,20 +143,9 @@ export default function Header() {
       </header>
 
       {/* Mobile menu */}
-      <div className={`${isMenuOpen ? 'block' : 'hidden'} sm:hidden`}>
+      <div className={`${isMenuOpen ? 'block' : 'hidden'} sm:hidden bg-white shadow-lg`}>
         <div className="pt-2 pb-3 space-y-1">
           {menu.map((item, idx) => {
-            if (item.label === 'HOME' && item.href) {
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium rounded-xl bg-teal-500 px-6 py-2 text-white font-extrabold text-2xl tracking-wide uppercase shadow-sm hover:bg-teal-600 transition-all"
-                >
-                  {item.label}
-                </Link>
-              );
-            }
             if (item.label === 'EXHIBITORS' && item.dropdown) {
               return (
                 <div key={item.label} className="relative">
@@ -192,6 +181,7 @@ export default function Header() {
                   key={item.label}
                   href={item.href}
                   className="block pl-3 pr-4 py-2 border-l-4 text-base font-medium"
+                  onClick={() => setIsMenuOpen(false)}
                 >
                   {item.label}
                 </Link>

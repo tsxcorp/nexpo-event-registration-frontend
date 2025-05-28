@@ -1,16 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { EventData, eventApi } from '@/lib/api/events';
 import RegistrationLayout from '@/components/layouts/RegistrationLayout';
 import RegistrationForm from '@/components/features/RegistrationForm';
 
 export default function RegisterPage() {
-  const searchParams = useSearchParams();
+  const params = useParams();
+  const eventId = params?.eventId as string;
   const [eventData, setEventData] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
-  const eventId = searchParams.get('Event_Info');
 
   useEffect(() => {
     if (!eventId) return;
