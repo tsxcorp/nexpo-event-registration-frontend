@@ -17,8 +17,10 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
 
   const getFieldName = (label: string) => (prefix ? `${prefix}.${label}` : label);
   const getFieldError = (label: string) => {
-    const path = prefix ? errors?.[prefix]?.[label] : errors?.[label];
-    return path;
+    if (prefix && errors?.[prefix] && typeof errors[prefix] === 'object') {
+      return (errors[prefix] as Record<string, any>)[label];
+    }
+    return (errors as Record<string, any>)[label];
   };
 
   const getErrorMessage = (error: any) =>
@@ -83,10 +85,10 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
         );
 
       case 'Select': {
-        const selectOptions: string[] = Array.isArray(field.values)
-          ? field.values
-          : typeof field.values === 'string'
-          ? field.values.split(',').map(s => s.trim())
+        const selectOptions: string[] = Array.isArray(field.options)
+          ? field.options
+          : typeof field.options === 'string'
+          ? (field.options as string).split(',').map((s: string) => s.trim())
           : [];
 
         return (
@@ -121,10 +123,10 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
       }
 
       case 'Multi Select': {
-        const multiOptions: string[] = Array.isArray(field.values)
-          ? field.values
-          : typeof field.values === 'string'
-          ? field.values.split(',').map(s => s.trim())
+        const multiOptions: string[] = Array.isArray(field.options)
+          ? field.options
+          : typeof field.options === 'string'
+          ? (field.options as string).split(',').map((s: string) => s.trim())
           : [];
 
         const selected = useWatch({ name: fieldName, control });
