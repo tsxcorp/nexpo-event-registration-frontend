@@ -5,6 +5,7 @@ export interface FormField {
   type: string;
   label: string;
   required: boolean;
+  values?: string[];
   options?: string[];
   default?: string;
   groupmember?: boolean;

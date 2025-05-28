@@ -85,10 +85,10 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
         );
 
       case 'Select': {
-        const selectOptions: string[] = Array.isArray(field.options)
-          ? field.options
-          : typeof field.options === 'string'
-          ? (field.options as string).split(',').map((s: string) => s.trim())
+        const selectOptions: string[] = Array.isArray(field.values)
+          ? field.values
+          : typeof field.values === 'string'
+          ? (field.values as string).split(',').map((s: string) => s.trim())
           : [];
 
         return (
@@ -123,10 +123,10 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
       }
 
       case 'Multi Select': {
-        const multiOptions: string[] = Array.isArray(field.options)
-          ? field.options
-          : typeof field.options === 'string'
-          ? (field.options as string).split(',').map((s: string) => s.trim())
+        const multiOptions: string[] = Array.isArray(field.values)
+          ? field.values
+          : typeof field.values === 'string'
+          ? (field.values as string).split(',').map((s: string) => s.trim())
           : [];
 
         const selected = useWatch({ name: fieldName, control });

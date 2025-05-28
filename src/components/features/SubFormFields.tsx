@@ -1,5 +1,5 @@
 import { FieldErrors, UseFormRegister } from 'react-hook-form';
-import { FormField } from '../lib/api';
+import { FormField } from '@/lib/api/events';
 import DynamicFormFields from './DynamicFormFields';
 
 type Props = {
@@ -10,7 +10,10 @@ type Props = {
 };
 
 export default function SubFormFields({ register, errors, namePrefix, fields = [] }: Props) {
-  const getError = (field: string) => errors?.[namePrefix]?.[field];
+  const getError = (field: string) =>
+    errors?.[namePrefix] && typeof errors[namePrefix] === 'object'
+      ? (errors[namePrefix] as Record<string, any>)[field]
+      : undefined;
 
   return (
     <>
