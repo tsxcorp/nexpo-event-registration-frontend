@@ -31,12 +31,12 @@ const emptyMember = { Salutation: '', Full_Name: '', Email: '', Phone_Number: ''
 
 interface Props {
   fields: FormField[];
+  eventId: string;
 }
 
-export default function RegistrationForm({ fields }: Props) {
+export default function RegistrationForm({ fields, eventId }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const eventId = searchParams.get('Event_Info');
   const [loading, setLoading] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [isNew, setIsNew] = useState(false);

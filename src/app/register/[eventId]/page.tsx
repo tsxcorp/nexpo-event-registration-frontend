@@ -36,7 +36,7 @@ export default function RegisterPage() {
       <section className="bg-white py-16 px-4">
         <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl p-10 space-y-6 border border-gray-200">
           <h3 className="text-2xl md:text-3xl font-semibold text-center text-gray-800">Đăng ký tham dự</h3>
-          <RegistrationForm fields={eventData.formFields} />
+          <RegistrationForm fields={eventData.formFields} eventId={eventId} />
         </div>
       </section>
     </RegistrationLayout>

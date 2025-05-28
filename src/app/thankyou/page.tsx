@@ -69,7 +69,6 @@ export default function ThankYouPage() {
           <div className="mb-8">
             <h3 className="text-xl font-semibold mb-4">🎫 Mã QR xác nhận</h3>
             <p className="text-gray-600 mb-4">Vui lòng trình mã QR này khi đến sự kiện</p>
-            
             {isGroup ? (
               <>
                 <div className="mb-6">
@@ -122,28 +121,28 @@ export default function ThankYouPage() {
           </div>
 
           {/* Group Members Section */}
-          {isGroup && registrationData.group_members && registrationData.group_members.length > 0 && (
+          {registrationData.group_members && registrationData.group_members.length > 1 && (
             <div className="mb-8">
-              <h3 className="text-xl font-semibold mb-4">👥 Thành viên trong nhóm</h3>
-              <div className="space-y-4">
-                {registrationData.group_members.map((member, index) => (
-                  <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-semibold text-gray-800">
-                          {member.Salutation} {member.Full_Name}
-                        </div>
-                        <div className="text-sm text-gray-500">{member.Email}</div>
-                      </div>
-                      <div className="bg-white p-2 rounded shadow-sm">
-                        <QRCode
-                          value={member.zoho_record_id || `${registrationData.group_id}-${index}`}
-                          size={100}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <h3 className="text-xl font-semibold mb-4">Danh sách thành viên nhóm</h3>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr>
+                      <th className="py-2 text-gray-600 font-medium text-left">Họ tên</th>
+                      <th className="py-2 text-gray-600 font-medium text-left">Email</th>
+                      <th className="py-2 text-gray-600 font-medium text-left">SĐT</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {registrationData.group_members.map((member, idx) => (
+                      <tr key={idx} className="border-b border-gray-200 last:border-0">
+                        <td className="py-2 text-blue-800 font-semibold">{member.Full_Name}</td>
+                        <td className="py-2">{member.Email}</td>
+                        <td className="py-2">{member.Phone_Number}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

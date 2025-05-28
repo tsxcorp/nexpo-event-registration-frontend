@@ -1,11 +1,15 @@
 'use client';
 
+import { useParams } from 'next/navigation';
 import Header from '@/components/layouts/Header';
 
-export default function EventPage({ params }: { params: { eventId: string } }) {
-  // In a real implementation, you would fetch the event details using params.eventId
+export default function EventPage() {
+  const params = useParams();
+  const eventId = params?.eventId as string;
+
+  // In a real implementation, you would fetch the event details using eventId
   const event = {
-    id: params.eventId,
+    id: eventId,
     name: 'Nexpo Tech Conference 2024',
     date: '2024-03-15',
     location: 'HCMC, Vietnam',
