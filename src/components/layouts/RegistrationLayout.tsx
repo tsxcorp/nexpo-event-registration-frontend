@@ -15,7 +15,7 @@ interface RegistrationLayoutProps {
 export default function RegistrationLayout({ children, eventData }: RegistrationLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800">
-      <Header />
+      {/* <Header /> */}
       
       {eventData?.banner && (
         <section
