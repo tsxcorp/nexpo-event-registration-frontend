@@ -123,23 +123,33 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
       }
 
       case 'Multi Select': {
-        const multiOptions: string[] = Array.isArray(field.values)
-          ? field.values
-          : typeof field.values === 'string'
-          ? (field.values as string).split(',').map((s: string) => s.trim())
-          : [];
-
-        const selected = useWatch({ name: fieldName, control });
+        const options = field.values || field.options || [];
+        const selected = useWatch({
+          control,
+          name: fieldName,
+          defaultValue: []
+        });
 
         return (
           <>
-            <div className="space-y-2">
-              {multiOptions.map((opt, i) => (
-                <label key={i} className="flex items-center space-x-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+              {options.map((opt, index) => (
+                <label
+                  key={index}
+                  className="flex items-center space-x-2"
+                >
                   <input
                     type="checkbox"
                     value={opt}
-                    {...register(fieldName)}
+                    {...register(fieldName, {
+                      required: isRequired,
+                      validate: (value) => {
+                        if (isRequired && (!value || value.length === 0)) {
+                          return 'At least one option is required.';
+                        }
+                        return true;
+                      }
+                    })}
                     className="text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <span className="text-gray-800">{opt}</span>
@@ -151,6 +161,89 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
                 At least one option is required.
               </p>
             )}
+          </>
+        );
+      }
+
+      case 'Agreement': {
+        // Handle both camelCase and snake_case field names
+        const checkboxLabel = field.checkbox_label || field.checkboxLabel || 'Tôi đồng ý';
+        const linkText = field.link_text || field.linkText;
+        const linkUrl = field.link_url || field.linkUrl;
+        
+        // Fallback content if no content is provided
+        const title = field.title || field.label || 'Agreement';
+        const content = field.content || 'Vui lòng đọc và đồng ý với các điều khoản.';
+        
+        // Extract URL from link_url if it contains HTML
+        const extractUrl = (urlString: string | undefined) => {
+          if (!urlString) return '';
+          // If it's a simple URL, return as is
+          if (urlString.startsWith('http')) return urlString;
+          // If it contains HTML, extract href
+          const match = urlString.match(/href\s*=\s*["']([^"']+)["']/);
+          return match ? match[1] : urlString;
+        };
+        
+        const cleanUrl = extractUrl(linkUrl);
+        
+        return (
+          <>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              {/* Title */}
+              {title && (
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">
+                  {title}
+                </h4>
+              )}
+              
+              {/* Content */}
+              {content && (
+                <div className="mb-4">
+                  <div 
+                    className="text-gray-700 leading-relaxed prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ __html: content }}
+                  />
+                </div>
+              )}
+              
+              {/* Link */}
+              {linkText && cleanUrl && (
+                <div className="mb-4">
+                  <a
+                    href={cleanUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline"
+                  >
+                    {linkText}
+                  </a>
+                </div>
+              )}
+              
+              {/* Checkbox */}
+              <label className="flex items-start space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...register(fieldName, { 
+                    required: isRequired,
+                    validate: (value) => {
+                      if (isRequired && !value) {
+                        return 'Bạn phải đồng ý để tiếp tục';
+                      }
+                      return true;
+                    }
+                  })}
+                  className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <span className="text-gray-800">{checkboxLabel}</span>
+              </label>
+              
+              {/* Error message */}
+              {fieldError && (
+                <p className="text-red-500 text-sm mt-2">{getErrorMessage(fieldError)}</p>
+              )}
+            </div>
           </>
         );
       }
@@ -226,14 +319,16 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
   return (
     <>
       {fields.map((field, idx) => (
-        <div key={idx}>
-          <label className="block font-medium text-gray-700 mb-1">
-            {field.label}
-            {field.required && <span className="text-red-500 ml-1">*</span>}
-          </label>
+        <div key={idx} className="mb-6">
+          {field.type !== 'Agreement' && (
+            <label className="block font-medium mb-2 text-gray-700">
+              {field.label}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
+            </label>
+          )}
           {renderField(field, idx)}
-          {field.helptext && (
-            <p className="text-sm text-gray-500 mb-1 mt-1">{field.helptext}</p>
+          {field.helptext && field.type !== 'Agreement' && (
+            <p className="text-sm text-gray-500 mt-1">{field.helptext}</p>
           )}
         </div>
       ))}

@@ -11,8 +11,9 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
     <>
       {/* Salutation */}
       <div>
-        <label className="block font-medium mb-1">
+        <label className="block font-medium mb-2 text-gray-700">
           {t.Salutation || "Salutation"}
+          <span className="text-red-500 ml-1">*</span>
         </label>
         <div className="relative">
           <select
@@ -39,13 +40,14 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
 
       {/* Full Name */}
       <div>
-        <label className="block font-medium mb-1">
+        <label className="block font-medium mb-2 text-gray-700">
           {t.Full_Name || "Full Name"}
+          <span className="text-red-500 ml-1">*</span>
         </label>
         <input
           type="text"
           {...register("Full_Name", { required: true })}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
         />
         {errors.Full_Name && (
           <p className="text-red-500 text-sm mt-1">
@@ -58,19 +60,20 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
 
       {/* Email */}
       <div>
-        <label className="block font-medium mb-1">
+        <label className="block font-medium mb-2 text-gray-700">
           {t.Email || "Email"}
+          <span className="text-red-500 ml-1">*</span>
         </label>
         <input
           type="email"
-          {...register("Email", {
+          {...register("Email", { 
             required: true,
             pattern: {
               value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-              message: "Invalid email format.",
-            },
+              message: "Invalid email format."
+            }
           })}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
         />
         {errors.Email && (
           <p className="text-red-500 text-sm mt-1">
@@ -83,19 +86,14 @@ export default function CoreFormFields({ register, errors, t = {} }: Props) {
 
       {/* Phone Number */}
       <div>
-        <label className="block font-medium mb-1">
+        <label className="block font-medium mb-2 text-gray-700">
           {t.Phone_Number || "Phone Number"}
+          <span className="text-red-500 ml-1">*</span>
         </label>
         <input
           type="tel"
-          {...register("Phone_Number", {
-            required: true,
-            pattern: {
-              value: /^0\d{9}$/,
-              message: "Invalid phone number.",
-            },
-          })}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+          {...register("Phone_Number", { required: true })}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
         />
         {errors.Phone_Number && (
           <p className="text-red-500 text-sm mt-1">

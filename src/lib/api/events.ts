@@ -10,6 +10,15 @@ export interface FormField {
   default?: string;
   groupmember?: boolean;
   helptext?: string;
+  // Agreement specific fields - support both camelCase and snake_case
+  title?: string;
+  content?: string;
+  checkbox_label?: string;
+  checkboxLabel?: string; // Alternative camelCase
+  link_text?: string;
+  linkText?: string; // Alternative camelCase
+  link_url?: string;
+  linkUrl?: string; // Alternative camelCase
 }
 
 export interface EventData {
@@ -27,6 +36,7 @@ export const eventApi = {
   getEventInfo: async (eventId: string): Promise<{ event: EventData }> => {
     // The backend uses a query parameter for this specific route
     const response = await apiClient.get(`/api/events/?eventId=${eventId}`);
+    
     return response.data;
   },
 

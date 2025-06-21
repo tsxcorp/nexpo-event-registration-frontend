@@ -18,12 +18,12 @@ export default function SubFormFields({ register, errors, namePrefix, fields = [
   return (
     <>
       <div>
-        <label className="block font-medium mb-1">
-          Salutation <span className="text-red-500">*</span>
+        <label className="block font-medium mb-2 text-gray-700">
+          Salutation <span className="text-red-500 ml-1">*</span>
         </label>
         <select
           {...register(`${namePrefix}.Salutation`, { required: true })}
-          className="w-full px-4 py-2 border rounded"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
         >
           <option value="">-- Select --</option>
           <option value="Mr.">Mr.</option>
@@ -36,13 +36,13 @@ export default function SubFormFields({ register, errors, namePrefix, fields = [
       </div>
 
       <div>
-        <label className="block font-medium mb-1">
-          Full Name <span className="text-red-500">*</span>
+        <label className="block font-medium mb-2 text-gray-700">
+          Full Name <span className="text-red-500 ml-1">*</span>
         </label>
         <input
           type="text"
           {...register(`${namePrefix}.Full_Name`, { required: true })}
-          className="w-full px-4 py-2 border rounded"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
         />
         {getError('Full_Name') && (
           <p className="text-red-500 text-sm mt-1">This field is required.</p>
@@ -50,8 +50,8 @@ export default function SubFormFields({ register, errors, namePrefix, fields = [
       </div>
 
       <div>
-        <label className="block font-medium mb-1">
-          Email <span className="text-red-500">*</span>
+        <label className="block font-medium mb-2 text-gray-700">
+          Email <span className="text-red-500 ml-1">*</span>
         </label>
         <input
           type="email"
@@ -62,7 +62,7 @@ export default function SubFormFields({ register, errors, namePrefix, fields = [
               message: 'Invalid email format.',
             },
           })}
-          className="w-full px-4 py-2 border rounded"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
         />
         {getError('Email') && (
           <p className="text-red-500 text-sm mt-1">This field is required.</p>
@@ -70,30 +70,28 @@ export default function SubFormFields({ register, errors, namePrefix, fields = [
       </div>
 
       <div>
-        <label className="block font-medium mb-1">
-          Phone Number <span className="text-red-500">*</span>
+        <label className="block font-medium mb-2 text-gray-700">
+          Phone Number <span className="text-red-500 ml-1">*</span>
         </label>
         <input
           type="tel"
-          {...register(`${namePrefix}.Phone_Number`, {
-            required: true,
-            pattern: {
-              value: /^0\d{9}$/,
-              message: 'Invalid phone number.',
-            },
-          })}
-          className="w-full px-4 py-2 border rounded"
+          {...register(`${namePrefix}.Phone_Number`, { required: true })}
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
         />
         {getError('Phone_Number') && (
           <p className="text-red-500 text-sm mt-1">This field is required.</p>
         )}
       </div>
 
-      {fields.length > 0 && (
-        <div className="mt-6">
-          <DynamicFormFields fields={fields} prefix={namePrefix} />
+      {fields.map((field, index) => (
+        <div key={index}>
+          <label className="block font-medium mb-2 text-gray-700">
+            {field.label}
+            {field.required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+          <DynamicFormFields fields={[field]} prefix={namePrefix} />
         </div>
-      )}
+      ))}
     </>
   );
 }
