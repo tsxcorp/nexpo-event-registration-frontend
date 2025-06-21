@@ -40,7 +40,15 @@ export default function RegistrationForm({ fields, eventId }: Props) {
   const [loading, setLoading] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [isNew, setIsNew] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
+
+  // --- Logic for skipping step 1 ---
+  const agreementFields = fields.filter(f => f.type === 'Agreement');
+  const otherFields = fields.filter(f => f.type !== 'Agreement');
+  const groupCustomFields = otherFields.filter(f => f.groupmember);
+  const hasAgreementFields = agreementFields.length > 0;
+  
+  const [currentStep, setCurrentStep] = useState(hasAgreementFields ? 1 : 2);
+  // ------------------------------------
 
   const methods = useForm<FormData>({
     defaultValues: {
@@ -69,11 +77,6 @@ export default function RegistrationForm({ fields, eventId }: Props) {
   });
 
   const coreKeys = ['Salutation', 'Full_Name', 'Email', 'Phone_Number'];
-
-  // Separate fields by type
-  const agreementFields = fields.filter(f => f.type === 'Agreement');
-  const otherFields = fields.filter(f => f.type !== 'Agreement');
-  const groupCustomFields = otherFields.filter(f => f.groupmember);
 
   const onSubmit = async (data: FormData) => {
     const coreData: Record<string, any> = {};
@@ -230,27 +233,29 @@ export default function RegistrationForm({ fields, eventId }: Props) {
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Step Indicator */}
-        <div className="flex items-center justify-center mb-8">
-          <div className="flex items-center space-x-4">
-            <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-              currentStep >= 1 ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300 text-gray-500'
-            }`}>
-              1
-            </div>
-            <div className={`w-16 h-1 ${
-              currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-300'
-            }`}></div>
-            <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-              currentStep >= 2 ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300 text-gray-500'
-            }`}>
-              2
+        {/* Step Indicator: Only show if there are agreement fields */}
+        {hasAgreementFields && (
+          <div className="flex items-center justify-center mb-8">
+            <div className="flex items-center space-x-4">
+              <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                currentStep >= 1 ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300 text-gray-500'
+              }`}>
+                1
+              </div>
+              <div className={`w-16 h-1 ${
+                currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-300'
+              }`}></div>
+              <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+                currentStep >= 2 ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300 text-gray-500'
+              }`}>
+                2
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Step 1: Agreement Fields */}
-        {currentStep === 1 && (
+        {/* Step 1: Agreement Fields (only renders if it exists and is the current step) */}
+        {currentStep === 1 && hasAgreementFields && (
           <Card className="w-full max-w-4xl mx-auto">
             <div className="p-6 sm:p-8">
               <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 text-center">
@@ -335,8 +340,13 @@ export default function RegistrationForm({ fields, eventId }: Props) {
                             register={register}
                             errors={errors}
                             namePrefix={`group_members.${index}`}
-                            fields={groupCustomFields}
                           />
+                          {groupCustomFields.length > 0 && (
+                            <DynamicFormFields
+                              fields={groupCustomFields}
+                              prefix={`group_members.${index}`}
+                            />
+                          )}
                         </div>
                       </div>
                     ))}
@@ -346,26 +356,29 @@ export default function RegistrationForm({ fields, eventId }: Props) {
             )}
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
-              <Button
-                type="button"
-                onClick={handlePrevStep}
-                className="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white px-8 py-3 rounded-lg text-lg font-semibold"
-              >
-                Quay lại
-              </Button>
-              
+            <div className={`flex flex-col sm:flex-row items-center w-full space-y-4 sm:space-y-0 ${
+              hasAgreementFields ? 'justify-between' : 'justify-end'
+            }`}>
+              {/* Back Button (conditionally rendered) */}
+              {hasAgreementFields && (
+                <Button
+                  type="button"
+                  onClick={handlePrevStep}
+                  className="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white px-8 py-3 rounded-lg text-lg font-semibold"
+                >
+                  Quay lại
+                </Button>
+              )}
+
+              {/* Right-aligned button group */}
               <div className="flex flex-col sm:flex-row w-full sm:w-auto space-y-4 sm:space-y-0 sm:space-x-4">
-                {groupCustomFields.length > 0 && (
-                  <Button
-                    type="button"
-                    onClick={handleAddMember}
-                    className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold"
-                  >
-                    Thêm thành viên
-                  </Button>
-                )}
-                
+                <Button
+                  type="button"
+                  onClick={handleAddMember}
+                  className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold"
+                >
+                  Thêm thành viên
+                </Button>
                 <Button
                   type="submit"
                   disabled={loading}
@@ -390,8 +403,13 @@ export default function RegistrationForm({ fields, eventId }: Props) {
                   register={register}
                   errors={errors}
                   namePrefix={`group_members.${editIndex}`}
-                  fields={groupCustomFields}
                 />
+                {groupCustomFields.length > 0 && (
+                  <DynamicFormFields
+                    fields={groupCustomFields}
+                    prefix={`group_members.${editIndex}`}
+                  />
+                )}
               </div>
               <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4 mt-6">
                 <Button
