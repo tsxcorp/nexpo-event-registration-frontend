@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import axios from 'axios';
+import { apiClient } from '@/lib/api/client';
 import * as XLSX from 'xlsx';
 import { EventData, eventApi, FormField } from '@/lib/api/events';
 import RegistrationLayout from '@/components/layouts/RegistrationLayout';
@@ -214,7 +215,13 @@ export default function ImportExcelPage() {
     reader.readAsBinaryString(selectedFile);
   };
 
-  const handleImport = async () => {
+    const handleImport = async () => {
+    console.log('🚀 Starting import process...');
+    console.log('Event ID:', eventId);
+    console.log('Preview data length:', previewData.length);
+    console.log('Validation summary:', validationSummary);
+    console.log('Import policy:', importPolicy);
+    
     if (!eventData || validationSummary.invalid > 0 && importPolicy === 'stopOnError') {
       setGeneralError("Vui lòng sửa các lỗi trong file trước khi import.");
       return;
@@ -225,37 +232,155 @@ export default function ImportExcelPage() {
     setImportProgress({ processed: 0, total: previewData.length });
 
     const dataToImport = previewData.filter((_, index) => rowResults[index]?.status === 'valid');
+    console.log('Data to import:', dataToImport.length, 'records');
     setImportProgress({ processed: 0, total: dataToImport.length });
+
+    console.log('📋 Starting batch processing for all valid records...');
 
     for (let i = 0; i < dataToImport.length; i += BATCH_SIZE) {
       const batch = dataToImport.slice(i, i + BATCH_SIZE);
       const batchIndices = previewData.map((row, index) => dataToImport.includes(row) ? index : -1).filter(index => index !== -1).slice(i, i + BATCH_SIZE);
       
       try {
-        // Here we would send the batch to a new backend endpoint
-        // For now, let's simulate with a delay
-        await sleep(500); // SIMULATE API CALL
+        // Create FormData for the batch
+        const formData = new FormData();
+        
+        // Transform data to match backend expectations
+        const transformedBatch = batch.map(row => {
+          const transformedRow: any = {};
+          
+          // Map core fields to expected names
+          if (row.title !== undefined) transformedRow.title = row.title;
+          if (row.full_name !== undefined) transformedRow.full_name = row.full_name;
+          if (row.email !== undefined) transformedRow.email = row.email;
+          if (row.mobile_number !== undefined) transformedRow.mobile_number = row.mobile_number;
+          
+          // Add all other fields as custom fields
+          Object.keys(row).forEach(key => {
+            if (!['title', 'full_name', 'email', 'mobile_number'].includes(key.toLowerCase())) {
+              transformedRow[key] = row[key];
+            }
+          });
+          
+          return transformedRow;
+        });
+        
+        // Create Excel file from transformed batch data
+        console.log('Creating Excel file for batch:', transformedBatch);
+        const ws = XLSX.utils.json_to_sheet(transformedBatch);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Import');
+        
+        // Generate buffer and create file
+        console.log('Writing Excel workbook to buffer...');
+        const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        
+        // Create a File object with a simpler MIME type
+        const excelFile = new File([excelBuffer], `import-batch-${i / BATCH_SIZE + 1}.xlsx`, {
+          type: 'application/vnd.ms-excel'
+        });
+        
+        console.log('Created Excel file:', {
+          name: excelFile.name,
+          size: excelFile.size,
+          type: excelFile.type,
+          bufferSize: excelBuffer.byteLength
+        });
+        
+        formData.append('file', excelFile);
+        formData.append('event_id', eventId);
+
+        // Make API call to backend
+        console.log(`🚀 Sending batch ${i / BATCH_SIZE + 1} with ${batch.length} records to backend...`);
+        console.log('API Client base URL:', apiClient.defaults.baseURL);
+        const formDataFile = formData.get('file');
+        console.log('FormData contents:', {
+          hasFile: formData.has('file'),
+          hasEventId: formData.has('event_id'),
+          eventId: formData.get('event_id'),
+          fileType: typeof formDataFile,
+          isFile: formDataFile instanceof File,
+          isBlob: formDataFile instanceof Blob,
+          fileDetails: formDataFile instanceof File ? {
+            name: formDataFile.name,
+            size: formDataFile.size,
+            type: formDataFile.type
+          } : 'Not a File object'
+        });
+        
+        // Sử dụng axios trực tiếp thay vì apiClient để tránh conflict với JSON config
+        const response = await axios.post('http://localhost:3000/api/imports', formData, {
+          headers: {
+            // Không set Content-Type, để axios tự động set multipart/form-data
+          },
+        });
+        console.log(`✅ Backend response for batch ${i / BATCH_SIZE + 1}:`, response.data);
+
+        // Process backend response
+        const { report, success, total } = response.data;
+        console.log('Processing backend response:', { success, total, reportLength: report?.length });
         
         const newResults = { ...rowResults };
-        batchIndices.forEach(index => {
-          // This is where you would process real API response
-          const isSuccess = Math.random() > 0.1; // Simulate success/failure
-          if(isSuccess) {
-            newResults[index] = { status: 'success', message: 'Import thành công' };
-          } else {
-            newResults[index] = { status: 'error', message: 'Lỗi từ Zoho (mô phỏng)' };
-          }
-        });
+        
+        if (report && Array.isArray(report)) {
+          report.forEach((result: any, reportIndex: number) => {
+            const actualIndex = batchIndices[reportIndex];
+            console.log(`Processing result ${reportIndex}:`, result, 'for index:', actualIndex);
+            
+            if (actualIndex !== undefined) {
+              newResults[actualIndex] = {
+                status: result.status.includes('✅') || result.status.includes('Success') ? 'success' : 'error',
+                message: result.status.includes('✅') || result.status.includes('Success') ? 'Import thành công' : result.error || result.status || 'Lỗi không xác định'
+              };
+            }
+          });
+        } else {
+          console.error('Invalid report format:', report);
+          // Mark all as error if report is invalid
+          batchIndices.forEach(index => {
+            newResults[index] = { 
+              status: 'error', 
+              message: 'Phản hồi từ server không hợp lệ' 
+            };
+          });
+        }
+        
         setRowResults(newResults);
 
       } catch (err: any) {
-        setGeneralError(`Lỗi khi xử lý lô ${i / BATCH_SIZE + 1}.`);
-        setIsProcessing(false);
-        return;
+        console.error(`❌ Import batch ${i / BATCH_SIZE + 1} error:`, err);
+        console.error('Error details:', {
+          message: err.message,
+          response: err.response?.data,
+          status: err.response?.status,
+          config: err.config
+        });
+        
+        // Mark all records in this batch as failed
+        const newResults = { ...rowResults };
+        batchIndices.forEach(index => {
+          newResults[index] = { 
+            status: 'error', 
+            message: err.response?.data?.details || err.response?.data?.error || err.message || 'Lỗi kết nối API' 
+          };
+        });
+        setRowResults(newResults);
+
+        if (importPolicy === 'stopOnError') {
+          setGeneralError(`Lỗi khi xử lý lô ${i / BATCH_SIZE + 1}: ${err.response?.data?.details || err.response?.data?.error || err.message}`);
+          setIsProcessing(false);
+          return;
+        }
       }
       setImportProgress(prev => ({ ...prev, processed: prev.processed + batch.length }));
+      
+      // Add delay between batches to avoid overwhelming the backend
+      if (i + BATCH_SIZE < dataToImport.length) {
+        await sleep(1000);
+      }
     }
 
+    console.log('✅ Import process completed');
     setIsProcessing(false);
   };
 
