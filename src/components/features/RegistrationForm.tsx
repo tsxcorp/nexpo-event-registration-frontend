@@ -440,24 +440,131 @@ export default function RegistrationForm({ fields, eventId }: Props) {
                     Thành viên nhóm ({groupMembers.length})
                   </span>
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 text-center">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-6 text-center">
                   Danh sách thành viên
                 </h3>
-                <div className="space-y-3">
-                  {groupMembers.map((member, index) => (
-                    <div key={member.id} className="p-3 sm:p-4 border-2 border-orange-200 rounded-lg bg-white shadow-sm">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-gray-800">Thành viên {index + 1}</span>
-                        <Button
-                          type="button"
-                          onClick={() => remove(index)}
-                          className="text-red-600 hover:text-red-800 hover:bg-red-50 font-bold text-sm px-3 py-1 rounded-md transition-colors"
-                        >
-                          Xóa
-                        </Button>
+                <div className="space-y-4">
+                  {groupMembers.map((member, index) => {
+                    const memberData = getValues(`group_members.${index}`);
+                    const hasData = memberData && (memberData.Full_Name || memberData.Email);
+                    
+                    return (
+                      <div key={member.id} className="p-4 sm:p-5 border-2 border-orange-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          {/* Member Info */}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                                <span className="text-orange-600 font-bold text-sm">{index + 1}</span>
+                              </div>
+                              <div className="flex-1">
+                                {hasData ? (
+                                  <div>
+                                    <h4 className="font-bold text-gray-900 text-base">
+                                      {memberData.Salutation && `${memberData.Salutation} `}
+                                      {memberData.Full_Name || 'Chưa có tên'}
+                                    </h4>
+                                    <p className="text-sm text-gray-600">
+                                      {memberData.Email || 'Chưa có email'}
+                                    </p>
+                                    {memberData.Phone_Number && (
+                                      <p className="text-sm text-gray-600">
+                                        📞 {memberData.Phone_Number}
+                                      </p>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div>
+                                    <h4 className="font-bold text-gray-500 text-base">
+                                      Thành viên {index + 1}
+                                    </h4>
+                                    <p className="text-sm text-gray-400 italic">
+                                      Chưa có thông tin
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Custom fields if any */}
+                            {hasData && groupCustomFields.length > 0 && (
+                              <div className="mt-3 pt-3 border-t border-gray-100">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                  {groupCustomFields.map((field, fieldIndex) => {
+                                    const fieldValue = memberData[field.label];
+                                    if (!fieldValue) return null;
+                                    
+                                    return (
+                                      <div key={fieldIndex} className="text-gray-600">
+                                        <span className="font-medium">{field.label}:</span>
+                                        <span className="ml-1">
+                                          {Array.isArray(fieldValue) ? fieldValue.join(', ') : fieldValue}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Action Buttons */}
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                setEditIndex(index);
+                                setIsNew(false);
+                              }}
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 shadow-sm hover:shadow-md"
+                            >
+                              ✏️ Sửa
+                            </Button>
+                            <Button
+                              type="button"
+                              onClick={() => {
+                                if (confirm('Bạn có chắc muốn xóa thành viên này?')) {
+                                  remove(index);
+                                }
+                              }}
+                              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 shadow-sm hover:shadow-md"
+                            >
+                              🗑️ Xóa
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        {/* Status indicator */}
+                        <div className="mt-3 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${hasData ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                            <span className={`text-xs font-medium ${hasData ? 'text-green-600' : 'text-gray-500'}`}>
+                              {hasData ? 'Đã điền thông tin' : 'Chưa điền thông tin'}
+                            </span>
+                          </div>
+                          <span className="text-xs text-gray-400">
+                            Thành viên #{index + 1}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
+                </div>
+                
+                {/* Add new member button */}
+                <div className="mt-6 pt-4 border-t border-orange-200">
+                  <Button
+                    type="button"
+                    onClick={handleAddMember}
+                    className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-4 rounded-xl font-bold text-base transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
+                  >
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                      </svg>
+                      Thêm thành viên mới
+                    </span>
+                  </Button>
                 </div>
               </div>
             </Card>
@@ -479,13 +586,15 @@ export default function RegistrationForm({ fields, eventId }: Props) {
 
             {/* Center content for mobile - Add member button */}
             <div className="flex flex-col sm:flex-row w-full sm:w-auto space-y-3 sm:space-y-0 sm:space-x-4">
-              <Button
-                type="button"
-                onClick={handleAddMember}
-                className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold transition-all duration-200 shadow-md hover:shadow-lg"
-              >
-                + Thêm thành viên
-              </Button>
+              {groupMembers.length === 0 && (
+                <Button
+                  type="button"
+                  onClick={handleAddMember}
+                  className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                  + Thêm thành viên
+                </Button>
+              )}
               
               {isLastStep ? (
                 <Button
@@ -524,38 +633,89 @@ export default function RegistrationForm({ fields, eventId }: Props) {
         {/* Group Member Dialog */}
         {editIndex !== null && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white p-6 rounded-lg max-w-md w-full mx-auto max-h-[90vh] overflow-y-auto">
-              <h3 className="text-xl font-semibold mb-4">
-                {isNew ? 'Thêm thành viên mới' : 'Chỉnh sửa thành viên'}
-              </h3>
-              <div className="grid grid-cols-1 gap-4">
-                <SubFormFields
-                  register={register}
-                  errors={errors}
-                  namePrefix={`group_members.${editIndex}`}
-                />
-                {groupCustomFields.length > 0 && (
-                  <DynamicFormFields
-                    fields={groupCustomFields}
-                    prefix={`group_members.${editIndex}`}
-                  />
-                )}
+            <div className="bg-white rounded-2xl max-w-2xl w-full mx-auto max-h-[90vh] overflow-y-auto shadow-2xl">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-2xl">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold">
+                      {isNew ? 'Thêm thành viên mới' : `Chỉnh sửa thành viên ${editIndex + 1}`}
+                    </h3>
+                    <p className="text-blue-100 text-sm mt-1">
+                      {isNew ? 'Điền thông tin cho thành viên mới' : 'Cập nhật thông tin thành viên'}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={handleCloseDialog}
+                    className="text-white hover:bg-white hover:text-blue-600 p-2 rounded-full transition-all"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                  </Button>
+                </div>
               </div>
-              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4 mt-6">
-                <Button
-                  type="button"
-                  onClick={handleCloseDialog}
-                  className="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
-                >
-                  Hủy
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleConfirmDialog}
-                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-                >
-                  Xác nhận
-                </Button>
+
+              {/* Content */}
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Core Fields */}
+                  <div className="md:col-span-2">
+                    <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-blue-600 font-bold text-sm">👤</span>
+                      </div>
+                      Thông tin cơ bản
+                    </h4>
+                  </div>
+                  
+                  <SubFormFields
+                    register={register}
+                    errors={errors}
+                    namePrefix={`group_members.${editIndex}`}
+                  />
+                  
+                  {/* Custom Fields */}
+                  {groupCustomFields.length > 0 && (
+                    <>
+                      <div className="md:col-span-2 mt-6">
+                        <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <span className="text-green-600 font-bold text-sm">⚙️</span>
+                          </div>
+                          Thông tin bổ sung
+                        </h4>
+                      </div>
+                      <div className="md:col-span-2">
+                        <DynamicFormFields
+                          fields={groupCustomFields}
+                          prefix={`group_members.${editIndex}`}
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="bg-gray-50 p-6 rounded-b-2xl border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4">
+                  <Button
+                    type="button"
+                    onClick={handleCloseDialog}
+                    className="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-bold transition-all duration-200"
+                  >
+                    Hủy bỏ
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleConfirmDialog}
+                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-200 shadow-md hover:shadow-lg"
+                  >
+                    {isNew ? '✅ Thêm thành viên' : '💾 Lưu thay đổi'}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
