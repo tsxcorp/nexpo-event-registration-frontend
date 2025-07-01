@@ -32,9 +32,10 @@ export const validateForm = (fields: FormField[], values: Record<string, any>): 
   const errors: Record<string, string> = {};
 
   fields.forEach((field) => {
-    const error = validateField(field, values[field.id]);
+    const fieldKey = field.id || field.label;
+    const error = validateField(field, values[fieldKey]);
     if (error) {
-      errors[field.id] = error;
+      errors[fieldKey] = error;
     }
   });
 

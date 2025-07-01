@@ -1,6 +1,6 @@
 'use client';
 
-// ✅ RegistrationForm.tsx đã cập nhật để truyền fields group_members vào SubFormFields và xử lý phản hồi đúng từ backend
+// ✅ RegistrationForm.tsx updated to make each section a separate step
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -27,6 +27,13 @@ interface FormData {
   [key: string]: any;
 }
 
+interface Section {
+  name: string;
+  sort: number;
+  fields: FormField[];
+  type: 'core' | 'agreement' | 'custom' | 'group';
+}
+
 const emptyMember = { Salutation: '', Full_Name: '', Email: '', Phone_Number: '' };
 
 interface Props {
@@ -41,14 +48,63 @@ export default function RegistrationForm({ fields, eventId }: Props) {
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [isNew, setIsNew] = useState(false);
 
-  // --- Logic for skipping step 1 ---
+  // Group fields by sections and sort them
+  const groupFieldsBySection = (fields: FormField[]): Section[] => {
+    const sectionMap = new Map<string, Section>();
+    
+    fields.forEach(field => {
+      const sectionName = field.section_name || 'Khác';
+      const sectionSort = field.section_sort || 999;
+      
+      if (!sectionMap.has(sectionName)) {
+        sectionMap.set(sectionName, {
+          name: sectionName,
+          sort: sectionSort,
+          fields: [],
+          type: field.type === 'Agreement' ? 'agreement' : 'custom'
+        });
+      }
+      
+      sectionMap.get(sectionName)!.fields.push(field);
+    });
+    
+    // Sort sections by section_sort
+    const sections = Array.from(sectionMap.values()).sort((a, b) => a.sort - b.sort);
+    
+    // Sort fields within each section by sort field
+    sections.forEach(section => {
+      section.fields.sort((a, b) => a.sort - b.sort);
+    });
+    
+    return sections;
+  };
+
+  // Create all steps: Agreement sections (if any) + Core info + Custom sections
   const agreementFields = fields.filter(f => f.type === 'Agreement');
   const otherFields = fields.filter(f => f.type !== 'Agreement');
   const groupCustomFields = otherFields.filter(f => f.groupmember);
-  const hasAgreementFields = agreementFields.length > 0;
   
-  const [currentStep, setCurrentStep] = useState(hasAgreementFields ? 1 : 2);
-  // ------------------------------------
+  const agreementSections = groupFieldsBySection(agreementFields);
+  const otherSections = groupFieldsBySection(otherFields);
+  
+  // Build step sequence with correct order
+  const allSteps: Section[] = [
+    // 1. Agreement sections first (if any)
+    ...agreementSections,
+    // 2. Core fields step
+    {
+      name: 'THÔNG TIN CÁ NHÂN',
+      sort: -1,
+      fields: [],
+      type: 'core'
+    },
+    // 3. Custom sections (already sorted by section_sort and field_sort)
+    ...otherSections
+  ];
+
+  // Add group members step if there are group members
+  const [currentStep, setCurrentStep] = useState(0);
+  const totalSteps = allSteps.length;
 
   const methods = useForm<FormData>({
     defaultValues: {
@@ -214,182 +270,170 @@ export default function RegistrationForm({ fields, eventId }: Props) {
   };
 
   const handleNextStep = async () => {
-    if (currentStep === 1) {
-      // Validate Agreement fields
-      const agreementFieldNames = agreementFields.map(f => f.label);
-      const isValid = await trigger(agreementFieldNames as any);
-      if (isValid) {
-        setCurrentStep(2);
-      }
+    const currentSection = allSteps[currentStep];
+    
+    // Validate current step
+    let fieldsToValidate: string[] = [];
+    
+    if (currentSection.type === 'core') {
+      fieldsToValidate = coreKeys;
+    } else if (currentSection.type === 'agreement' || currentSection.type === 'custom') {
+      fieldsToValidate = currentSection.fields.map(f => f.label);
+    }
+    
+    const isValid = await trigger(fieldsToValidate as any);
+    
+    if (isValid && currentStep < totalSteps - 1) {
+      setCurrentStep(currentStep + 1);
     }
   };
 
   const handlePrevStep = () => {
-    if (currentStep === 2) {
-      setCurrentStep(1);
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
     }
   };
+
+  const isLastStep = currentStep === totalSteps - 1;
+  const currentSection = allSteps[currentStep];
 
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Step Indicator: Only show if there are agreement fields */}
-        {hasAgreementFields && (
-          <div className="flex items-center justify-center mb-8">
-            <div className="flex items-center space-x-4">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                currentStep >= 1 ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300 text-gray-500'
-              }`}>
-                1
+        {/* Multi-Step Indicator */}
+        <div className="flex items-center justify-center mb-8">
+          <div className="flex items-center space-x-2 overflow-x-auto">
+            {allSteps.map((step, index) => (
+              <div key={index} className="flex items-center">
+                <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm ${
+                  index <= currentStep 
+                    ? 'bg-blue-600 border-blue-600 text-white' 
+                    : 'border-gray-300 text-gray-500'
+                }`}>
+                  {index + 1}
+                </div>
+                {index < allSteps.length - 1 && (
+                  <div className={`w-8 h-1 ${
+                    index < currentStep ? 'bg-blue-600' : 'bg-gray-300'
+                  }`}></div>
+                )}
               </div>
-              <div className={`w-16 h-1 ${
-                currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-300'
-              }`}></div>
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                currentStep >= 2 ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300 text-gray-500'
-              }`}>
-                2
-              </div>
-            </div>
+            ))}
           </div>
-        )}
+        </div>
 
-        {/* Step 1: Agreement Fields (only renders if it exists and is the current step) */}
-        {currentStep === 1 && hasAgreementFields && (
-          <Card className="w-full max-w-4xl mx-auto">
+        {/* Progress Info */}
+        <div className="text-center mb-6">
+          <p className="text-lg text-gray-600">
+            Bước <span className="font-bold text-blue-600">{currentStep + 1}</span> / {totalSteps}
+          </p>
+          <p className="text-sm text-gray-500 mt-1">{currentSection.name}</p>
+        </div>
+
+        {/* Current Step Content */}
+        <div className="w-full max-w-4xl mx-auto">
+          <Card className="border-2 border-blue-100 shadow-lg">
             <div className="p-6 sm:p-8">
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 text-center">
-                Điều khoản và Chính sách
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 text-center">
+                {currentSection.name}
               </h2>
-              <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 text-center">
-                Vui lòng đọc và đồng ý với các điều khoản trước khi tiếp tục
-              </p>
-              
-              <div className="space-y-8">
-                <DynamicFormFields fields={agreementFields} />
-              </div>
 
-              <div className="flex justify-end mt-8 sm:mt-10">
-                <Button
-                  type="button"
-                  onClick={handleNextStep}
-                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 sm:px-8 rounded-lg text-lg font-semibold"
-                >
-                  Tiếp tục
-                </Button>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* Step 2: Core and Custom Fields */}
-        {currentStep === 2 && (
-          <div className="space-y-6 sm:space-y-8 w-full max-w-4xl mx-auto">
-            {/* Core Fields Card */}
-            <Card>
-              <div className="p-6 sm:p-8">
-                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 text-center">
-                  Thông tin cá nhân
-                </h2>
+              {/* Core Fields */}
+              {currentSection.type === 'core' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <CoreFormFields register={register} errors={errors} />
                 </div>
-              </div>
-            </Card>
+              )}
 
-            {/* Custom Fields Card */}
-            {otherFields.length > 0 && (
-              <Card>
-                <div className="p-6 sm:p-8">
-                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 text-center">
-                    Thông tin bổ sung
-                  </h2>
+              {/* Agreement or Custom Fields */}
+              {(currentSection.type === 'agreement' || currentSection.type === 'custom') && (
+                <div className="space-y-6">
+                  <p className="text-sm text-gray-500 text-center mb-6">
+                    {currentSection.fields.length} trường thông tin trong phần này
+                  </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {otherFields.map((field, index) => (
-                      <div key={index} className={field.type === 'Multi Select' ? 'md:col-span-2' : ''}>
+                    {currentSection.fields.map((field, fieldIndex) => (
+                      <div key={fieldIndex} className={field.type === 'Multi Select' || field.type === 'Agreement' ? 'md:col-span-2' : ''}>
                         <DynamicFormFields fields={[field]} />
                       </div>
                     ))}
                   </div>
                 </div>
-              </Card>
-            )}
-
-            {/* Group Members Card */}
-            {groupMembers.length > 0 && (
-              <Card>
-                <div className="p-6 sm:p-8">
-                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 text-center">
-                    Thành viên nhóm
-                  </h2>
-                  <div className="space-y-6">
-                    {groupMembers.map((member, index) => (
-                      <div key={member.id} className="p-6 border border-gray-200 rounded-lg bg-gray-50">
-                        <div className="flex justify-between items-center mb-4">
-                          <h3 className="text-lg sm:text-xl font-semibold">Thành viên {index + 1}</h3>
-                          <Button
-                            type="button"
-                            onClick={() => remove(index)}
-                            className="text-red-600 hover:text-red-800 font-semibold"
-                          >
-                            Xóa
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <SubFormFields
-                            register={register}
-                            errors={errors}
-                            namePrefix={`group_members.${index}`}
-                          />
-                          {groupCustomFields.length > 0 && (
-                            <DynamicFormFields
-                              fields={groupCustomFields}
-                              prefix={`group_members.${index}`}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Card>
-            )}
-
-            {/* Action Buttons */}
-            <div className={`flex flex-col sm:flex-row items-center w-full space-y-4 sm:space-y-0 ${
-              hasAgreementFields ? 'justify-between' : 'justify-end'
-            }`}>
-              {/* Back Button (conditionally rendered) */}
-              {hasAgreementFields && (
-                <Button
-                  type="button"
-                  onClick={handlePrevStep}
-                  className="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white px-8 py-3 rounded-lg text-lg font-semibold"
-                >
-                  Quay lại
-                </Button>
               )}
-
-              {/* Right-aligned button group */}
-              <div className="flex flex-col sm:flex-row w-full sm:w-auto space-y-4 sm:space-y-0 sm:space-x-4">
-                <Button
-                  type="button"
-                  onClick={handleAddMember}
-                  className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold"
-                >
-                  Thêm thành viên
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-lg font-semibold disabled:opacity-50"
-                >
-                  {loading ? 'Đang gửi...' : 'Hoàn tất đăng ký'}
-                </Button>
-              </div>
             </div>
+          </Card>
+        </div>
+
+        {/* Group Members Management (shown when there are group members) */}
+        {groupMembers.length > 0 && (
+          <div className="w-full max-w-4xl mx-auto mt-6">
+            <Card className="border-2 border-orange-100 shadow-lg">
+              <div className="p-6 sm:p-8">
+                <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
+                  Thành viên nhóm ({groupMembers.length})
+                </h3>
+                <div className="space-y-4">
+                  {groupMembers.map((member, index) => (
+                    <div key={member.id} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold">Thành viên {index + 1}</span>
+                        <Button
+                          type="button"
+                          onClick={() => remove(index)}
+                          className="text-red-600 hover:text-red-800 font-semibold text-sm"
+                        >
+                          Xóa
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Card>
           </div>
         )}
+
+        {/* Navigation Buttons */}
+        <div className="flex flex-col sm:flex-row justify-between items-center w-full max-w-4xl mx-auto space-y-4 sm:space-y-0 mt-8">
+          {/* Back Button */}
+          <Button
+            type="button"
+            onClick={handlePrevStep}
+            disabled={currentStep === 0}
+            className="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white px-8 py-3 rounded-lg text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Quay lại
+          </Button>
+
+          {/* Right-aligned button group */}
+          <div className="flex flex-col sm:flex-row w-full sm:w-auto space-y-4 sm:space-y-0 sm:space-x-4">
+            <Button
+              type="button"
+              onClick={handleAddMember}
+              className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold"
+            >
+              Thêm thành viên
+            </Button>
+            
+            {isLastStep ? (
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-lg font-semibold disabled:opacity-50"
+              >
+                {loading ? 'Đang gửi...' : 'Hoàn tất đăng ký'}
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                onClick={handleNextStep}
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-lg font-semibold"
+              >
+                Tiếp tục
+              </Button>
+            )}
+          </div>
+        </div>
 
         {/* Group Member Dialog */}
         {editIndex !== null && (

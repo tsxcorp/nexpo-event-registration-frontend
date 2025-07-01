@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { FormField } from '@/lib/api/events';
 import { useFormContext, useWatch } from 'react-hook-form';
 
@@ -14,6 +14,29 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
     formState: { errors },
     control,
   } = useFormContext();
+
+  // Get all Multi Select field names upfront
+  const multiSelectFieldNames = useMemo(() => {
+    return fields
+      .filter(field => field.type === 'Multi Select')
+      .map(field => prefix ? `${prefix}.${field.label}` : field.label);
+  }, [fields, prefix]);
+
+  // Watch all Multi Select fields at once to avoid hooks violation
+  const watchedMultiSelectValues = useWatch({
+    control,
+    name: multiSelectFieldNames,
+    defaultValue: multiSelectFieldNames.map(() => [])
+  });
+
+  // Create a map for easy lookup
+  const multiSelectValuesMap = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    multiSelectFieldNames.forEach((fieldName, index) => {
+      map[fieldName] = watchedMultiSelectValues[index] || [];
+    });
+    return map;
+  }, [multiSelectFieldNames, watchedMultiSelectValues]);
 
   const getFieldName = (label: string) => (prefix ? `${prefix}.${label}` : label);
   const getFieldError = (label: string) => {
@@ -124,11 +147,7 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
 
       case 'Multi Select': {
         const options = field.values || field.options || [];
-        const selected = useWatch({
-          control,
-          name: fieldName,
-          defaultValue: []
-        });
+        const selected = multiSelectValuesMap[fieldName] || [];
 
         return (
           <>

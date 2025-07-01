@@ -154,12 +154,12 @@ function ThankYouContent() {
             </div>
           )}
 
-          <Button
+          {/* <Button
             variant="primary"
             onClick={() => window.location.href = '/'}
           >
             Quay về trang chủ
-          </Button>
+          </Button> */}
         </Card>
       </section>
     </RegistrationLayout>

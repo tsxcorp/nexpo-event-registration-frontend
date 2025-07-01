@@ -1,16 +1,22 @@
 import { apiClient } from './client';
 
 export interface FormField {
-  id: string;
-  type: string;
+  sort: number;
   label: string;
+  type: string;
   required: boolean;
+  groupmember: boolean;
+  helptext: string;
+  placeholder: string;
+  field_condition: string;
+  section_name: string;
+  section_sort: number;
+  section_condition: string;
+  matching_field: boolean;
   values?: string[];
   options?: string[];
   default?: string;
-  groupmember?: boolean;
-  helptext?: string;
-  // Agreement specific fields - support both camelCase and snake_case
+  // Agreement specific fields
   title?: string;
   content?: string;
   checkbox_label?: string;
@@ -19,6 +25,8 @@ export interface FormField {
   linkText?: string; // Alternative camelCase
   link_url?: string;
   linkUrl?: string; // Alternative camelCase
+  // Legacy fields for backward compatibility
+  id?: string;
 }
 
 export interface EventData {
