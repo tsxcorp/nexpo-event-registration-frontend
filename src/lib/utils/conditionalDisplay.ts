@@ -62,32 +62,44 @@ export function evaluateCondition(condition: Condition | null, formValues: Recor
   const fieldValue = formValues[condition.fieldLabel];
   const conditionValue = condition.value;
 
-  // Handle different field value types
-  let valueToCheck: string = '';
-  
+  // Normalize function
+  const normalize = (v: any) =>
+    typeof v === 'string'
+      ? v.trim().toLowerCase()
+      : Array.isArray(v)
+      ? v.map(x => (typeof x === 'string' ? x.trim().toLowerCase() : x))
+      : v;
+
+  let valueToCheck: string | string[] = '';
   if (typeof fieldValue === 'string') {
-    valueToCheck = fieldValue;
+    valueToCheck = normalize(fieldValue);
   } else if (Array.isArray(fieldValue)) {
-    // For multi-select fields, join with comma
-    valueToCheck = fieldValue.join(',');
+    valueToCheck = normalize(fieldValue);
   } else if (fieldValue === true) {
     valueToCheck = 'true';
   } else if (fieldValue === false) {
     valueToCheck = 'false';
   } else if (fieldValue !== undefined && fieldValue !== null) {
-    valueToCheck = String(fieldValue);
+    valueToCheck = normalize(String(fieldValue));
   }
 
-  // Evaluate based on operator
+  const normalizedConditionValue = normalize(conditionValue);
+
   switch (condition.operator) {
     case '=':
-      return valueToCheck === conditionValue;
+      return valueToCheck === normalizedConditionValue;
     case '!=':
-      return valueToCheck !== conditionValue;
+      return valueToCheck !== normalizedConditionValue;
     case 'contains':
-      return valueToCheck.includes(conditionValue);
+      if (Array.isArray(valueToCheck)) {
+        return valueToCheck.includes(normalizedConditionValue);
+      }
+      return typeof valueToCheck === 'string' && valueToCheck.includes(normalizedConditionValue);
     case 'not_contains':
-      return !valueToCheck.includes(conditionValue);
+      if (Array.isArray(valueToCheck)) {
+        return !valueToCheck.includes(normalizedConditionValue);
+      }
+      return typeof valueToCheck === 'string' && !valueToCheck.includes(normalizedConditionValue);
     default:
       return true;
   }
