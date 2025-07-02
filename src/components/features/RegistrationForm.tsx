@@ -356,13 +356,13 @@ export default function RegistrationForm({ fields, eventId }: Props) {
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 sm:space-y-6">
         {/* Multi-Step Indicator */}
-        <div className="flex items-center justify-center mb-8 px-4">
+        <div className="flex items-center justify-center mb-4 sm:mb-8 px-2 sm:px-4">
           <div className="flex items-center space-x-1 sm:space-x-2 overflow-x-auto max-w-full">
             {allSteps.map((step, index) => (
               <div key={index} className="flex items-center flex-shrink-0">
-                <div className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 text-xs sm:text-sm font-bold ${
+                <div className={`flex items-center justify-center w-7 h-7 sm:w-10 sm:h-10 rounded-full border-2 text-xs sm:text-sm font-bold ${
                   index <= currentStep 
                     ? 'bg-blue-600 border-blue-600 text-white shadow-lg' 
                     : 'border-gray-300 text-gray-500 bg-white'
@@ -370,7 +370,7 @@ export default function RegistrationForm({ fields, eventId }: Props) {
                   {index + 1}
                 </div>
                 {index < allSteps.length - 1 && (
-                  <div className={`w-6 sm:w-8 h-1 ${
+                  <div className={`w-4 sm:w-8 h-1 ${
                     index < currentStep ? 'bg-blue-600' : 'bg-gray-300'
                   }`}></div>
                 )}
@@ -380,41 +380,41 @@ export default function RegistrationForm({ fields, eventId }: Props) {
         </div>
 
         {/* Progress Info */}
-        <div className="text-center mb-8 px-4">
-          <p className="text-lg sm:text-xl font-bold text-gray-800">
+        <div className="text-center mb-4 sm:mb-8 px-2 sm:px-4">
+          <p className="text-base sm:text-xl font-bold text-gray-800">
             Bước <span className="text-blue-600">{currentStep + 1}</span> / {totalSteps}
           </p>
-          <p className="text-sm sm:text-base text-gray-600 mt-2 font-medium">{currentSection.name}</p>
+          <p className="text-sm sm:text-base text-gray-600 mt-1 font-medium">{currentSection.name}</p>
         </div>
 
         {/* Current Step Content */}
-        <div className="w-full max-w-4xl mx-auto px-4">
-          <Card className="border-2 border-blue-100 shadow-xl bg-white">
-            <div className="p-4 sm:p-6 lg:p-8">
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-6 sm:mb-8 text-center">
+        <div className="w-full max-w-4xl mx-auto px-2 sm:px-4">
+          <Card className="border border-blue-100 sm:border-2 shadow-lg sm:shadow-xl bg-white">
+            <div className="p-3 sm:p-6 lg:p-8">
+              <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-4 sm:mb-8 text-center">
                 {currentSection.name}
               </h2>
 
               {/* Core Fields */}
               {currentSection.type === 'core' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
                   <CoreFormFields register={register} errors={errors} />
                 </div>
               )}
 
               {/* Agreement or Custom Fields */}
               {(currentSection.type === 'agreement' || currentSection.type === 'custom') && (
-                <div className="space-y-6">
+                <div className="space-y-4 sm:space-y-6">
                   {(() => {
                     const visibleFields = getVisibleFields(currentSection.fields);
                     return (
                       <>
                         <div className="text-center">
-                          <span className="inline-block bg-blue-100 text-blue-800 text-sm font-medium px-4 py-2 rounded-full">
+                          <span className="inline-block bg-blue-100 text-blue-800 text-xs sm:text-sm font-medium px-3 py-1 sm:px-4 sm:py-2 rounded-full">
                             {visibleFields.length} trường thông tin
                           </span>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
                           {visibleFields.map((field, fieldIndex) => (
                             <div key={fieldIndex} className={field.type === 'Multi Select' || field.type === 'Agreement' ? 'md:col-span-2' : ''}>
                               <DynamicFormFields fields={[field]} />
@@ -432,53 +432,53 @@ export default function RegistrationForm({ fields, eventId }: Props) {
 
         {/* Group Members Management (shown when there are group members) */}
         {groupMembers.length > 0 && (
-          <div className="w-full max-w-4xl mx-auto mt-6 px-4">
-            <Card className="border-2 border-orange-100 shadow-lg bg-gradient-to-br from-orange-50 to-white">
-              <div className="p-4 sm:p-6">
-                <div className="flex items-center justify-center mb-4">
-                  <span className="bg-orange-100 text-orange-800 text-sm font-bold px-4 py-2 rounded-full">
+          <div className="w-full max-w-4xl mx-auto mt-3 sm:mt-6 px-2 sm:px-4">
+            <Card className="border border-orange-100 sm:border-2 shadow-md sm:shadow-lg bg-gradient-to-br from-orange-50 to-white">
+              <div className="p-3 sm:p-6">
+                <div className="flex items-center justify-center mb-3 sm:mb-4">
+                  <span className="bg-orange-100 text-orange-800 text-xs sm:text-sm font-bold px-3 py-1 sm:px-4 sm:py-2 rounded-full">
                     Thành viên nhóm ({groupMembers.length})
                   </span>
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-6 text-center">
+                <h3 className="text-base sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 text-center">
                   Danh sách thành viên
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {groupMembers.map((member, index) => {
                     const memberData = getValues(`group_members.${index}`);
                     const hasData = memberData && (memberData.Full_Name || memberData.Email);
                     
                     return (
-                      <div key={member.id} className="p-4 sm:p-5 border-2 border-orange-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div key={member.id} className="p-3 sm:p-5 border border-orange-200 sm:border-2 rounded-lg sm:rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                           {/* Member Info */}
                           <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                                <span className="text-orange-600 font-bold text-sm">{index + 1}</span>
+                            <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                                <span className="text-orange-600 font-bold text-xs sm:text-sm">{index + 1}</span>
                               </div>
                               <div className="flex-1">
                                 {hasData ? (
                                   <div>
-                                    <h4 className="font-bold text-gray-900 text-base">
+                                    <h4 className="font-bold text-gray-900 text-sm sm:text-base">
                                       {memberData.Salutation && `${memberData.Salutation} `}
                                       {memberData.Full_Name || 'Chưa có tên'}
                                     </h4>
-                                    <p className="text-sm text-gray-600">
+                                    <p className="text-xs sm:text-sm text-gray-600">
                                       {memberData.Email || 'Chưa có email'}
                                     </p>
                                     {memberData.Phone_Number && (
-                                      <p className="text-sm text-gray-600">
+                                      <p className="text-xs sm:text-sm text-gray-600">
                                         📞 {memberData.Phone_Number}
                                       </p>
                                     )}
                                   </div>
                                 ) : (
                                   <div>
-                                    <h4 className="font-bold text-gray-500 text-base">
+                                    <h4 className="font-bold text-gray-500 text-sm sm:text-base">
                                       Thành viên {index + 1}
                                     </h4>
-                                    <p className="text-sm text-gray-400 italic">
+                                    <p className="text-xs sm:text-sm text-gray-400 italic">
                                       Chưa có thông tin
                                     </p>
                                   </div>
@@ -488,8 +488,8 @@ export default function RegistrationForm({ fields, eventId }: Props) {
                             
                             {/* Custom fields if any */}
                             {hasData && groupCustomFields.length > 0 && (
-                              <div className="mt-3 pt-3 border-t border-gray-100">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                              <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-100">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2 text-xs">
                                   {groupCustomFields.map((field, fieldIndex) => {
                                     const fieldValue = memberData[field.label];
                                     if (!fieldValue) return null;
@@ -516,7 +516,7 @@ export default function RegistrationForm({ fields, eventId }: Props) {
                                 setEditIndex(index);
                                 setIsNew(false);
                               }}
-                              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 shadow-sm hover:shadow-md"
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 shadow-sm hover:shadow-md"
                             >
                               ✏️ Sửa
                             </Button>
@@ -527,7 +527,7 @@ export default function RegistrationForm({ fields, eventId }: Props) {
                                   remove(index);
                                 }
                               }}
-                              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 shadow-sm hover:shadow-md"
+                              className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 shadow-sm hover:shadow-md"
                             >
                               🗑️ Xóa
                             </Button>
@@ -535,8 +535,8 @@ export default function RegistrationForm({ fields, eventId }: Props) {
                         </div>
                         
                         {/* Status indicator */}
-                        <div className="mt-3 flex items-center justify-between">
-                          <div className="flex items-center gap-2">
+                        <div className="mt-2 sm:mt-3 flex items-center justify-between">
+                          <div className="flex items-center gap-1 sm:gap-2">
                             <div className={`w-2 h-2 rounded-full ${hasData ? 'bg-green-500' : 'bg-gray-300'}`}></div>
                             <span className={`text-xs font-medium ${hasData ? 'text-green-600' : 'text-gray-500'}`}>
                               {hasData ? 'Đã điền thông tin' : 'Chưa điền thông tin'}
@@ -552,14 +552,14 @@ export default function RegistrationForm({ fields, eventId }: Props) {
                 </div>
                 
                 {/* Add new member button */}
-                <div className="mt-6 pt-4 border-t border-orange-200">
+                <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-orange-200">
                   <Button
                     type="button"
                     onClick={handleAddMember}
-                    className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-4 rounded-xl font-bold text-base transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
+                    className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 py-3 sm:px-6 sm:py-4 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
                   >
                     <span className="flex items-center justify-center gap-2">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                       </svg>
                       Thêm thành viên mới
@@ -572,25 +572,25 @@ export default function RegistrationForm({ fields, eventId }: Props) {
         )}
 
         {/* Navigation Buttons - Fixed at bottom for mobile */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg sm:relative sm:bottom-auto sm:border-t-0 sm:shadow-none sm:bg-transparent sm:mt-8">
-          <div className="flex flex-col sm:flex-row justify-between items-center w-full max-w-4xl mx-auto space-y-3 sm:space-y-0">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 sm:p-4 shadow-lg sm:relative sm:bottom-auto sm:border-t-0 sm:shadow-none sm:bg-transparent sm:mt-8">
+          <div className="flex flex-col sm:flex-row justify-between items-center w-full max-w-4xl mx-auto space-y-2 sm:space-y-0">
             {/* Back Button */}
             <Button
               type="button"
               onClick={handlePrevStep}
               disabled={currentStep === 0}
-              className="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
+              className="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg text-sm sm:text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
             >
               ← Quay lại
             </Button>
 
             {/* Center content for mobile - Add member button */}
-            <div className="flex flex-col sm:flex-row w-full sm:w-auto space-y-3 sm:space-y-0 sm:space-x-4">
+            <div className="flex flex-col sm:flex-row w-full sm:w-auto space-y-2 sm:space-y-0 sm:space-x-4">
               {groupMembers.length === 0 && (
                 <Button
                   type="button"
                   onClick={handleAddMember}
-                  className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold transition-all duration-200 shadow-md hover:shadow-lg"
+                  className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg text-sm sm:text-base font-bold transition-all duration-200 shadow-md hover:shadow-lg"
                 >
                   + Thêm thành viên
                 </Button>
@@ -600,11 +600,11 @@ export default function RegistrationForm({ fields, eventId }: Props) {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-base font-bold disabled:opacity-50 transition-all duration-200 shadow-md hover:shadow-lg"
+                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 sm:px-8 sm:py-3 rounded-lg text-sm sm:text-base font-bold disabled:opacity-50 transition-all duration-200 shadow-md hover:shadow-lg"
                 >
                   {loading ? (
                     <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <svg className="animate-spin -ml-1 mr-3 h-4 w-4 sm:h-5 sm:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
@@ -618,7 +618,7 @@ export default function RegistrationForm({ fields, eventId }: Props) {
                 <Button
                   type="button"
                   onClick={handleNextStep}
-                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-base font-bold transition-all duration-200 shadow-md hover:shadow-lg"
+                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 sm:px-8 sm:py-3 rounded-lg text-sm sm:text-base font-bold transition-all duration-200 shadow-md hover:shadow-lg"
                 >
                   Tiếp tục →
                 </Button>
@@ -628,7 +628,7 @@ export default function RegistrationForm({ fields, eventId }: Props) {
         </div>
 
         {/* Add padding at bottom for mobile to account for fixed navigation */}
-        <div className="h-32 sm:h-0"></div>
+        <div className="h-20 sm:h-0"></div>
 
         {/* Group Member Dialog */}
         {editIndex !== null && (
