@@ -89,37 +89,45 @@ const validateAndNormalizeRow = (row: any, formFields: FormField[]): { isValid: 
 
     // Validate Select and Multi Select fields
     if (row[field.label] && (field.type === 'Select' || field.type === 'Multi Select')) {
-      const availableOptions = field.values || field.options || [];
+      const availableOptions = (field.values || field.options || []).map((v: string) => v.trim().toLowerCase());
       if (availableOptions.length > 0) {
         if (field.type === 'Select') {
-          // Single select: value must be in available options
-          if (!availableOptions.includes(row[field.label])) {
-            return { 
-              isValid: false, 
-              normalizedRow, 
-              error: `Giá trị "${row[field.label]}" không hợp lệ cho trường "${field.label}". Các giá trị hợp lệ: ${availableOptions.join(', ')}` 
+          // Single select: value must be in available options (case-insensitive, trim)
+          const value = String(row[field.label]).trim().toLowerCase();
+          if (!availableOptions.includes(value)) {
+            return {
+              isValid: false,
+              normalizedRow,
+              error: `Giá trị "${row[field.label]}" không hợp lệ cho trường "${field.label}". Các giá trị hợp lệ: ${field.values ? field.values.join(', ') : ''}`
             };
           }
         } else if (field.type === 'Multi Select') {
-          // Multi select: split by comma and validate each value
-          const selectedValues = String(row[field.label]).split(',').map((v: string) => v.trim()).filter((v: string) => v);
+          // Multi select: split by comma, trim, lowercase, validate each value
+          const selectedValues = String(row[field.label])
+            .split(',')
+            .map((v: string) => v.trim().toLowerCase())
+            .filter((v: string) => v);
           const invalidValues = selectedValues.filter((value: string) => !availableOptions.includes(value));
-          
+
           if (invalidValues.length > 0) {
-            return { 
-              isValid: false, 
-              normalizedRow, 
-              error: `Giá trị "${invalidValues.join(', ')}" không hợp lệ cho trường "${field.label}". Các giá trị hợp lệ: ${availableOptions.join(', ')}` 
+            return {
+              isValid: false,
+              normalizedRow,
+              error: `Giá trị "${invalidValues.join(', ')}" không hợp lệ cho trường "${field.label}". Các giá trị hợp lệ: ${field.values ? field.values.join(', ') : ''}`
             };
           }
-          
-          // Normalize multi-select value (join with comma)
-          normalizedRow[field.label] = selectedValues.join(', ');
+
+          // Normalize multi-select value (join with comma and space, original case)
+          const originalSelected = String(row[field.label])
+            .split(',')
+            .map((v: string) => v.trim())
+            .filter((v: string) => v);
+          normalizedRow[field.label] = originalSelected.join(', ');
         }
       }
     }
   }
-  
+
   return { isValid: true, normalizedRow };
 };
 
@@ -473,12 +481,18 @@ export default function ImportExcelPage() {
   const startEditing = (rowIndex: number, header: string, currentValue: any) => {
     setEditingCell({ rowIndex, header });
     setEditValue(String(currentValue || ''));
-    
+
     // Handle Multi Select fields
     const fieldInfo = getFieldOptions(header);
     if (fieldInfo.type === 'Multi Select') {
-      const currentValues = String(currentValue || '').split(',').map((v: string) => v.trim()).filter((v: string) => v);
+      // Always reset and normalize values
+      const currentValues = String(currentValue || '')
+        .split(',')
+        .map((v: string) => v.trim())
+        .filter((v: string) => v);
       setMultiSelectValues(currentValues);
+    } else {
+      setMultiSelectValues([]); // Always reset for non-multiselect
     }
   };
 
@@ -493,7 +507,7 @@ export default function ImportExcelPage() {
     // Re-validate the row
     const formFields = eventData?.formFields || [];
     const { isValid, normalizedRow, error } = validateAndNormalizeRow(newData[rowIndex], formFields);
-    
+
     const newResults = { ...rowResults };
     newResults[rowIndex] = {
       status: isValid ? 'valid' : 'invalid',
@@ -507,19 +521,22 @@ export default function ImportExcelPage() {
 
     setEditingCell(null);
     setEditValue('');
+    setMultiSelectValues([]); // Always reset
   };
 
   const cancelEdit = () => {
     setEditingCell(null);
     setEditValue('');
-    setMultiSelectValues([]);
+    setMultiSelectValues([]); // Always reset
   };
 
   const handleMultiSelectSave = () => {
     if (!editingCell) return;
 
     const { rowIndex, header } = editingCell;
-    const newValue = multiSelectValues.join(', ');
+    // Normalize: trim, remove duplicates, join with ', '
+    const uniqueValues = Array.from(new Set(multiSelectValues.map(v => v.trim()).filter(v => v)));
+    const newValue = uniqueValues.join(', ');
     const newData = [...previewData];
     newData[rowIndex] = { ...newData[rowIndex], [header]: newValue };
     setPreviewData(newData);
@@ -527,7 +544,7 @@ export default function ImportExcelPage() {
     // Re-validate the row
     const formFields = eventData?.formFields || [];
     const { isValid, normalizedRow, error } = validateAndNormalizeRow(newData[rowIndex], formFields);
-    
+
     const newResults = { ...rowResults };
     newResults[rowIndex] = {
       status: isValid ? 'valid' : 'invalid',
@@ -537,12 +554,12 @@ export default function ImportExcelPage() {
 
     setEditingCell(null);
     setEditValue('');
-    setMultiSelectValues([]);
+    setMultiSelectValues([]); // Always reset
   };
 
   const handleMultiSelectChange = (option: string, checked: boolean) => {
     if (checked) {
-      setMultiSelectValues(prev => [...prev, option]);
+      setMultiSelectValues(prev => Array.from(new Set([...prev, option])));
     } else {
       setMultiSelectValues(prev => prev.filter(v => v !== option));
     }
