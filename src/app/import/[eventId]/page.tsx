@@ -81,8 +81,9 @@ const validateAndNormalizeRow = (row: any, formFields: FormField[]): { isValid: 
     normalizedRow[phoneKey] = phoneResult.normalized; // Update row with normalized number
   }
 
-  // Custom fields
+  // Custom fields (skip Agreement fields)
   for (const field of formFields) {
+    if (field.type === 'Agreement') continue;
     if (field.required && !row[field.label]) {
       return { isValid: false, normalizedRow, error: `Trường "${field.label}" là bắt buộc.` };
     }
@@ -198,13 +199,15 @@ export default function ImportExcelPage() {
         }
 
         if (json.length > 0) {
-          setHeaders(Object.keys(json[0]));
-          
+          // Filter out Agreement fields from headers
+          const agreementLabels = (eventData?.formFields || []).filter(f => f.type === 'Agreement').map(f => f.label);
+          setHeaders(Object.keys(json[0]).filter(h => !agreementLabels.includes(h)));
           const initialResults: Record<number, RowResult> = {};
           const normalizedData: any[] = [];
           const formFields = eventData?.formFields || [];
-
           json.forEach((row, index) => {
+            // Remove Agreement fields from row
+            agreementLabels.forEach(label => delete row[label]);
             const { isValid, normalizedRow, error } = validateAndNormalizeRow(row, formFields);
             normalizedData.push(normalizedRow);
             initialResults[index] = {
@@ -212,7 +215,6 @@ export default function ImportExcelPage() {
               message: error,
             };
           });
-          
           setRowResults(initialResults);
           setPreviewData(normalizedData);
         }
@@ -254,6 +256,7 @@ export default function ImportExcelPage() {
         const formData = new FormData();
         
         // Transform data to match backend expectations
+        const agreementLabels = (eventData?.formFields || []).filter(f => f.type === 'Agreement').map(f => f.label);
         const transformedBatch = batch.map(row => {
           const transformedRow: any = {};
           
@@ -263,11 +266,16 @@ export default function ImportExcelPage() {
           if (row.email !== undefined) transformedRow.email = row.email;
           if (row.mobile_number !== undefined) transformedRow.mobile_number = row.mobile_number;
           
-          // Add all other fields as custom fields
+          // Add all other fields as custom fields, except Agreement
           Object.keys(row).forEach(key => {
-            if (!['title', 'full_name', 'email', 'mobile_number'].includes(key.toLowerCase())) {
+            if (!['title', 'full_name', 'email', 'mobile_number'].includes(key.toLowerCase()) && !agreementLabels.includes(key)) {
               transformedRow[key] = row[key];
             }
+          });
+          
+          // Set Agreement fields to true
+          agreementLabels.forEach(label => {
+            transformedRow[label] = true;
           });
           
           return transformedRow;
@@ -398,8 +406,8 @@ export default function ImportExcelPage() {
     setIsProcessing(true);
     try {
       const coreHeaders = ['title', 'full_name', 'email', 'mobile_number'];
-      const customHeaders = eventData.formFields.map(field => field.label);
-      
+      // Skip Agreement fields
+      const customHeaders = eventData.formFields.filter(f => f.type !== 'Agreement').map(field => field.label);
       const allHeaders = [...coreHeaders, ...customHeaders];
       
       // Find the maximum number of options among Select/Multi Select fields
@@ -426,6 +434,7 @@ export default function ImportExcelPage() {
         };
 
         eventData.formFields.forEach(field => {
+          if (field.type === 'Agreement') return;
           const isSelectable = field.type === 'Select' || field.type === 'Multi Select';
           const availableOptions = field.values || field.options;
 
