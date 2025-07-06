@@ -1,14 +1,19 @@
 import { useState, useMemo } from 'react';
-import { FormField } from '@/lib/api/events';
+import { FormField, FieldOption } from '@/lib/api/events';
 import { useFormContext, useWatch } from 'react-hook-form';
+import { normalizeFieldOptions, getFieldValue, getFieldLabel } from '@/lib/utils/fieldUtils';
+import { i18n } from '@/lib/translation/i18n';
 
 type Props = {
   fields: FormField[];
   prefix?: string;
+  currentLanguage?: string;
 };
 
-export default function DynamicFormFields({ fields, prefix }: Props) {
+export default function DynamicFormFields({ fields, prefix, currentLanguage = 'vi' }: Props) {
   const [imagePreviews, setImagePreviews] = useState<Record<string, string>>({});
+  const t = i18n[currentLanguage] || i18n.vi;
+
   const {
     register,
     formState: { errors },
@@ -47,7 +52,7 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
   };
 
   const getErrorMessage = (error: any) =>
-    typeof error?.message === 'string' ? error.message : 'This field is required.';
+    typeof error?.message === 'string' ? error.message : t.field_required;
 
   const renderField = (field: FormField, index: number) => {
     const key = `${field.label}-${index}`;
@@ -70,19 +75,19 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
                 fieldType === 'Email' ? 'email' :
                 fieldType === 'Number' ? 'tel' : 'text'
               }
-              placeholder={field.placeholder || `Nhập ${field.label.toLowerCase()}`}
+              placeholder={field.placeholder || `${currentLanguage === 'vi' ? 'Nhập' : 'Enter'} ${field.label.toLowerCase()}`}
               {...register(fieldName, {
-                required: isRequired,
+                required: isRequired ? t.field_required : false,
                 ...(fieldType === 'Email' && {
                   pattern: {
                     value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: 'Định dạng email không hợp lệ.',
+                    message: t.email_invalid,
                   },
                 }),
                 ...(fieldType === 'Number' && {
                   pattern: {
                     value: /^[0-9]+$/,
-                    message: 'Chỉ được nhập số.',
+                    message: currentLanguage === 'vi' ? 'Chỉ được nhập số.' : 'Only numbers allowed.',
                   },
                 }),
               })}
@@ -102,8 +107,8 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
           <>
             <textarea
               rows={4}
-              placeholder={field.placeholder || `Nhập ${field.label.toLowerCase()}`}
-              {...register(fieldName, { required: isRequired })}
+              placeholder={field.placeholder || `${currentLanguage === 'vi' ? 'Nhập' : 'Enter'} ${field.label.toLowerCase()}`}
+              {...register(fieldName, { required: isRequired ? t.field_required : false })}
               className={`${baseClass} resize-vertical ${fieldError ? 'border-red-500 focus:ring-red-500' : ''}`}
             />
             {fieldError && (
@@ -116,29 +121,25 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
         );
 
       case 'Select': {
-        const selectOptions: string[] = Array.isArray(field.values)
-          ? field.values
-          : typeof field.values === 'string'
-          ? (field.values as string).split(',').map((s: string) => s.trim())
-          : [];
+        const selectOptions = normalizeFieldOptions(field);
 
         return (
           <>
             <div className="relative">
               <select
                 {...register(fieldName, {
-                  required: isRequired,
-                  validate: val => !isRequired || val !== '' || 'Vui lòng chọn một tùy chọn.',
+                  required: isRequired ? t.field_required : false,
+                  validate: val => !isRequired || val !== '' || (currentLanguage === 'vi' ? 'Vui lòng chọn một tùy chọn.' : 'Please select an option.'),
                 })}
                 defaultValue=""
                 className={`appearance-none w-full px-3 py-2 sm:px-4 sm:py-3 pr-10 sm:pr-12 border border-gray-300 sm:border-2 rounded-lg bg-white text-gray-900 font-medium text-sm sm:text-base shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-all duration-200 ${fieldError ? 'border-red-500 focus:ring-red-500' : ''}`}
               >
                 <option disabled value="" className="text-gray-500">
-                  -- Chọn {field.label.toLowerCase()} --
+                  -- {currentLanguage === 'vi' ? 'Chọn' : 'Select'} {field.label.toLowerCase()} --
                 </option>
                 {selectOptions.map((opt, i) => (
-                  <option key={i} value={opt} className="text-gray-900">
-                    {opt}
+                  <option key={i} value={getFieldValue(opt)} className="text-gray-900">
+                    {getFieldLabel(opt)}
                   </option>
                 ))}
               </select>
@@ -159,7 +160,7 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
       }
 
       case 'Multi Select': {
-        const options = field.values || field.options || [];
+        const options = normalizeFieldOptions(field);
         const selected = multiSelectValuesMap[fieldName] || [];
 
         return (
@@ -173,19 +174,19 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
                   >
                     <input
                       type="checkbox"
-                      value={opt}
+                      value={getFieldValue(opt)}
                       {...register(fieldName, {
-                        required: isRequired,
+                        required: isRequired ? t.select_at_least_one : false,
                         validate: (value) => {
                           if (isRequired && (!value || value.length === 0)) {
-                            return 'Vui lòng chọn ít nhất một tùy chọn.';
+                            return t.select_at_least_one;
                           }
                           return true;
                         }
                       })}
                       className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 focus:ring-blue-500 border-2 border-gray-400 rounded transition-all"
                     />
-                    <span className="text-gray-800 font-medium text-sm sm:text-base">{opt}</span>
+                    <span className="text-gray-800 font-medium text-sm sm:text-base">{getFieldLabel(opt)}</span>
                   </label>
                 ))}
               </div>
@@ -193,7 +194,7 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
             {isRequired && (!selected || selected.length === 0) && fieldError && (
               <p className="text-red-600 text-xs sm:text-sm mt-1 sm:mt-2 font-medium flex items-center">
                 <span className="mr-1">⚠️</span>
-                Vui lòng chọn ít nhất một tùy chọn.
+                {t.select_at_least_one}
               </p>
             )}
           </>
@@ -202,13 +203,13 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
 
       case 'Agreement': {
         // Handle both camelCase and snake_case field names
-        const checkboxLabel = field.checkbox_label || field.checkboxLabel || 'Tôi đồng ý';
+        const checkboxLabel = field.checkbox_label || field.checkboxLabel || (currentLanguage === 'vi' ? 'Tôi đồng ý' : 'I agree');
         const linkText = field.link_text || field.linkText;
         const linkUrl = field.link_url || field.linkUrl;
         
         // Fallback content if no content is provided
-        const title = field.title || field.label || 'Agreement';
-        const content = field.content || 'Vui lòng đọc và đồng ý với các điều khoản.';
+        const title = field.title || field.label || (currentLanguage === 'vi' ? 'Điều khoản' : 'Agreement');
+        const content = field.content || '';
         
         // Extract URL from link_url if it contains HTML
         const extractUrl = (urlString: string | undefined) => {
@@ -229,6 +230,7 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
               {title && (
                 <h4 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4 border-b border-gray-200 pb-2">
                   {title}
+                  {field.required && <span className="text-red-500 ml-1 text-base sm:text-lg">*</span>}
                 </h4>
               )}
               
@@ -263,10 +265,10 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
                   <input
                     type="checkbox"
                     {...register(fieldName, { 
-                      required: isRequired,
+                      required: isRequired ? t.agreement_required : false,
                       validate: (value) => {
                         if (isRequired && !value) {
-                          return 'Bạn phải đồng ý để tiếp tục';
+                          return t.agreement_required;
                         }
                         return true;
                       }
@@ -299,17 +301,17 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
                 type="file"
                 accept={fieldType === 'Image' ? 'image/*' : undefined}
                 {...register(fieldName, {
-                  required: isRequired,
+                  required: isRequired ? t.field_required : false,
                   validate: {
                     sizeLimit: (value: FileList) => {
                       if (!value || value.length === 0)
-                        return !isRequired || 'Vui lòng chọn file.';
+                        return !isRequired || (currentLanguage === 'vi' ? 'Vui lòng chọn file.' : 'Please select a file.');
                       const file = value[0];
                       const maxSize =
                         fieldType === 'Image' ? 5 * 1024 * 1024 : 30 * 1024 * 1024;
                       return (
                         file.size <= maxSize ||
-                        `❌ File quá lớn (tối đa ${fieldType === 'Image' ? '5MB' : '30MB'})`
+                        `❌ ${currentLanguage === 'vi' ? 'File quá lớn' : 'File too large'} (${currentLanguage === 'vi' ? 'tối đa' : 'max'} ${fieldType === 'Image' ? '5MB' : '30MB'})`
                       );
                     },
                   },
@@ -330,7 +332,10 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
                 className="block w-full text-xs sm:text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 sm:file:py-3 sm:file:px-6 file:rounded-full file:border-0 file:bg-blue-600 file:text-white file:font-medium file:text-xs sm:file:text-sm hover:file:bg-blue-700 file:cursor-pointer transition-all"
               />
               <p className="text-xs text-gray-500 mt-2">
-                {fieldType === 'Image' ? 'Tối đa 5MB, định dạng: JPG, PNG, GIF' : 'Tối đa 30MB'}
+                {fieldType === 'Image' 
+                  ? (currentLanguage === 'vi' ? 'Tối đa 5MB, định dạng: JPG, PNG, GIF' : 'Max 5MB, formats: JPG, PNG, GIF')
+                  : (currentLanguage === 'vi' ? 'Tối đa 30MB' : 'Max 30MB')
+                }
               </p>
             </div>
             {imagePreviews[fieldName] && (
@@ -356,8 +361,8 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
           <>
             <input
               type="text"
-              placeholder={field.placeholder || `Nhập ${field.label.toLowerCase()}`}
-              {...register(fieldName, { required: isRequired })}
+              placeholder={field.placeholder || `${currentLanguage === 'vi' ? 'Nhập' : 'Enter'} ${field.label.toLowerCase()}`}
+              {...register(fieldName, { required: isRequired ? t.field_required : false })}
               className={`${baseClass} ${fieldError ? 'border-red-500 focus:ring-red-500' : ''}`}
             />
             {fieldError && (
@@ -380,14 +385,6 @@ export default function DynamicFormFields({ fields, prefix }: Props) {
               {field.label}
               {field.required && <span className="text-red-500 ml-1 text-base sm:text-lg">*</span>}
             </label>
-          )}
-          {field.type === 'Agreement' && (
-            <div className="mb-2">
-              <span className="text-gray-800 font-bold text-sm sm:text-base">
-                {field.label}
-                {field.required && <span className="text-red-500 ml-1 text-base sm:text-lg">*</span>}
-              </span>
-            </div>
           )}
           {renderField(field, idx)}
           {field.helptext && field.type !== 'Agreement' && (

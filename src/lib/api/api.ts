@@ -9,16 +9,17 @@ export interface FormField {
   }
   
   export interface EventData {
-    id: string;
-    name: string;
-    description: string;
-    banner: string;
-    logo: string;
-    header: string;
-    footer: string;
-    email: string;
-    formFields: FormField[];
-  }
+  id: string;
+  name: string;
+  description: string;
+  banner?: string;
+  logo?: string;
+  favicon?: string;
+  header?: string;
+  footer?: string;
+  email?: string;
+  formFields: FormField[];
+}
   
   export const fetchEventInfo = async (eventId: string): Promise<{ event: EventData }> => {
     const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/events?eventId=${eventId}`);

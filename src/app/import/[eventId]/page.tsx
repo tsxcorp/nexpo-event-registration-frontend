@@ -6,6 +6,7 @@ import axios from 'axios';
 import { apiClient } from '@/lib/api/client';
 import * as XLSX from 'xlsx';
 import { EventData, eventApi, FormField } from '@/lib/api/events';
+import { normalizeFieldOptions, getFieldValue, getFieldLabel } from '@/lib/utils/fieldUtils';
 import RegistrationLayout from '@/components/layouts/RegistrationLayout';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -90,16 +91,19 @@ const validateAndNormalizeRow = (row: any, formFields: FormField[]): { isValid: 
 
     // Validate Select and Multi Select fields
     if (row[field.label] && (field.type === 'Select' || field.type === 'Multi Select')) {
-      const availableOptions = (field.values || field.options || []).map((v: string) => v.trim().toLowerCase());
+      const availableOptions = normalizeFieldOptions(field);
+      const availableValues = availableOptions.map(opt => getFieldValue(opt).toLowerCase());
+      const availableLabels = availableOptions.map(opt => getFieldLabel(opt));
+      
       if (availableOptions.length > 0) {
         if (field.type === 'Select') {
           // Single select: value must be in available options (case-insensitive, trim)
           const value = String(row[field.label]).trim().toLowerCase();
-          if (!availableOptions.includes(value)) {
+          if (!availableValues.includes(value)) {
             return {
               isValid: false,
               normalizedRow,
-              error: `Giá trị "${row[field.label]}" không hợp lệ cho trường "${field.label}". Các giá trị hợp lệ: ${field.values ? field.values.join(', ') : ''}`
+              error: `Giá trị "${row[field.label]}" không hợp lệ cho trường "${field.label}". Các giá trị hợp lệ: ${availableLabels.join(', ')}`
             };
           }
         } else if (field.type === 'Multi Select') {
@@ -108,13 +112,13 @@ const validateAndNormalizeRow = (row: any, formFields: FormField[]): { isValid: 
             .split(',')
             .map((v: string) => v.trim().toLowerCase())
             .filter((v: string) => v);
-          const invalidValues = selectedValues.filter((value: string) => !availableOptions.includes(value));
+          const invalidValues = selectedValues.filter((value: string) => !availableValues.includes(value));
 
           if (invalidValues.length > 0) {
             return {
               isValid: false,
               normalizedRow,
-              error: `Giá trị "${invalidValues.join(', ')}" không hợp lệ cho trường "${field.label}". Các giá trị hợp lệ: ${field.values ? field.values.join(', ') : ''}`
+              error: `Giá trị "${invalidValues.join(', ')}" không hợp lệ cho trường "${field.label}". Các giá trị hợp lệ: ${availableLabels.join(', ')}`
             };
           }
 
@@ -417,7 +421,7 @@ export default function ImportExcelPage() {
       );
       
       selectFields.forEach(field => {
-        const options = field.values || field.options || [];
+        const options = normalizeFieldOptions(field);
         if (options.length > maxOptions) {
           maxOptions = options.length;
         }
@@ -436,19 +440,19 @@ export default function ImportExcelPage() {
         eventData.formFields.forEach(field => {
           if (field.type === 'Agreement') return;
           const isSelectable = field.type === 'Select' || field.type === 'Multi Select';
-          const availableOptions = field.values || field.options;
+          const availableOptions = normalizeFieldOptions(field);
 
           if (isSelectable && availableOptions && availableOptions.length > 0) {
             if (field.type === 'Select') {
               // Cycle through options for different records
               const optionIndex = i % availableOptions.length;
-              sampleRecord[field.label] = availableOptions[optionIndex];
+              sampleRecord[field.label] = getFieldValue(availableOptions[optionIndex]);
             } else if (field.type === 'Multi Select') {
               // For Multi Select: randomly select 1-3 values
               const numValues = Math.min(Math.floor(Math.random() * 3) + 1, availableOptions.length);
               const shuffledOptions = [...availableOptions].sort(() => Math.random() - 0.5);
               const selectedValues = shuffledOptions.slice(0, numValues);
-              sampleRecord[field.label] = selectedValues.join(', ');
+              sampleRecord[field.label] = selectedValues.map(opt => getFieldValue(opt)).join(', ');
             }
           } else if (field.default) {
             sampleRecord[field.label] = field.default;
@@ -589,7 +593,7 @@ export default function ImportExcelPage() {
     const field = eventData.formFields.find(f => f.label === header);
     if (field && (field.type === 'Select' || field.type === 'Multi Select')) {
       return { 
-        options: field.values || field.options || [], 
+        options: normalizeFieldOptions(field), 
         type: field.type 
       };
     }
@@ -611,11 +615,11 @@ export default function ImportExcelPage() {
                 <label key={index} className="flex items-center space-x-2 text-sm">
                   <input
                     type="checkbox"
-                    checked={multiSelectValues.includes(option)}
-                    onChange={(e) => handleMultiSelectChange(option, e.target.checked)}
+                    checked={multiSelectValues.includes(getFieldValue(option))}
+                    onChange={(e) => handleMultiSelectChange(getFieldValue(option), e.target.checked)}
                     className="h-3 w-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <span>{option}</span>
+                  <span>{getFieldLabel(option)}</span>
                 </label>
               ))}
             </div>
@@ -655,8 +659,8 @@ export default function ImportExcelPage() {
             >
               <option value="">-- Chọn --</option>
               {fieldInfo.options.map((option, index) => (
-                <option key={index} value={option}>
-                  {option}
+                <option key={index} value={getFieldValue(option)}>
+                  {getFieldLabel(option)}
                 </option>
               ))}
             </select>
@@ -726,8 +730,29 @@ export default function ImportExcelPage() {
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><LoadingSpinner size="lg" /></div>;
-  if (!eventData) return <div className="min-h-screen flex items-center justify-center"><Card className="p-8 text-center text-red-600">Không tìm thấy sự kiện.</Card></div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <LoadingSpinner 
+          size="lg" 
+          showLogo={true} 
+          text="Đang tải thông tin sự kiện..."
+        />
+      </div>
+    );
+  }
+  
+  if (!eventData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-red-500 text-lg font-medium">
+            Không tìm thấy sự kiện.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <RegistrationLayout eventData={eventData}>

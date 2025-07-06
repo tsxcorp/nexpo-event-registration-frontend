@@ -11,6 +11,50 @@ A modern event registration platform built with Next.js, TypeScript, and Tailwin
 - Customizable event branding
 - Export registration data
 
+## Translation System
+
+The platform includes a comprehensive translation system that automatically translates content based on user language preferences.
+
+### Features
+
+- **Automatic Translation**: Uses Google Translate API to translate event data
+- **Custom Translations**: Allows users to add and edit translations via JSON files
+- **Translation Caching**: Caches translations to improve performance
+- **Language Switcher**: UI component to switch between supported languages
+- **Translation Editor**: Modal interface for editing and improving translations
+
+### Supported Languages
+
+- Vietnamese (vi) - Default
+- English (en)
+- Chinese (zh)
+- Japanese (ja)
+- Korean (ko)
+
+### Setup
+
+1. **Google Translate API Key**: Add your API key to environment variables:
+   ```env
+   NEXT_PUBLIC_GOOGLE_TRANSLATE_API_KEY=your_api_key_here
+   ```
+
+2. **Custom Translations**: The system automatically creates and manages custom translations in `data/custom-translations.json`
+
+### Usage
+
+The translation system is integrated into the registration form and automatically translates:
+- Event names and descriptions
+- Form field labels, help text, and placeholders
+- Select field options
+- Agreement field content and checkbox labels
+
+### Components
+
+- `LanguageSwitcher`: Dropdown to change language
+- `TranslationEditor`: Modal for editing translations
+- `TranslatableText`: Wrapper component for editable translated text
+- `useTranslation`: Custom hook for translation state management
+
 ## Tech Stack
 
 - Next.js 13+ (App Router)

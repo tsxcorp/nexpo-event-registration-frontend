@@ -1,6 +1,12 @@
 import { apiClient } from './client';
 
+export interface FieldOption {
+  value: string;
+  label: string;
+}
+
 export interface FormField {
+  field_id?: string; // New field ID for robust conditional logic
   sort: number;
   label: string;
   type: string;
@@ -9,12 +15,13 @@ export interface FormField {
   helptext: string;
   placeholder: string;
   field_condition: string;
+  section_id?: string; // New section ID
   section_name: string;
   section_sort: number;
   section_condition: string;
   matching_field: boolean;
-  values?: string[];
-  options?: string[];
+  values?: string[] | FieldOption[];
+  options?: string[] | FieldOption[];
   default?: string;
   // Agreement specific fields
   title?: string;
@@ -36,6 +43,7 @@ export interface EventData {
   banner?: string;
   header?: string;
   logo?: string;
+  favicon?: string;
   footer?: string;
   formFields: FormField[];
 }
@@ -44,8 +52,15 @@ export const eventApi = {
   getEventInfo: async (eventId: string): Promise<{ event: EventData }> => {
     // The backend uses a query parameter for this specific route
     const response = await apiClient.get(`/api/events/?eventId=${eventId}`);
-    
-    return response.data;
+    let event = response.data.event || response.data;
+    // Robust mapping for formFields (camelCase or snake_case)
+    if (!event.formFields && event.form_fields) {
+      event.formFields = event.form_fields;
+    }
+    if (!Array.isArray(event.formFields)) {
+      event.formFields = [];
+    }
+    return { event };
   },
 
   submitRegistration: async (eventId: string, data: Record<string, any>) => {

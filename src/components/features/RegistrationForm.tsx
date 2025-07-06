@@ -2,16 +2,18 @@
 
 // ✅ RegistrationForm.tsx updated to make each section a separate step with conditional display
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, FormProvider, useFieldArray, useWatch } from 'react-hook-form';
 import { FormField } from '@/lib/api/events';
 import { parseCondition, evaluateCondition, getReferencedFields } from '@/lib/utils/conditionalDisplay';
+import { normalizeFormValue, convertFormDataToFieldIds } from '@/lib/utils/fieldUtils';
 import CoreFormFields from './CoreFormFields';
 import DynamicFormFields from './DynamicFormFields';
 import SubFormFields from './SubFormFields';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import { i18n } from '@/lib/translation/i18n';
 
 interface FormData {
   Salutation: string;
@@ -41,9 +43,11 @@ const emptyMember = { Salutation: '', Full_Name: '', Email: '', Phone_Number: ''
 interface Props {
   fields: FormField[];
   eventId: string;
+  currentLanguage?: string;
+  onRegisterFormMigration?: (callback: (oldFields: FormField[], newFields: FormField[]) => void) => void;
 }
 
-export default function RegistrationForm({ fields, eventId }: Props) {
+export default function RegistrationForm({ fields, eventId, currentLanguage = 'vi', onRegisterFormMigration }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -119,6 +123,70 @@ export default function RegistrationForm({ fields, eventId }: Props) {
     trigger
   } = methods;
 
+  // Form values migration function
+  const migrateFormValues = useCallback((oldFields: FormField[], newFields: FormField[]) => {
+    console.log('🔄 Starting form values migration...');
+    const currentValues = getValues();
+    const newValues = { ...currentValues };
+    
+    console.log('📋 Current form values before migration:', currentValues);
+    
+    // Create mapping from old labels to new labels using field properties
+    const fieldMappings: { oldLabel: string; newLabel: string }[] = [];
+    
+    oldFields.forEach(oldField => {
+      // Find corresponding new field by field_id (most reliable) or by properties
+      const newField = newFields.find((newF: FormField) => {
+        if (oldField.field_id && newF.field_id) {
+          return oldField.field_id === newF.field_id;
+        }
+        // Fallback: match by type, sort, and section
+         return oldField.type === newF.type &&
+                oldField.sort === newF.sort &&
+                (oldField.section_name || '') === (newF.section_name || '');
+      });
+      
+      if (newField && oldField.label !== newField.label) {
+        fieldMappings.push({
+          oldLabel: oldField.label,
+          newLabel: newField.label
+        });
+      }
+    });
+    
+    console.log('🔄 Field mappings for migration:', fieldMappings);
+    
+    // Migrate form values
+    let migrationCount = 0;
+    fieldMappings.forEach(({ oldLabel, newLabel }) => {
+      if (currentValues[oldLabel] !== undefined) {
+        console.log(`🔄 Migrating: "${oldLabel}" → "${newLabel}"`, currentValues[oldLabel]);
+        newValues[newLabel] = currentValues[oldLabel];
+        delete newValues[oldLabel];
+        migrationCount++;
+      }
+    });
+    
+    // Update form with new values
+    Object.keys(newValues).forEach(key => {
+      setValue(key, newValues[key]);
+    });
+    
+    console.log(`✅ Form values migration completed - ${migrationCount} fields migrated`);
+    console.log('📋 Final form values after migration:', newValues);
+  }, [getValues, setValue]);
+
+  // Register form migration callback on mount
+  useEffect(() => {
+    console.log('🔗 RegistrationForm mounting - checking for migration callback registration');
+    if (onRegisterFormMigration) {
+      console.log('📝 Registering form migration callback with parent');
+      onRegisterFormMigration(migrateFormValues);
+    } else {
+      console.warn('⚠️ No onRegisterFormMigration prop provided');
+    }
+  }, [onRegisterFormMigration, migrateFormValues]);
+
   // Watch all form values for conditional display
   const watchedValues = useWatch({
     control,
@@ -131,7 +199,7 @@ export default function RegistrationForm({ fields, eventId }: Props) {
       if (!section.condition) return true;
       
       const condition = parseCondition(section.condition);
-      return evaluateCondition(condition, watchedValues);
+      return evaluateCondition(condition, watchedValues, fields);
     });
   };
 
@@ -141,7 +209,7 @@ export default function RegistrationForm({ fields, eventId }: Props) {
       if (!field.field_condition) return true;
       
       const condition = parseCondition(field.field_condition);
-      return evaluateCondition(condition, watchedValues);
+      return evaluateCondition(condition, watchedValues, fields);
     });
   };
 
@@ -155,7 +223,7 @@ export default function RegistrationForm({ fields, eventId }: Props) {
     ...visibleAgreementSections,
     // 2. Core fields step
     {
-      name: 'THÔNG TIN CÁ NHÂN',
+      name: i18n[currentLanguage]?.personal_info || 'THÔNG TIN CÁ NHÂN',
       sort: -1,
       fields: [],
       type: 'core',
@@ -222,26 +290,35 @@ export default function RegistrationForm({ fields, eventId }: Props) {
           // If not checked, remove it from payload
           delete customData[fieldLabel];
         }
-      } else if (field.type === 'Multi Select') {
-        // For Multi Select, join array into a comma-separated string
-        if (Array.isArray(currentValue) && currentValue.length > 0) {
-          customData[fieldLabel] = currentValue.join(',');
+      } else if (field.type === 'Select' || field.type === 'Multi Select') {
+        // Normalize select/multiselect values to backend format
+        const normalizedValue = normalizeFormValue(field, currentValue);
+        if (normalizedValue !== undefined && normalizedValue !== null) {
+          if (field.type === 'Multi Select' && Array.isArray(normalizedValue)) {
+            customData[fieldLabel] = normalizedValue.join(',');
+          } else {
+            customData[fieldLabel] = normalizedValue;
+          }
         } else {
-          // If empty or not an array, remove it
+          // If empty, remove it from payload
           delete customData[fieldLabel];
         }
       }
     });
 
+    // 3. Convert customData from field labels to field_id format for backend
+    const customDataWithFieldIds = convertFormDataToFieldIds(customData, allVisibleFields);
+    console.log('📋 Custom data converted to field_id format:', customDataWithFieldIds);
+
     const payload = {
       ...coreData,
       group_members: data.group_members,
-      Custom_Fields_Value: customData,
+      Custom_Fields_Value: customDataWithFieldIds, // Use field_id format for backend
       Event_Info: eventId
     };
     
-    // 3. Log the final payload for debugging
-    console.log('Final Payload to be sent (with conditional fields):', JSON.stringify(payload, null, 2));
+    // 4. Log the final payload for debugging
+    console.log('Final Payload to be sent (with field_id format):', JSON.stringify(payload, null, 2));
 
     try {
       setLoading(true);
@@ -261,7 +338,7 @@ export default function RegistrationForm({ fields, eventId }: Props) {
           Full_Name: coreData.Full_Name,
           Email: coreData.Email,
           Phone_Number: coreData.Phone_Number,
-          ...customData,
+          ...customData, // Keep original labels for Thank You page display
           zoho_record_id: zohoRecordId,
           group_id: result.group_id,
           group_members: result.group_members || [],
@@ -271,7 +348,8 @@ export default function RegistrationForm({ fields, eventId }: Props) {
         console.log('Registration data being passed:', registrationData);
         
         const queryParams = new URLSearchParams({
-          data: JSON.stringify(registrationData)
+          data: JSON.stringify(registrationData),
+          lang: currentLanguage // Pass current language to Thank You page
         });
         
         const thankyouUrl = `/thankyou?${queryParams.toString()}`;
@@ -354,6 +432,9 @@ export default function RegistrationForm({ fields, eventId }: Props) {
   const isLastStep = currentStep === totalSteps - 1;
   const currentSection = allSteps[currentStep];
 
+  // When rendering core fields:
+  const getLabel = (key: string, defaultLabel: string) => i18n[currentLanguage]?.[key] || defaultLabel;
+
   return (
     <FormProvider {...methods}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 sm:space-y-6">
@@ -380,12 +461,12 @@ export default function RegistrationForm({ fields, eventId }: Props) {
         </div>
 
         {/* Progress Info */}
-        <div className="text-center mb-4 sm:mb-8 px-2 sm:px-4">
+        {/* <div className="text-center mb-4 sm:mb-8 px-2 sm:px-4">
           <p className="text-base sm:text-xl font-bold text-gray-800">
             Bước <span className="text-blue-600">{currentStep + 1}</span> / {totalSteps}
           </p>
           <p className="text-sm sm:text-base text-gray-600 mt-1 font-medium">{currentSection.name}</p>
-        </div>
+        </div> */}
 
         {/* Current Step Content */}
         <div className="w-full max-w-4xl mx-auto px-2 sm:px-4">
@@ -398,7 +479,7 @@ export default function RegistrationForm({ fields, eventId }: Props) {
               {/* Core Fields */}
               {currentSection.type === 'core' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
-                  <CoreFormFields register={register} errors={errors} />
+                  <CoreFormFields register={register} errors={errors} currentLanguage={currentLanguage} />
                 </div>
               )}
 
@@ -417,7 +498,7 @@ export default function RegistrationForm({ fields, eventId }: Props) {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
                           {visibleFields.map((field, fieldIndex) => (
                             <div key={fieldIndex} className={field.type === 'Multi Select' || field.type === 'Agreement' ? 'md:col-span-2' : ''}>
-                              <DynamicFormFields fields={[field]} />
+                              <DynamicFormFields fields={[field]} currentLanguage={currentLanguage} />
                             </div>
                           ))}
                         </div>
@@ -518,18 +599,18 @@ export default function RegistrationForm({ fields, eventId }: Props) {
                               }}
                               className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 shadow-sm hover:shadow-md"
                             >
-                              ✏️ Sửa
+                              ✏️ {i18n[currentLanguage]?.edit || 'Sửa'}
                             </Button>
                             <Button
                               type="button"
                               onClick={() => {
-                                if (confirm('Bạn có chắc muốn xóa thành viên này?')) {
+                                if (confirm(i18n[currentLanguage]?.confirm_delete || 'Bạn có chắc muốn xóa thành viên này?')) {
                                   remove(index);
                                 }
                               }}
                               className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 shadow-sm hover:shadow-md"
                             >
-                              🗑️ Xóa
+                              🗑️ {i18n[currentLanguage]?.delete || 'Xóa'}
                             </Button>
                           </div>
                         </div>
@@ -581,7 +662,7 @@ export default function RegistrationForm({ fields, eventId }: Props) {
               disabled={currentStep === 0}
               className="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg text-sm sm:text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
             >
-              ← Quay lại
+              ← {i18n[currentLanguage]?.back || 'Quay lại'}
             </Button>
 
             {/* Center content for mobile - Add member button */}
@@ -592,7 +673,7 @@ export default function RegistrationForm({ fields, eventId }: Props) {
                   onClick={handleAddMember}
                   className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg text-sm sm:text-base font-bold transition-all duration-200 shadow-md hover:shadow-lg"
                 >
-                  + Thêm thành viên
+                  + {i18n[currentLanguage]?.add_member || 'Thêm thành viên'}
                 </Button>
               )}
               
@@ -608,10 +689,10 @@ export default function RegistrationForm({ fields, eventId }: Props) {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Đang gửi...
+                      {i18n[currentLanguage]?.submitting || 'Đang gửi...'}
                     </span>
                   ) : (
-                    '✓ Hoàn tất đăng ký'
+                    `✓ ${i18n[currentLanguage]?.complete_registration || 'Hoàn tất đăng ký'}`
                   )}
                 </Button>
               ) : (
@@ -620,7 +701,7 @@ export default function RegistrationForm({ fields, eventId }: Props) {
                   onClick={handleNextStep}
                   className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 sm:px-8 sm:py-3 rounded-lg text-sm sm:text-base font-bold transition-all duration-200 shadow-md hover:shadow-lg"
                 >
-                  Tiếp tục →
+                  {i18n[currentLanguage]?.continue || 'Tiếp tục'} →
                 </Button>
               )}
             </div>
@@ -691,6 +772,7 @@ export default function RegistrationForm({ fields, eventId }: Props) {
                         <DynamicFormFields
                           fields={groupCustomFields}
                           prefix={`group_members.${editIndex}`}
+                          currentLanguage={currentLanguage}
                         />
                       </div>
                     </>
@@ -706,7 +788,7 @@ export default function RegistrationForm({ fields, eventId }: Props) {
                     onClick={handleCloseDialog}
                     className="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-bold transition-all duration-200"
                   >
-                    Hủy bỏ
+                    {i18n[currentLanguage]?.cancel || 'Hủy bỏ'}
                   </Button>
                   <Button
                     type="button"
