@@ -139,13 +139,13 @@ const EventInfo: FC<EventInfoProps> = ({
           style={{ transform: `translateY(${scrollY * 0.08}px)`, animationDelay: '2s' }}
         ></div>
       </div>
-      {/* Fixed Header with slide-down animation */}
+      {/* Fixed Header - Responsive */}
       <header className={`fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm transition-all duration-500 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
               {logoUrl && (
-                <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-100 transform transition-transform duration-300 hover:scale-110">
+                <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-gray-100 transform transition-transform duration-300 hover:scale-110 flex-shrink-0">
                   <Image
                     src={logoUrl}
                     alt={`${eventData.name} logo`}
@@ -156,7 +156,7 @@ const EventInfo: FC<EventInfoProps> = ({
                   />
                 </div>
               )}
-              <h1 className="text-xl font-semibold text-gray-900 truncate max-w-md animate-fade-in">
+              <h1 className="text-sm sm:text-lg lg:text-xl font-semibold text-gray-900 truncate animate-fade-in">
                 {eventData.name}
               </h1>
             </div>
@@ -174,95 +174,123 @@ const EventInfo: FC<EventInfoProps> = ({
         </div>
       </header>
 
-      {/* Banner Section with Parallax */}
-      <section className="relative h-[70vh] overflow-hidden mt-20">
-        {bannerUrl && (
-          <div 
-            className="absolute inset-0 scale-110"
-            style={{ transform: `translateY(${scrollY * 0.5}px) scale(1.1)` }}
-          >
+      {/* Banner Section - Responsive with proper dimensions */}
+      <section className="relative w-full h-[50vh] sm:h-[60vh] lg:h-[70vh] mt-16 sm:mt-20">
+        {bannerUrl ? (
+          <div className="relative w-full h-full overflow-hidden">
             <Image
               src={bannerUrl}
               alt={eventData.name}
               fill
               sizes="100vw"
-              className="object-cover"
+              className="object-cover object-center"
               quality={95}
               priority
+              style={{
+                transform: `translateY(${scrollY * 0.3}px)`,
+              }}
             />
-            {/* Animated overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20"></div>
+            {/* Gradient overlay for better text readability */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/30"></div>
+            
+            {/* Content overlay - responsive positioning */}
+            <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+              <div className="text-center text-white max-w-4xl mx-auto">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 drop-shadow-lg">
+                  {eventData.name}
+                </h1>
+                {eventData.location && (
+                  <p className="text-sm sm:text-base md:text-lg lg:text-xl opacity-90 drop-shadow-md">
+                    {eventData.location}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          // Fallback when no banner image
+          <div className="relative w-full h-full bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 flex items-center justify-center">
+            <div className="text-center text-white max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
+                {eventData.name}
+              </h1>
+              {eventData.location && (
+                <p className="text-sm sm:text-base md:text-lg lg:text-xl opacity-90">
+                  {eventData.location}
+                </p>
+              )}
+            </div>
           </div>
         )}
         
-        {/* Floating particles effect */}
-        <div className="absolute inset-0">
-          {[...Array(6)].map((_, i) => (
+        {/* Floating particles effect - adjusted for mobile */}
+        <div className="absolute inset-0 pointer-events-none hidden sm:block">
+          {[...Array(4)].map((_, i) => (
             <div
               key={i}
-              className="absolute w-2 h-2 bg-white/30 rounded-full animate-float"
+              className="absolute w-1 h-1 sm:w-2 sm:h-2 bg-white/30 rounded-full animate-float"
               style={{
-                left: `${20 + i * 15}%`,
-                top: `${30 + i * 10}%`,
-                animationDelay: `${i * 0.8}s`,
-                animationDuration: `${3 + i * 0.5}s`
+                left: `${25 + i * 20}%`,
+                top: `${20 + i * 15}%`,
+                animationDelay: `${i * 1}s`,
+                animationDuration: `${4 + i * 0.5}s`
               }}
             ></div>
           ))}
         </div>
       </section>
 
-      {/* Event Description Card with entrance animation */}
-      <section className="relative -mt-32 z-10">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className={`bg-white rounded-2xl shadow-2xl p-8 md:p-12 transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+      {/* Event Description Card - Responsive spacing */}
+      <section className="relative -mt-16 sm:-mt-24 lg:-mt-32 z-10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className={`bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-2xl p-6 sm:p-8 md:p-12 transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
             <div className="text-center mb-8">
-              <h2 className={`text-3xl md:text-4xl font-light text-gray-900 mb-4 transform transition-all duration-1000 delay-300 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+              <h2 className={`text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 mb-4 transform transition-all duration-1000 delay-300 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
                 {eventData.name}
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-6 sm:mt-8">
                   {/* Location with hover animation */}
-                <div className={`text-center transform transition-all duration-700 delay-700 hover:scale-105 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 mb-3 transition-all duration-300 hover:bg-green-200 hover:shadow-lg">
-                    <svg className="w-6 h-6 text-green-600 transition-transform duration-300 hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className={`text-center transform transition-all duration-700 delay-700 hover:scale-105 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'} sm:col-span-1 lg:col-span-1`}>
+                  <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-100 mb-2 sm:mb-3 transition-all duration-300 hover:bg-green-200 hover:shadow-lg">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 transition-transform duration-300 hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                   </div>
-                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-1">
+                  <h3 className="text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wide mb-1">
                     {currentLanguage === 'en' ? 'Location' : 'Địa Điểm'}
                   </h3>
-                  <p className="text-lg font-semibold text-gray-900">{eventData.location || 'TBA'}</p>
+                  <p className="text-sm sm:text-lg font-semibold text-gray-900 px-2">{eventData.location || 'TBA'}</p>
                 </div>
 
                 {/* Start Date with hover animation */}
-                <div className={`text-center transform transition-all duration-700 delay-500 hover:scale-105 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 mb-3 transition-all duration-300 hover:bg-blue-200 hover:shadow-lg">
-                    <svg className="w-6 h-6 text-blue-600 transition-transform duration-300 hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className={`text-center transform transition-all duration-700 delay-500 hover:scale-105 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'} sm:col-span-1 lg:col-span-1`}>
+                  <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 mb-2 sm:mb-3 transition-all duration-300 hover:bg-blue-200 hover:shadow-lg">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 transition-transform duration-300 hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-1">
+                  <h3 className="text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wide mb-1">
                     {currentLanguage === 'en' ? 'Start Date' : 'Ngày Bắt Đầu'}
                   </h3>
-                  <p className="text-lg font-semibold text-gray-900">{startDate.day} {startDate.month} {startDate.year}</p>
-                  <p className="text-sm text-gray-600">{startDate.weekday}, {startDate.time}</p>
+                  <p className="text-sm sm:text-lg font-semibold text-gray-900">{startDate.day} {startDate.month} {startDate.year}</p>
+                  <p className="text-xs sm:text-sm text-gray-600">{startDate.weekday}, {startDate.time}</p>
                 </div>
 
               
 
                 {/* End Date with hover animation */}
-                <div className={`text-center transform transition-all duration-700 delay-900 hover:scale-105 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 mb-3 transition-all duration-300 hover:bg-purple-200 hover:shadow-lg">
-                    <svg className="w-6 h-6 text-purple-600 transition-transform duration-300 hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className={`text-center transform transition-all duration-700 delay-900 hover:scale-105 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'} sm:col-span-2 lg:col-span-1`}>
+                  <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-purple-100 mb-2 sm:mb-3 transition-all duration-300 hover:bg-purple-200 hover:shadow-lg">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 transition-transform duration-300 hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-1">
+                  <h3 className="text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wide mb-1">
                     {currentLanguage === 'en' ? 'End Date' : 'Ngày Kết Thúc'}
                   </h3>
-                  <p className="text-lg font-semibold text-gray-900">{endDate.day} {endDate.month} {endDate.year}</p>
-                  <p className="text-sm text-gray-600">{endDate.weekday}, {endDate.time}</p>
+                  <p className="text-sm sm:text-lg font-semibold text-gray-900">{endDate.day} {endDate.month} {endDate.year}</p>
+                  <p className="text-xs sm:text-sm text-gray-600">{endDate.weekday}, {endDate.time}</p>
                 </div>
               </div>
             </div>

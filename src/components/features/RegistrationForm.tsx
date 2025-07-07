@@ -59,7 +59,7 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
     const sectionMap = new Map<string, Section>();
     
     fields.forEach(field => {
-      const sectionName = field.section_name || 'Khác';
+      const sectionName = field.section_name || '';
       const sectionSort = field.section_sort || 999;
       const sectionCondition = field.section_condition || '';
       
@@ -652,26 +652,26 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
           </div>
         )}
 
-        {/* Navigation Buttons - Fixed at bottom for mobile */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 sm:p-4 shadow-lg sm:relative sm:bottom-auto sm:border-t-0 sm:shadow-none sm:bg-transparent sm:mt-8">
-          <div className="flex flex-col sm:flex-row justify-between items-center w-full max-w-4xl mx-auto space-y-2 sm:space-y-0">
+        {/* Navigation Buttons - Improved mobile spacing */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 sm:p-4 shadow-lg z-40 sm:relative sm:bottom-auto sm:border-t-0 sm:shadow-none sm:bg-transparent sm:mt-8">
+          <div className="flex flex-col sm:flex-row justify-between items-center w-full max-w-4xl mx-auto space-y-3 sm:space-y-0">
             {/* Back Button */}
             <Button
               type="button"
               onClick={handlePrevStep}
               disabled={currentStep === 0}
-              className="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg text-sm sm:text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
+              className="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white px-4 py-3 sm:px-6 sm:py-3 rounded-lg text-sm sm:text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md order-1 sm:order-none"
             >
               ← {i18n[currentLanguage]?.back || 'Quay lại'}
             </Button>
 
             {/* Center content for mobile - Add member button */}
-            <div className="flex flex-col sm:flex-row w-full sm:w-auto space-y-2 sm:space-y-0 sm:space-x-4">
+            <div className="flex flex-col sm:flex-row w-full sm:w-auto space-y-3 sm:space-y-0 sm:space-x-4 order-3 sm:order-none">
               {groupMembers.length === 0 && (
                 <Button
                   type="button"
                   onClick={handleAddMember}
-                  className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg text-sm sm:text-base font-bold transition-all duration-200 shadow-md hover:shadow-lg"
+                  className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-4 py-3 sm:px-6 sm:py-3 rounded-lg text-sm sm:text-base font-bold transition-all duration-200 shadow-md hover:shadow-lg"
                 >
                   + {i18n[currentLanguage]?.add_member || 'Thêm thành viên'}
                 </Button>
@@ -681,7 +681,7 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 sm:px-8 sm:py-3 rounded-lg text-sm sm:text-base font-bold disabled:opacity-50 transition-all duration-200 shadow-md hover:shadow-lg"
+                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 sm:px-8 sm:py-3 rounded-lg text-sm sm:text-base font-bold disabled:opacity-50 transition-all duration-200 shadow-md hover:shadow-lg"
                 >
                   {loading ? (
                     <span className="flex items-center justify-center">
@@ -699,7 +699,7 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
                 <Button
                   type="button"
                   onClick={handleNextStep}
-                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 sm:px-8 sm:py-3 rounded-lg text-sm sm:text-base font-bold transition-all duration-200 shadow-md hover:shadow-lg"
+                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 sm:px-8 sm:py-3 rounded-lg text-sm sm:text-base font-bold transition-all duration-200 shadow-md hover:shadow-lg"
                 >
                   {i18n[currentLanguage]?.continue || 'Tiếp tục'} →
                 </Button>
@@ -708,39 +708,39 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
           </div>
         </div>
 
-        {/* Add padding at bottom for mobile to account for fixed navigation */}
-        <div className="h-20 sm:h-0"></div>
+        {/* Add sufficient padding at bottom for mobile to account for fixed navigation */}
+        <div className="h-32 sm:h-0"></div>
 
-        {/* Group Member Dialog */}
+        {/* Group Member Dialog - Mobile optimized */}
         {editIndex !== null && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-2xl w-full mx-auto max-h-[90vh] overflow-y-auto shadow-2xl">
-              {/* Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-2xl">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-2 sm:p-4">
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl max-w-2xl w-full mx-auto max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl">
+              {/* Header - Mobile optimized */}
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 sm:p-6 rounded-t-2xl">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl font-bold">
+                  <div className="flex-1">
+                    <h3 className="text-lg sm:text-xl font-bold">
                       {isNew ? 'Thêm thành viên mới' : `Chỉnh sửa thành viên ${editIndex + 1}`}
                     </h3>
-                    <p className="text-blue-100 text-sm mt-1">
+                    <p className="text-blue-100 text-xs sm:text-sm mt-1">
                       {isNew ? 'Điền thông tin cho thành viên mới' : 'Cập nhật thông tin thành viên'}
                     </p>
                   </div>
                   <Button
                     type="button"
                     onClick={handleCloseDialog}
-                    className="text-white hover:bg-white hover:text-blue-600 p-2 rounded-full transition-all"
+                    className="text-white hover:bg-white hover:text-blue-600 p-2 rounded-full transition-all ml-3 flex-shrink-0"
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                   </Button>
                 </div>
               </div>
 
-              {/* Content */}
-              <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Content - Mobile optimized */}
+              <div className="p-4 sm:p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   {/* Core Fields */}
                   <div className="md:col-span-2">
                     <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -780,9 +780,9 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
                 </div>
               </div>
 
-              {/* Footer */}
-              <div className="bg-gray-50 p-6 rounded-b-2xl border-t border-gray-200">
-                <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4">
+              {/* Footer - Mobile optimized */}
+              <div className="bg-gray-50 p-4 sm:p-6 rounded-b-2xl border-t border-gray-200 sticky bottom-0">
+                <div className="flex flex-col-reverse sm:flex-row justify-end space-y-reverse space-y-3 sm:space-y-0 sm:space-x-4">
                   <Button
                     type="button"
                     onClick={handleCloseDialog}
@@ -793,7 +793,7 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
                   <Button
                     type="button"
                     onClick={handleConfirmDialog}
-                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-200 shadow-md hover:shadow-lg"
+                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-200 shadow-md hover:shadow-lg mb-3 sm:mb-0"
                   >
                     {isNew ? '✅ Thêm thành viên' : '💾 Lưu thay đổi'}
                   </Button>
