@@ -420,6 +420,18 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
     
     if (isValid && currentStep < totalSteps - 1) {
       setCurrentStep(currentStep + 1);
+      
+      // Auto-scroll to top of form after step change
+      setTimeout(() => {
+        const formElement = document.getElementById('registration-form');
+        if (formElement) {
+          formElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      }, 100);
     }
   };
 
@@ -469,9 +481,9 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
         </div> */}
 
         {/* Current Step Content */}
-        <div className="w-full max-w-4xl mx-auto px-2 sm:px-4">
+        <div className="w-full max-w-4xl mx-auto px-2 sm:px-4 mb-6 sm:mb-8">
           <Card className="border border-blue-100 sm:border-2 shadow-lg sm:shadow-xl bg-white">
-            <div className="p-3 sm:p-6 lg:p-8">
+            <div className="p-3 sm:p-6 lg:p-8 pb-6 sm:pb-8">
               <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-4 sm:mb-8 text-center">
                 {currentSection.name}
               </h2>
@@ -652,8 +664,8 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
           </div>
         )}
 
-        {/* Navigation Buttons - Improved mobile spacing */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 sm:p-4 shadow-lg z-40 sm:relative sm:bottom-auto sm:border-t-0 sm:shadow-none sm:bg-transparent sm:mt-8">
+        {/* Navigation Buttons - Better mobile spacing */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 sm:p-4 shadow-lg z-40 sm:relative sm:bottom-auto sm:border-t-0 sm:shadow-none sm:bg-transparent sm:mt-8">
           <div className="flex flex-col sm:flex-row justify-between items-center w-full max-w-4xl mx-auto space-y-3 sm:space-y-0">
             {/* Back Button */}
             <Button
@@ -709,7 +721,7 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
         </div>
 
         {/* Add sufficient padding at bottom for mobile to account for fixed navigation */}
-        <div className="h-32 sm:h-0"></div>
+        <div className="h-40 sm:h-0"></div>
 
         {/* Group Member Dialog - Mobile optimized */}
         {editIndex !== null && (

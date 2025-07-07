@@ -166,11 +166,11 @@ export default function DynamicFormFields({ fields, prefix, currentLanguage = 'v
         return (
           <>
             <div className="bg-gray-50 border border-gray-200 sm:border-2 rounded-lg p-3 sm:p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-3 sm:gap-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {options.map((opt, index) => (
                   <label
                     key={index}
-                    className="flex items-center space-x-2 sm:space-x-3 cursor-pointer hover:bg-white p-2 rounded-md transition-colors"
+                    className="flex items-start space-x-3 sm:space-x-4 cursor-pointer hover:bg-white p-3 rounded-lg transition-colors border border-transparent hover:border-gray-200"
                   >
                     <input
                       type="checkbox"
@@ -184,9 +184,9 @@ export default function DynamicFormFields({ fields, prefix, currentLanguage = 'v
                           return true;
                         }
                       })}
-                      className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 focus:ring-blue-500 border-2 border-gray-400 rounded transition-all"
+                      className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 focus:ring-blue-500 border-2 border-gray-400 rounded transition-all mt-0.5"
                     />
-                    <span className="text-gray-800 font-medium text-sm sm:text-base">{getFieldLabel(opt)}</span>
+                    <span className="text-gray-800 font-medium text-sm sm:text-base leading-relaxed flex-1">{getFieldLabel(opt)}</span>
                   </label>
                 ))}
               </div>
