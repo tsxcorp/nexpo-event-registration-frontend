@@ -150,7 +150,9 @@ const EventInfo: FC<EventInfoProps> = ({
                     src={logoUrl}
                     alt={`${eventData.name} logo`}
                     fill
+                    sizes="40px"
                     className="object-contain p-1"
+                    quality={95}
                   />
                 </div>
               )}
@@ -183,7 +185,9 @@ const EventInfo: FC<EventInfoProps> = ({
               src={bannerUrl}
               alt={eventData.name}
               fill
+              sizes="100vw"
               className="object-cover"
+              quality={95}
               priority
             />
             {/* Animated overlay */}
@@ -329,7 +333,9 @@ const EventInfo: FC<EventInfoProps> = ({
                       src={logoUrl}
                       alt={`${eventData.name} logo`}
                       fill
+                      sizes="48px"
                       className="object-contain p-2"
+                      quality={95}
                     />
                   </div>
                 )}
