@@ -3,11 +3,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { EventData, eventApi } from '@/lib/api/events';
-import RegistrationLayout from '@/components/layouts/RegistrationLayout';
-import RegistrationForm from '@/components/features/RegistrationForm';
-import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
+import EventInfo from '@/components/features/EventInfo';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-
 import StructuredData from '@/components/seo/StructuredData';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useEventMetadata } from '@/hooks/useEventMetadata';
@@ -123,42 +120,17 @@ export default function RegisterPage() {
   return (
     <>
       <StructuredData event={eventData} currentLanguage={currentLanguage} />
-      <RegistrationLayout eventData={eventData} key={`registration-layout-${forceUpdateKey}`}>
-      {/* Language Switcher */}
-      <div className="fixed top-4 right-4 z-40">
-        <LanguageSwitcher
-          currentLanguage={currentLanguage}
-          onLanguageChange={handleLanguageChange}
-          isTranslating={isTranslating}
-        />
-      </div>
-
-      <section className="max-w-5xl mx-auto px-6 py-16" key={`event-info-${currentLanguage}-${forceUpdateKey}`}>
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-6">{eventData.name}</h2>
-        <div
-          className="prose prose-lg md:prose-xl mx-auto text-justify"
-          dangerouslySetInnerHTML={{ __html: eventData.description }}
-        />
-        
-
-      </section>
-
-      <section className="bg-white py-8 sm:py-16 px-4" key={`registration-form-${currentLanguage}-${forceUpdateKey}`}>
-        <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl p-6 sm:p-10 space-y-6 border border-gray-200">
-          <h3 className="text-2xl md:text-3xl font-semibold text-center text-gray-800">
-            {i18n[currentLanguage]?.register_title || 'Đăng ký tham dự'}
-          </h3>
-          
-          {/* Always show RegistrationForm - core fields are always required */}
-          <RegistrationForm 
-            fields={eventData.formFields || []} 
-            eventId={eventId} 
-            currentLanguage={currentLanguage}
-            onRegisterFormMigration={setFormMigrationCallback}
-          />
-        </div>
-      </section>
-    </RegistrationLayout>
+      
+      {/* Complete Event Information with integrated Registration Form */}
+      <EventInfo 
+        event={eventData} 
+        currentLanguage={currentLanguage}
+        onLanguageChange={handleLanguageChange}
+        isTranslating={isTranslating}
+        eventId={eventId}
+        onRegisterFormMigration={setFormMigrationCallback}
+        key={`event-info-${currentLanguage}-${forceUpdateKey}`}
+      />
     </>
   );
 } 

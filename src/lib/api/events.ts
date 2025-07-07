@@ -40,6 +40,10 @@ export interface EventData {
   id: string;
   name: string;
   description: string;
+  email?: string;
+  location?: string;
+  start_date: string;
+  end_date: string;
   banner?: string;
   header?: string;
   logo?: string;
