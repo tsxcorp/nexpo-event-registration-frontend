@@ -58,15 +58,17 @@ function detectContentLanguage(eventData: EventData): string {
 }
 
 export function useTranslation(initialEventData: EventData | null) {
-  const [eventData, setEventData] = useState<EventData | null>(initialEventData);
+  const [eventData, setEventData] = useState<EventData | null>(null);
   const [currentLanguage, setCurrentLanguage] = useState('vi');
   const [isTranslating, setIsTranslating] = useState(false);
   const [formValuesMigrationCallback, setFormValuesMigrationCallback] = useState<((oldFields: any[], newFields: any[]) => void) | null>(null);
   const [languageInitialized, setLanguageInitialized] = useState(false);
 
-  // Auto-detect language when event data becomes available
+  // Initialize language and event data when initial data becomes available
   useEffect(() => {
     if (initialEventData && !languageInitialized) {
+      console.log('🌐 Initializing language and event data...');
+      
       const detectedLanguage = detectContentLanguage(initialEventData);
       const savedLanguage = localStorage.getItem('preferredLanguage');
       
@@ -80,7 +82,19 @@ export function useTranslation(initialEventData: EventData | null) {
         eventName: initialEventData.name
       });
       
+      // Set language first
       setCurrentLanguage(finalLanguage);
+      
+      // Then set event data immediately (no translation needed if same as saved language)
+      if (savedLanguage === finalLanguage) {
+        setEventData(initialEventData);
+        console.log('✅ Using original event data (no translation needed)');
+      } else {
+        // If we need to use detected language, set original data first then translate
+        setEventData(initialEventData);
+        console.log('🔄 Will use detected language, setting original data first');
+      }
+      
       setLanguageInitialized(true);
       
       // Save to localStorage if not already saved
@@ -89,13 +103,6 @@ export function useTranslation(initialEventData: EventData | null) {
       }
     }
   }, [initialEventData, languageInitialized]);
-
-  // Update eventData when initialEventData changes
-  useEffect(() => {
-    if (initialEventData) {
-      setEventData(initialEventData);
-    }
-  }, [initialEventData]);
 
   // Initialize field mappings when event data changes
   useEffect(() => {
@@ -113,7 +120,7 @@ export function useTranslation(initialEventData: EventData | null) {
 
   // Translate event data
   const translateEventData = useCallback(async (targetLanguage: string) => {
-    if (!eventData || targetLanguage === currentLanguage) {
+    if (!initialEventData || targetLanguage === currentLanguage) {
       console.log('⏭️ Skipping translation - no data or same language');
       return;
     }
@@ -123,24 +130,15 @@ export function useTranslation(initialEventData: EventData | null) {
 
     try {
       // Store original fields for migration
-      const originalFields = eventData.formFields || [];
+      const originalFields = eventData?.formFields || initialEventData.formFields || [];
       console.log('📋 Original fields count:', originalFields.length);
       
-      // Log original data
-      console.log('📋 Original event data:', {
-        name: eventData.name,
-        description: eventData.description?.substring(0, 100) + '...'
-      });
+      // Always translate from the original event data to ensure consistency
+      const sourceData = initialEventData;
       
       // Translate the event data
-      const translatedData = await translationService.translateEventData(eventData, targetLanguage);
+      const translatedData = await translationService.translateEventData(sourceData, targetLanguage);
       console.log('✅ Translation completed');
-      
-      // Log translated data
-      console.log('📋 Translated event data:', {
-        name: translatedData.name,
-        description: translatedData.description?.substring(0, 100) + '...'
-      });
       
       // Update field mappings after translation
       if (translatedData.formFields) {
@@ -152,17 +150,12 @@ export function useTranslation(initialEventData: EventData | null) {
           console.log('🔄 Calling form values migration callback...');
           formValuesMigrationCallback(originalFields, translatedData.formFields);
         } else {
-          console.warn('⚠️ No form values migration callback registered!');
+          console.log('ℹ️ No form values migration callback registered yet');
         }
       }
       
       // Update state
       console.log('🔄 Updating eventData state with translated data...');
-      console.log('📋 Final translated data being set:', {
-        name: translatedData.name,
-        description: translatedData.description?.substring(0, 200) + '...',
-        descriptionFull: translatedData.description
-      });
       setEventData(translatedData);
       setCurrentLanguage(targetLanguage);
       
@@ -173,10 +166,12 @@ export function useTranslation(initialEventData: EventData | null) {
 
     } catch (error) {
       console.error('❌ Translation failed:', error);
+      // Fallback to original data if translation fails
+      setEventData(initialEventData);
     } finally {
       setIsTranslating(false);
     }
-  }, [eventData, currentLanguage, formValuesMigrationCallback]);
+  }, [initialEventData, currentLanguage, formValuesMigrationCallback, eventData]);
 
   return {
     eventData,

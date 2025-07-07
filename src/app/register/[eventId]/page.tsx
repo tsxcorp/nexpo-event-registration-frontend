@@ -15,25 +15,9 @@ export default function RegisterPage() {
   const eventId = params?.eventId as string;
   const [originalEventData, setOriginalEventData] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [forceUpdateKey, setForceUpdateKey] = useState(0);
   const formMigrationRef = useRef<((oldFields: any[], newFields: any[]) => void) | null>(null);
-
-  // Load event data first
-  useEffect(() => {
-    if (!eventId) return;
-    
-    eventApi.getEventInfo(eventId)
-      .then(res => {
-        const event = res.event;
-        console.log('📥 Event data loaded:', { 
-          name: event.name, 
-          fieldsCount: event.formFields?.length 
-        });
-        setOriginalEventData(event);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [eventId]);
 
   // Use translation hook with originalEventData for auto-detection
   const {
@@ -51,12 +35,30 @@ export default function RegisterPage() {
     currentLanguage 
   });
 
-  // Set event data when originalEventData is loaded
+  // Load event data first
   useEffect(() => {
-    if (originalEventData && !eventData) {
-      setEventData(originalEventData);
-    }
-  }, [originalEventData, eventData, setEventData]);
+    if (!eventId) return;
+    
+    console.log('🔄 Loading event data for ID:', eventId);
+    setLoading(true);
+    setError(false);
+    
+    eventApi.getEventInfo(eventId)
+      .then(res => {
+        const event = res.event;
+        console.log('📥 Event data loaded:', { 
+          name: event.name, 
+          fieldsCount: event.formFields?.length 
+        });
+        setOriginalEventData(event);
+        setError(false);
+      })
+      .catch(err => {
+        console.error('❌ Failed to load event:', err);
+        setError(true);
+      })
+      .finally(() => setLoading(false));
+  }, [eventId]);
 
   // Debug: Log eventData changes
   useEffect(() => {
@@ -65,7 +67,6 @@ export default function RegisterPage() {
         name: eventData.name,
         description: eventData.description?.substring(0, 100) + '...',
         fieldsCount: eventData.formFields?.length,
-        fullDescription: eventData.description // Log full description for debugging
       });
       
       // Force re-render by updating key
@@ -93,19 +94,24 @@ export default function RegisterPage() {
     registerFormValuesMigration(callback);
   };
 
-  if (loading) {
+  // Show loading while loading event data OR while translation is in progress
+  if (loading || (originalEventData && !eventData)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <LoadingSpinner 
           size="lg" 
           showLogo={true} 
-          text={i18n[currentLanguage]?.loading || 'Đang tải dữ liệu sự kiện...'}
+          text={isTranslating 
+            ? (i18n[currentLanguage]?.translating || 'Đang dịch nội dung...')
+            : (i18n[currentLanguage]?.loading || 'Đang tải dữ liệu sự kiện...')
+          }
         />
       </div>
     );
   }
   
-  if (!eventData) {
+  // Only show error if we have explicitly failed to load (not during language detection)
+  if (error || (!loading && !originalEventData)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -117,13 +123,28 @@ export default function RegisterPage() {
     );
   }
 
+  // Render the page even if eventData is temporarily null during language switching
+  const displayData = eventData || originalEventData;
+  
+  if (!displayData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <LoadingSpinner 
+          size="lg" 
+          showLogo={true} 
+          text={i18n[currentLanguage]?.loading || 'Đang tải dữ liệu sự kiện...'}
+        />
+      </div>
+    );
+  }
+
   return (
     <>
-      <StructuredData event={eventData} currentLanguage={currentLanguage} />
+      <StructuredData event={displayData} currentLanguage={currentLanguage} />
       
       {/* Complete Event Information with integrated Registration Form */}
       <EventInfo 
-        event={eventData} 
+        event={displayData} 
         currentLanguage={currentLanguage}
         onLanguageChange={handleLanguageChange}
         isTranslating={isTranslating}

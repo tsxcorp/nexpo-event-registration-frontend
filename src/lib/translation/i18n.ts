@@ -54,6 +54,7 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     
     // Page states
     loading: "Đang tải dữ liệu sự kiện...",
+    translating: "Đang dịch nội dung...",
     event_not_found: "Không tìm thấy sự kiện.",
     no_form_fields: "Không có form fields để hiển thị",
     
@@ -150,6 +151,7 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     
     // Page states
     loading: "Loading event data...",
+    translating: "Translating content...",
     event_not_found: "Event not found.",
     no_form_fields: "No form fields to display",
     
