@@ -329,7 +329,9 @@ export default function ImportExcelPage() {
         });
         
         // Sử dụng axios trực tiếp thay vì apiClient để tránh conflict với JSON config
-        const response = await axios.post('http://localhost:3000/api/imports', formData, {
+        const importUrl = `${apiClient.defaults.baseURL}/api/imports`;
+        console.log('🌐 Import URL:', importUrl);
+        const response = await axios.post(importUrl, formData, {
           headers: {
             // Không set Content-Type, để axios tự động set multipart/form-data
           },
