@@ -63,7 +63,6 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [showHamburgerMenu, setShowHamburgerMenu] = useState(false);
   const [toastMessage, setToastMessage] = useState<{
     show: boolean;
     message: string;
@@ -78,7 +77,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
   });
 
   const tabs = [
-    { id: 'overview', label: 'Tổng quan', icon: 'ChartBarIcon' },
+    { id: 'overview', label: 'Check-in', icon: 'ChartBarIcon' },
     { id: 'exhibitors', label: 'Exhibitors', icon: 'BuildingOfficeIcon' },
     { id: 'favorites', label: 'Yêu thích', icon: 'HeartIcon', count: favoriteExhibitors.length },
     { id: 'more', label: 'Thêm', icon: 'Cog6ToothIcon' }
@@ -758,149 +757,36 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       )}
 
       {/* Header */}
-      <div className={`bg-white/80 backdrop-blur-sm shadow-sm sticky top-0 z-10 transition-all duration-300 ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
-        <div className="max-w-md mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => router.push(`/insight/${eventId}`)}
-              className="p-3 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-            >
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <h1 className="insight-h2 font-bold text-gray-900">
-              Visitor Dashboard
-            </h1>
-            <div className="flex items-center space-x-1">
-              <button
-                onClick={() => setShowHamburgerMenu(!showHamburgerMenu)}
-                className="p-3 hover:bg-gray-100 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-              >
-                <Icon name={showHamburgerMenu ? "XMarkIcon" : "Bars3Icon"} className="w-5 h-5 text-gray-600" />
-              </button>
+      <div className={`bg-gradient-to-r from-blue-500 to-purple-600 shadow-xl sticky top-0 z-10 transition-all duration-300 ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
+        <div className="max-w-md mx-auto px-4 py-4">
+          <div className="flex items-start space-x-3">
+            {eventData.logo && (
+              <div className="w-12 h-12 rounded-lg bg-white flex-shrink-0 shadow-sm mt-1 p-1">
+                <img 
+                  src={eventData.logo} 
+                  alt={eventData.name}
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg font-bold text-white leading-tight break-words">
+                {eventData.name || 'Event Dashboard'}
+              </h1>
+              <p className="text-sm text-white/80 font-medium mt-1">
+                {new Date(eventData.start_date).toLocaleDateString('vi-VN')} - {new Date(eventData.end_date).toLocaleDateString('vi-VN')}
+              </p>
+              {visitorData.registration_date && (
+                <p className="text-xs text-white/70 mt-1">
+                  Đăng ký: {new Date(visitorData.registration_date).toLocaleDateString('vi-VN')}
+                </p>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Hamburger Menu */}
-      {showHamburgerMenu && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-end">
-          <div className={`bg-white w-80 max-w-[90vw] h-full shadow-xl transform transition-transform duration-300 ${showHamburgerMenu ? 'translate-x-0' : 'translate-x-full'}`}>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="insight-h3 font-bold text-gray-900">Menu</h2>
-                <button
-                  onClick={() => setShowHamburgerMenu(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <Icon name="XMarkIcon" className="w-5 h-5 text-gray-600" />
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <h3 className="insight-h5 text-gray-500 font-medium">NAVIGATION</h3>
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => {
-                        setActiveTab(tab.id);
-                        setShowHamburgerMenu(false);
-                      }}
-                      className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors ${
-                        activeTab === tab.id
-                          ? 'bg-blue-50 text-blue-600 border border-blue-200'
-                          : 'hover:bg-gray-50 text-gray-700'
-                      }`}
-                    >
-                      <Icon name={tab.icon} className="w-5 h-5" />
-                      <span className="font-medium">{tab.label}</span>
-                    </button>
-                  ))}
-                </div>
 
-                <div className="border-t pt-4">
-                  <h3 className="insight-h5 text-gray-500 font-medium mb-2">QUICK ACTIONS</h3>
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => {
-                        openFileViewer('Floor Plan', (eventData as any)?.floor_plan_url, 'pdf');
-                        setShowHamburgerMenu(false);
-                      }}
-                      className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors"
-                    >
-                      <Icon name="MapIcon" className="w-5 h-5" />
-                      <span>Floor Plan</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        openFileViewer('Directory', (eventData as any)?.directory_url, 'pdf');
-                        setShowHamburgerMenu(false);
-                      }}
-                      className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors"
-                    >
-                      <Icon name="BookOpenIcon" className="w-5 h-5" />
-                      <span>Directory</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        openFacebookEvent();
-                        setShowHamburgerMenu(false);
-                      }}
-                      className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors"
-                    >
-                      <Icon name="ShareIcon" className="w-5 h-5" />
-                      <span>Social Media</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Favorites Section */}
-                <div className="border-t pt-4">
-                  <h3 className="insight-h5 text-gray-500 font-medium mb-2">FAVORITES</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <Icon name="HeartIcon" className="w-5 h-5 text-red-500" fill="currentColor" />
-                        <span className="text-gray-700">Exhibitors yêu thích</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded-full">
-                          {favoriteExhibitors.length}
-                        </span>
-                        {favoriteExhibitors.length > 0 && (
-                          <button
-                            onClick={() => {
-                              clearAllFavorites();
-                              setShowHamburgerMenu(false);
-                            }}
-                            className="text-xs text-gray-500 hover:text-red-600 transition-colors duration-200 px-2 py-1 rounded hover:bg-red-100"
-                            title="Xóa tất cả favorites"
-                          >
-                            Xóa
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setActiveTab('favorites');
-                        setShowHamburgerMenu(false);
-                      }}
-                      className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors"
-                    >
-                      <Icon name="HeartIcon" className="w-5 h-5" fill="currentColor" />
-                      <span>Xem Favorites</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Content */}
       <div 
@@ -910,231 +796,6 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Event Info Card */}
-        <div className={`transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-          <Card className="p-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-xl hover:shadow-2xl transition-shadow duration-300">
-            <div className="flex items-center space-x-3">
-              {eventData.logo && (
-                <img 
-                  src={eventData.logo} 
-                  alt={eventData.name}
-                  className="w-12 h-12 rounded-lg object-cover bg-white/20"
-                />
-              )}
-              <div className="flex-1 min-w-0">
-                <h2 className="text-xl font-bold text-white leading-tight">
-                  {eventData.name || visitorData.event_name}
-                </h2>
-                <p className="text-sm text-white/80 font-medium">
-                  {new Date(eventData.start_date).toLocaleDateString('vi-VN')} - {new Date(eventData.end_date).toLocaleDateString('vi-VN')}
-                </p>
-                {visitorData.registration_date && (
-                  <p className="text-xs text-white/70 mt-1">
-                    Đăng ký: {new Date(visitorData.registration_date).toLocaleDateString('vi-VN')}
-                  </p>
-                )}
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Visitor Info Card */}
-        <div className={`transform transition-all duration-1000 delay-150 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-          <Card className="p-4 hover:shadow-lg transition-shadow duration-300">
-            <div className="insight-card-header">
-              <h3 className="insight-h3 font-bold text-gray-900">Thông tin của bạn</h3>
-              <div className={`insight-badge ${
-                hasCheckedIn
-                  ? 'insight-status-success'
-                  : visitorData.status?.toLowerCase() === 'confirmed' 
-                    ? 'insight-status-success' 
-                    : 'insight-status-info'
-              }`}>
-                {hasCheckedIn ? 'Đã check-in' : (visitorData.status || 'Đã đăng ký')}
-              </div>
-            </div>
-            
-            <div className="insight-info-grid">
-              <div className="insight-info-row">
-                <span className="insight-label">Tên:</span>
-                <span className="insight-value">{visitorData.name}</span>
-              </div>
-              <div className="insight-info-row">
-                <span className="insight-label">Email:</span>
-                <span className="insight-value-sm">{visitorData.email}</span>
-              </div>
-              <div className="insight-info-row">
-                <span className="insight-label">SĐT:</span>
-                <span className="insight-value">{visitorData.phone || 'Không có'}</span>
-              </div>
-              {visitorData.company && (
-                <div className="insight-info-row">
-                  <span className="insight-label">Công ty:</span>
-                  <span className="insight-value-sm">{visitorData.company}</span>
-                </div>
-              )}
-              {visitorData.job_title && (
-                <div className="insight-info-row">
-                  <span className="insight-label">Chức vụ:</span>
-                  <span className="insight-value-sm">{visitorData.job_title}</span>
-                </div>
-              )}
-              {visitorData.group_id && (
-                <div className="insight-info-row">
-                  <span className="insight-label">Group ID:</span>
-                  <span className="insight-value-sm">{visitorData.group_id}</span>
-                </div>
-              )}
-
-            </div>
-
-            {/* QR Code */}
-            <div className="insight-section-divider">
-              <div className="text-center">
-                {/* QR Mode Selection */}
-                <div className="mb-4">
-                  {hasCheckedIn ? (
-                    // User has checked in - show badge/redeem tabs
-                    <div className="flex bg-gray-100 rounded-lg p-1 max-w-xs mx-auto">
-                      <button
-                        onClick={() => handleQrModeChange('badge')}
-                        className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
-                          qrMode === 'badge'
-                            ? 'bg-white text-blue-600 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-800'
-                        }`}
-                      >
-                        Badge QR
-                      </button>
-                      <button
-                        onClick={() => handleQrModeChange('redeem')}
-                        className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
-                          qrMode === 'redeem'
-                            ? 'bg-white text-blue-600 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-800'
-                        }`}
-                      >
-                        Redeem QR
-                      </button>
-                    </div>
-                  ) : (
-                    // User hasn't checked in - show personal/group switch
-                    <div className="flex bg-gray-100 rounded-lg p-1 max-w-xs mx-auto">
-                      <button
-                        onClick={() => handleQrModeChange('personal')}
-                        className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
-                          qrMode === 'personal'
-                            ? 'bg-white text-blue-600 shadow-sm'
-                            : 'text-gray-600 hover:text-gray-800'
-                        }`}
-                      >
-                        Cá nhân
-                      </button>
-                      <button
-                        onClick={() => handleQrModeChange('group')}
-                        disabled={!visitorData.group_id}
-                        className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
-                          qrMode === 'group'
-                            ? 'bg-white text-blue-600 shadow-sm'
-                            : !visitorData.group_id
-                              ? 'text-gray-400 cursor-not-allowed'
-                              : 'text-gray-600 hover:text-gray-800'
-                        }`}
-                      >
-                        Nhóm {!visitorData.group_id && '(N/A)'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* QR Code Display */}
-                <div className="mb-4">
-                  <p className="insight-text-secondary mb-2">
-                    {hasCheckedIn ? (
-                      qrMode === 'badge' ? 'Badge QR Code' : 'Redeem QR Code (để in lại thẻ)'
-                    ) : (
-                      qrMode === 'personal' ? 'QR Check-in (Cá nhân)' : 'QR Check-in (Nhóm)'
-                    )}
-                  </p>
-                  <div className="inline-block p-2 bg-white rounded-lg shadow-sm relative">
-                    {qrCodeLoading ? (
-                      <div className="w-24 h-24 flex items-center justify-center bg-gray-100 rounded animate-pulse">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                      </div>
-                    ) : qrCodeError ? (
-                      <div className="w-24 h-24 flex items-center justify-center bg-gray-100 rounded">
-                        <span className="insight-text-muted">QR Error</span>
-                      </div>
-                    ) : (
-                      <img 
-                        src={generateQRCode()}
-                        alt="QR Code"
-                        className="w-24 h-24 mx-auto"
-                        onError={(e) => {
-                          console.error('QR Code failed to load');
-                          setQrCodeError(true);
-                          setQrCodeLoading(false);
-                        }}
-                        onLoad={() => {
-                          setQrCodeLoading(false);
-                        }}
-                      />
-                    )}
-                  </div>
-                  
-                  {/* Copy Button */}
-                  <div className="mt-2">
-                    <button
-                      onClick={copyQrDataToClipboard}
-                      className="text-xs text-blue-600 hover:text-blue-800 transition-colors duration-200 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-full"
-                    >
-                      📋 Copy QR Data
-                    </button>
-                  </div>
-                </div>
-
-                {/* Additional Info for Group Mode */}
-                {!hasCheckedIn && qrMode === 'group' && visitorData.group_id && (
-                  <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                    <p className="insight-text-caption text-blue-700">
-                      <strong>Group ID:</strong> {visitorData.group_id}
-                    </p>
-                    <p className="insight-text-caption text-blue-600 mt-1">
-                      QR này sẽ check-in toàn bộ nhóm cùng lúc
-                    </p>
-                  </div>
-                )}
-
-                {/* Warning for missing Group ID */}
-                {!hasCheckedIn && qrMode === 'group' && !visitorData.group_id && (
-                  <div className="mb-4 p-3 bg-yellow-50 rounded-lg">
-                    <p className="insight-text-caption text-yellow-700">
-                      ⚠️ Bạn chưa được phân vào nhóm nào
-                    </p>
-                    <p className="insight-text-caption text-yellow-600 mt-1">
-                      Vui lòng liên hệ ban tổ chức để được hỗ trợ
-                    </p>
-                  </div>
-                )}
-
-                {/* QR Code Description */}
-                <div className="text-center">
-                  <p className="insight-text-caption text-gray-500">
-                    {hasCheckedIn ? (
-                      qrMode === 'badge' 
-                        ? 'Sử dụng QR này để truy cập các dịch vụ tại sự kiện'
-                        : 'Scan QR này để in lại thẻ đeo nếu bạn làm mất thẻ'
-                    ) : (
-                      qrMode === 'personal'
-                        ? 'Scan QR này để check-in cá nhân và nhận thẻ đeo'
-                        : 'Scan QR này để check-in theo nhóm và nhận thẻ đeo'
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
 
 
 
@@ -1188,26 +849,198 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           
           {activeTab === 'overview' && (
             <div className="space-y-4">
-              {/* Event Details */}
-              <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+              {/* Visitor Info Card */}
+              <div className={`transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
                 <Card className="p-4 hover:shadow-lg transition-shadow duration-300">
-                  <h3 className="insight-h3 font-bold text-gray-900 mb-3">Chi tiết sự kiện</h3>
-                  <div className="insight-content-spacing">
-                    <div>
-                      <h4 className="insight-h4 font-semibold text-gray-800 mb-1">Mô tả</h4>
-                      <div 
-                        {...renderHtmlContent(eventData.description || '', 'insight-text-secondary')}
-                      />
+                  <div className="insight-card-header">
+                    <h3 className="insight-h3 font-bold text-gray-900">Thông tin của bạn</h3>
+                    <div className={`insight-badge ${
+                      hasCheckedIn
+                        ? 'insight-status-success'
+                        : visitorData.status?.toLowerCase() === 'confirmed' 
+                          ? 'insight-status-success' 
+                          : 'insight-status-info'
+                    }`}>
+                      {hasCheckedIn ? 'Đã check-in' : (visitorData.status || 'Đã đăng ký')}
                     </div>
-                    <div>
-                      <h4 className="insight-h4 font-semibold text-gray-800 mb-1">Địa điểm</h4>
-                      <p className="insight-text-secondary">{eventData.location}</p>
+                  </div>
+                  
+                  <div className="insight-info-grid">
+                    <div className="insight-info-row">
+                      <span className="insight-label">Tên:</span>
+                      <span className="insight-value">{visitorData.name}</span>
                     </div>
-                    <div>
-                      <h4 className="insight-h4 font-semibold text-gray-800 mb-1">Thời gian</h4>
-                      <p className="insight-text-secondary">
-                        {new Date(eventData.start_date).toLocaleDateString('vi-VN')} - {new Date(eventData.end_date).toLocaleDateString('vi-VN')}
-                      </p>
+                    <div className="insight-info-row">
+                      <span className="insight-label">Email:</span>
+                      <span className="insight-value-sm">{visitorData.email}</span>
+                    </div>
+                    <div className="insight-info-row">
+                      <span className="insight-label">SĐT:</span>
+                      <span className="insight-value">{visitorData.phone || 'Không có'}</span>
+                    </div>
+                    {visitorData.company && (
+                      <div className="insight-info-row">
+                        <span className="insight-label">Công ty:</span>
+                        <span className="insight-value-sm">{visitorData.company}</span>
+                      </div>
+                    )}
+                    {visitorData.job_title && (
+                      <div className="insight-info-row">
+                        <span className="insight-label">Chức vụ:</span>
+                        <span className="insight-value-sm">{visitorData.job_title}</span>
+                      </div>
+                    )}
+                    {visitorData.group_id && (
+                      <div className="insight-info-row">
+                        <span className="insight-label">Group ID:</span>
+                        <span className="insight-value-sm">{visitorData.group_id}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* QR Code */}
+                  <div className="insight-section-divider">
+                    <div className="text-center">
+                      {/* QR Mode Selection */}
+                      <div className="mb-4">
+                        {hasCheckedIn ? (
+                          // User has checked in - show badge/redeem tabs
+                          <div className="flex bg-gray-100 rounded-lg p-1 max-w-xs mx-auto">
+                            <button
+                              onClick={() => handleQrModeChange('badge')}
+                              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
+                                qrMode === 'badge'
+                                  ? 'bg-white text-blue-600 shadow-sm'
+                                  : 'text-gray-600 hover:text-gray-800'
+                              }`}
+                            >
+                              Badge QR
+                            </button>
+                            <button
+                              onClick={() => handleQrModeChange('redeem')}
+                              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
+                                qrMode === 'redeem'
+                                  ? 'bg-white text-blue-600 shadow-sm'
+                                  : 'text-gray-600 hover:text-gray-800'
+                              }`}
+                            >
+                              Redeem QR
+                            </button>
+                          </div>
+                        ) : (
+                          // User hasn't checked in - show personal/group switch
+                          <div className="flex bg-gray-100 rounded-lg p-1 max-w-xs mx-auto">
+                            <button
+                              onClick={() => handleQrModeChange('personal')}
+                              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
+                                qrMode === 'personal'
+                                  ? 'bg-white text-blue-600 shadow-sm'
+                                  : 'text-gray-600 hover:text-gray-800'
+                              }`}
+                            >
+                              Cá nhân
+                            </button>
+                            <button
+                              onClick={() => handleQrModeChange('group')}
+                              disabled={!visitorData.group_id}
+                              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
+                                qrMode === 'group'
+                                  ? 'bg-white text-blue-600 shadow-sm'
+                                  : !visitorData.group_id
+                                    ? 'text-gray-400 cursor-not-allowed'
+                                    : 'text-gray-600 hover:text-gray-800'
+                              }`}
+                            >
+                              Nhóm {!visitorData.group_id && '(N/A)'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* QR Code Display */}
+                      <div className="mb-4">
+                        <p className="insight-text-secondary mb-2">
+                          {hasCheckedIn ? (
+                            qrMode === 'badge' ? 'Badge QR Code' : 'Redeem QR Code (để in lại thẻ)'
+                          ) : (
+                            qrMode === 'personal' ? 'QR Check-in (Cá nhân)' : 'QR Check-in (Nhóm)'
+                          )}
+                        </p>
+                        <div className="inline-block p-2 bg-white rounded-lg shadow-sm relative">
+                          {qrCodeLoading ? (
+                            <div className="w-24 h-24 flex items-center justify-center bg-gray-100 rounded animate-pulse">
+                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                            </div>
+                          ) : qrCodeError ? (
+                            <div className="w-24 h-24 flex items-center justify-center bg-gray-100 rounded">
+                              <span className="insight-text-muted">QR Error</span>
+                            </div>
+                          ) : (
+                            <img 
+                              src={generateQRCode()}
+                              alt="QR Code"
+                              className="w-24 h-24 mx-auto"
+                              onError={(e) => {
+                                console.error('QR Code failed to load');
+                                setQrCodeError(true);
+                                setQrCodeLoading(false);
+                              }}
+                              onLoad={() => {
+                                setQrCodeLoading(false);
+                              }}
+                            />
+                          )}
+                        </div>
+                        
+                        {/* Copy Button */}
+                        <div className="mt-2">
+                          <button
+                            onClick={copyQrDataToClipboard}
+                            className="text-xs text-blue-600 hover:text-blue-800 transition-colors duration-200 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-full"
+                          >
+                            📋 Copy QR Data
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Additional Info for Group Mode */}
+                      {!hasCheckedIn && qrMode === 'group' && visitorData.group_id && (
+                        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                          <p className="insight-text-caption text-blue-700">
+                            <strong>Group ID:</strong> {visitorData.group_id}
+                          </p>
+                          <p className="insight-text-caption text-blue-600 mt-1">
+                            QR này sẽ check-in toàn bộ nhóm cùng lúc
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Warning for missing Group ID */}
+                      {!hasCheckedIn && qrMode === 'group' && !visitorData.group_id && (
+                        <div className="mb-4 p-3 bg-yellow-50 rounded-lg">
+                          <p className="insight-text-caption text-yellow-700">
+                            ⚠️ Bạn chưa được phân vào nhóm nào
+                          </p>
+                          <p className="insight-text-caption text-yellow-600 mt-1">
+                            Vui lòng liên hệ ban tổ chức để được hỗ trợ
+                          </p>
+                        </div>
+                      )}
+
+                      {/* QR Code Description */}
+                      <div className="text-center">
+                        <p className="insight-text-caption text-gray-500">
+                          {hasCheckedIn ? (
+                            qrMode === 'badge' 
+                              ? 'Sử dụng QR này để truy cập các dịch vụ tại sự kiện'
+                              : 'Scan QR này để in lại thẻ đeo nếu bạn làm mất thẻ'
+                          ) : (
+                            qrMode === 'personal'
+                              ? 'Scan QR này để check-in cá nhân và nhận thẻ đeo'
+                              : 'Scan QR này để check-in theo nhóm và nhận thẻ đeo'
+                          )}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </Card>
@@ -1215,7 +1048,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
 
               {/* Check-in History */}
               {visitorData.check_in_history && visitorData.check_in_history.length > 0 && (
-                <div className={`transform transition-all duration-1000 delay-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+                <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
                   <Card className="p-4 hover:shadow-lg transition-shadow duration-300">
                     <h3 className="insight-h3 font-bold text-gray-900 mb-3">Lịch sử check-in</h3>
                     <div className="insight-content-spacing-sm">
@@ -1230,42 +1063,43 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                 </div>
               )}
 
-              {/* Quick Actions */}
-              <div className={`transform transition-all duration-1000 delay-600 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-                <Card className="p-4 hover:shadow-lg transition-shadow duration-300">
-                  <h3 className="insight-h3 font-bold text-gray-900 mb-3">Hành động nhanh</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button 
-                      variant="outline" 
-                      className="flex flex-col items-center py-4 transform hover:scale-105 transition-transform duration-200 min-h-[72px]"
-                      onClick={() => openFileViewer('Floor Plan', (eventData as any)?.floor_plan_url, 'pdf')}
-                    >
-                      <Icon name="MapIcon" className="w-6 h-6 mb-1 text-blue-600" />
-                      <span className="text-xs font-medium text-gray-700">Floor Plan</span>
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="flex flex-col items-center py-4 transform hover:scale-105 transition-transform duration-200 min-h-[72px]"
-                      onClick={() => openFileViewer('Directory', (eventData as any)?.directory_url, 'pdf')}
-                    >
-                      <Icon name="BookOpenIcon" className="w-6 h-6 mb-1 text-emerald-600" />
-                      <span className="text-xs font-medium text-gray-700">Directory</span>
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="flex flex-col items-center py-4 transform hover:scale-105 transition-transform duration-200 min-h-[72px]"
-                      onClick={openFacebookEvent}
-                    >
-                      <Icon name="ShareIcon" className="w-6 h-6 mb-1 text-purple-600" />
-                      <span className="text-xs font-medium text-gray-700">Social</span>
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="flex flex-col items-center py-4 transform hover:scale-105 transition-transform duration-200 min-h-[72px]"
-                    >
-                      <Icon name="InformationCircleIcon" className="w-6 h-6 mb-1 text-amber-600" />
-                      <span className="text-xs font-medium text-gray-700">Hỗ trợ</span>
-                    </Button>
+              {/* App Guide */}
+              <div className={`transform transition-all duration-1000 delay-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+                <Card className="p-4 hover:shadow-lg transition-shadow duration-300 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
+                  <h3 className="insight-h3 font-bold text-blue-900 mb-3 flex items-center">
+                    <Icon name="InformationCircleIcon" className="w-5 h-5 mr-2 text-blue-600" />
+                    Hướng dẫn sử dụng
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                        <Icon name="BuildingOfficeIcon" className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-blue-900">Exhibitors</h4>
+                        <p className="text-xs text-blue-700">Khám phá danh sách nhà triển lãm, tìm kiếm theo tên hoặc số booth</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                        <Icon name="HeartIcon" className="w-4 h-4 text-white" fill="currentColor" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-blue-900">Yêu thích</h4>
+                        <p className="text-xs text-blue-700">Lưu các exhibitors quan tâm để dễ dàng quay lại xem sau</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                        <Icon name="Cog6ToothIcon" className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-blue-900">Thêm</h4>
+                        <p className="text-xs text-blue-700">Truy cập Floor Plan, Directory và các liên kết hữu ích khác</p>
+                      </div>
+                    </div>
                   </div>
                 </Card>
               </div>
