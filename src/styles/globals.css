@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import insight typography system */
+@import './insight-typography.css';
+
 @layer base {
   :root {
     --background: 0 0% 100%;

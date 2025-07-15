@@ -36,6 +36,26 @@ export interface FormField {
   id?: string;
 }
 
+export interface ExhibitorData {
+  display_name: string;
+  country: string;
+  email: string;
+  tel: string;
+  mobile: string;
+  fax: string;
+  website: string;
+  zip_code: string;
+  vie_address: string;
+  eng_address: string;
+  vie_company_description: string;
+  eng_company_description: string;
+  vie_display_products: string;
+  eng_display_products: string;
+  introduction_video: string;
+  company_logo: string;
+  cover_image: string;
+}
+
 export interface EventData {
   id: string;
   name: string;
@@ -50,6 +70,7 @@ export interface EventData {
   favicon?: string;
   footer?: string;
   formFields: FormField[];
+  exhibitors?: ExhibitorData[];
 }
 
 export const eventApi = {

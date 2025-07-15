@@ -3,6 +3,7 @@ import { FormField, FieldOption } from '@/lib/api/events';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { normalizeFieldOptions, getFieldValue, getFieldLabel } from '@/lib/utils/fieldUtils';
 import { i18n } from '@/lib/translation/i18n';
+import { renderHtmlContent } from '@/lib/utils/htmlUtils';
 
 type Props = {
   fields: FormField[];
@@ -238,8 +239,7 @@ export default function DynamicFormFields({ fields, prefix, currentLanguage = 'v
               {content && (
                 <div className="mb-4 sm:mb-6">
                   <div 
-                    className="text-gray-700 leading-relaxed prose prose-sm max-w-none bg-white p-3 sm:p-4 rounded-lg border border-gray-200 text-sm sm:text-base"
-                    dangerouslySetInnerHTML={{ __html: content }}
+                    {...renderHtmlContent(content, 'text-gray-700 leading-relaxed bg-white p-3 sm:p-4 rounded-lg border border-gray-200 text-sm sm:text-base')}
                   />
                 </div>
               )}

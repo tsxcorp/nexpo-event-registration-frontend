@@ -4,6 +4,8 @@ import { EventData } from '@/lib/api/events';
 import { i18n } from '@/lib/translation/i18n';
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import RegistrationForm from '@/components/features/RegistrationForm';
+import { buildBannerUrl, buildLogoUrl } from '@/lib/utils/imageUtils';
+import { renderHtmlContent } from '@/lib/utils/htmlUtils';
 
 interface EventInfoProps {
   event: EventData;
@@ -114,13 +116,9 @@ const EventInfo: FC<EventInfoProps> = ({
     diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
   }
 
-  // Handle image URLs
-  const bannerUrl = eventData.banner ? 
-    (eventData.banner.startsWith('http') ? eventData.banner : `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${eventData.banner}`) 
-    : null;
-  const logoUrl = eventData.logo ? 
-    (eventData.logo.startsWith('http') ? eventData.logo : `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${eventData.logo}`) 
-    : null;
+  // Handle image URLs using utility functions
+  const bannerUrl = buildBannerUrl(eventData);
+  const logoUrl = buildLogoUrl(eventData);
 
   return (
     <div className="min-h-screen bg-white overflow-hidden">
@@ -299,8 +297,7 @@ const EventInfo: FC<EventInfoProps> = ({
             {eventData.description && (
               <div className={`border-t border-gray-200 pt-8 transform transition-all duration-1000 delay-1100 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
                 <div 
-                  className="prose prose-lg max-w-none text-gray-700 leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: eventData.description }}
+                  {...renderHtmlContent(eventData.description, 'text-gray-700 leading-relaxed max-w-none')}
                 />
               </div>
             )}
