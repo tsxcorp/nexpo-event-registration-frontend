@@ -403,43 +403,19 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
         if (visitorData.badge_qr) {
           qrData = visitorData.badge_qr;
         } else {
-          // Fallback to visitor info
-          qrData = JSON.stringify({
-            eventId,
-            visitorId,
-            name: visitorData.name,
-            email: visitorData.email,
-            type: 'badge'
-          });
+          // Fallback to visitor ID if no badge_qr
+          qrData = visitorId;
         }
       } else if (qrMode === 'redeem') {
         // Show redeem QR for re-printing card
-        qrData = JSON.stringify({
-          eventId,
-          visitorId,
-          group_id: visitorData.group_id,
-          name: visitorData.name,
-          type: 'redeem'
-        });
+        qrData = visitorData.group_id || visitorId;
       }
     } else {
       // User hasn't checked in - show personal or group QR for check-in
       if (qrMode === 'personal') {
-        qrData = JSON.stringify({
-          eventId,
-          visitorId,
-          name: visitorData.name,
-          email: visitorData.email,
-          type: 'checkin_personal'
-        });
+        qrData = visitorId;
       } else if (qrMode === 'group') {
-        qrData = JSON.stringify({
-          eventId,
-          visitorId,
-          group_id: visitorData.group_id,
-          name: visitorData.name,
-          type: 'checkin_group'
-        });
+        qrData = visitorData.group_id || visitorId;
       }
     }
     
@@ -602,40 +578,16 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           if (visitorData.badge_qr) {
             qrData = visitorData.badge_qr;
           } else {
-            qrData = JSON.stringify({
-              eventId,
-              visitorId,
-              name: visitorData.name,
-              email: visitorData.email,
-              type: 'badge'
-            });
+            qrData = visitorId;
           }
         } else if (qrMode === 'redeem') {
-          qrData = JSON.stringify({
-            eventId,
-            visitorId,
-            group_id: visitorData.group_id,
-            name: visitorData.name,
-            type: 'redeem'
-          });
+          qrData = visitorData.group_id || visitorId;
         }
       } else {
         if (qrMode === 'personal') {
-          qrData = JSON.stringify({
-            eventId,
-            visitorId,
-            name: visitorData.name,
-            email: visitorData.email,
-            type: 'checkin_personal'
-          });
+          qrData = visitorId;
         } else if (qrMode === 'group') {
-          qrData = JSON.stringify({
-            eventId,
-            visitorId,
-            group_id: visitorData.group_id,
-            name: visitorData.name,
-            type: 'checkin_group'
-          });
+          qrData = visitorData.group_id || visitorId;
         }
       }
       
@@ -761,7 +713,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 relative overflow-hidden smooth-scroll">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div 
@@ -953,7 +905,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       {/* Content */}
       <div 
         ref={contentRef}
-        className="max-w-md mx-auto px-4 py-4 space-y-4 relative"
+        className="max-w-md mx-auto px-4 py-4 mobile-content-spacing space-y-4 relative smooth-scroll"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -1184,45 +1136,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           </Card>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className={`bg-white/80 backdrop-blur-sm rounded-lg shadow-sm p-1 transform transition-all duration-1000 delay-300 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-          <div className="grid grid-cols-4 gap-1">
-            {tabs.map((tab, index) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex flex-col items-center py-3 px-2 rounded-lg transition-all duration-300 transform hover:scale-105 min-h-[56px] relative ${
-                  activeTab === tab.id
-                    ? 'bg-blue-500 text-white shadow-lg'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-                style={{ transitionDelay: `${index * 50}ms` }}
-              >
-                <Icon name={tab.icon} className="w-5 h-5 mb-1" fill={tab.icon === 'HeartIcon' ? 'currentColor' : 'none'} />
-                <span className="text-xs font-medium">{tab.label}</span>
-                {tab.count !== undefined && tab.count > 0 && (
-                  <span className={`absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center ${
-                    activeTab === tab.id ? 'bg-white text-blue-500' : 'bg-red-500 text-white'
-                  }`}>
-                    {tab.count > 99 ? '99+' : tab.count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-          
-          {/* Swipe indicator */}
-          {isSwipeInProgress && (
-            <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-200 rounded-full overflow-hidden">
-              <div 
-                className={`h-full bg-blue-500 transition-transform duration-200 ${
-                  swipeDirection === 'left' ? 'translate-x-2' : '-translate-x-2'
-                }`}
-                style={{ width: '25%' }}
-              />
-            </div>
-          )}
-        </div>
+
 
         {/* Search Bar - Only show in exhibitors tab */}
         {activeTab === 'exhibitors' && (
@@ -1740,6 +1654,69 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           </div>
         </div>
       )}
+
+      {/* Bottom Navigation - Native App Style */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 bottom-nav-shadow z-50">
+        {/* Swipe indicator */}
+        {isSwipeInProgress && (
+          <div className="absolute top-0 left-0 right-0 h-1 bg-blue-200 overflow-hidden">
+            <div 
+              className={`h-full bg-blue-500 transition-transform duration-200 ${
+                swipeDirection === 'left' ? 'translate-x-2' : '-translate-x-2'
+              }`}
+              style={{ width: '25%' }}
+            />
+          </div>
+        )}
+        
+        <div className="max-w-md mx-auto px-4 pt-2 pb-safe">
+          <div className="grid grid-cols-4 gap-1">
+            {tabs.map((tab, index) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  // Add haptic feedback
+                  if ('vibrate' in navigator) {
+                    navigator.vibrate(30);
+                  }
+                }}
+                className={`flex flex-col items-center py-2 px-2 rounded-lg transition-all duration-300 transform active:scale-95 min-h-[60px] relative touch-manipulation ${
+                  activeTab === tab.id
+                    ? 'text-blue-600 bg-blue-50'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+                style={{ transitionDelay: `${index * 50}ms` }}
+              >
+                <div className="relative">
+                  <Icon 
+                    name={tab.icon} 
+                    className={`w-6 h-6 mb-1 transition-all duration-300 ${
+                      activeTab === tab.id ? 'scale-110' : ''
+                    }`} 
+                    fill={tab.icon === 'HeartIcon' ? 'currentColor' : 'none'} 
+                  />
+                  {tab.count !== undefined && tab.count > 0 && (
+                    <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs font-bold flex items-center justify-center">
+                      {tab.count > 99 ? '99+' : tab.count}
+                    </span>
+                  )}
+                </div>
+                <span className={`text-xs font-medium transition-all duration-300 ${
+                  activeTab === tab.id ? 'font-semibold' : ''
+                }`}>
+                  {tab.label}
+                </span>
+                
+                {/* Active indicator */}
+                {activeTab === tab.id && (
+                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full"></div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 } 
