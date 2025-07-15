@@ -564,6 +564,291 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
     showToast(`Đã chuyển sang ${modeNames[newMode]}`, 'info');
   };
 
+  // Export favorites to PDF
+  const exportFavoritesToPDF = async () => {
+    if (favoriteExhibitors.length === 0 || !eventData || !visitorData) return;
+    
+    try {
+      showToast('Đang tạo PDF cẩm nang...', 'info');
+      
+      // Get favorite exhibitor data
+      const favoriteExhibitorData = exhibitors.filter(ex => isFavorite(ex.display_name));
+      
+      // Create HTML content for PDF
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { 
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+              line-height: 1.6; 
+              color: #333; 
+              margin: 0; 
+              padding: 20px;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              padding: 20px;
+              background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+              color: white;
+              border-radius: 10px;
+            }
+            .event-title { 
+              font-size: 24px; 
+              font-weight: bold; 
+              margin-bottom: 10px; 
+            }
+            .event-date { 
+              font-size: 16px; 
+              opacity: 0.9; 
+            }
+            .visitor-info {
+              background: #F3F4F6;
+              padding: 15px;
+              border-radius: 8px;
+              margin-bottom: 25px;
+              border-left: 4px solid #3B82F6;
+            }
+            .exhibitor-card {
+              background: white;
+              border: 1px solid #E5E7EB;
+              border-radius: 10px;
+              padding: 20px;
+              margin-bottom: 20px;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+              page-break-inside: avoid;
+            }
+            .exhibitor-header {
+              display: flex;
+              align-items: flex-start;
+              margin-bottom: 15px;
+              gap: 15px;
+            }
+            .exhibitor-logo {
+              width: 60px;
+              height: 60px;
+              border-radius: 8px;
+              background: white;
+              border: 2px solid #E5E7EB;
+              padding: 4px;
+              flex-shrink: 0;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              object-fit: contain;
+            }
+            .exhibitor-logo img {
+              max-width: 100%;
+              max-height: 100%;
+              object-fit: contain;
+            }
+            .exhibitor-logo-placeholder {
+              width: 60px;
+              height: 60px;
+              border-radius: 8px;
+              background: linear-gradient(135deg, #F3F4F6, #E5E7EB);
+              border: 2px solid #D1D5DB;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: bold;
+              font-size: 18px;
+              color: #6B7280;
+              flex-shrink: 0;
+            }
+            .exhibitor-info {
+              flex: 1;
+              min-width: 0;
+            }
+            .exhibitor-name {
+              font-size: 20px;
+              font-weight: bold;
+              color: #1F2937;
+              margin-bottom: 8px;
+              border-bottom: 2px solid #EF4444;
+              padding-bottom: 5px;
+            }
+            .booth-number {
+              background: #3B82F6;
+              color: white;
+              padding: 4px 12px;
+              border-radius: 20px;
+              font-size: 12px;
+              font-weight: bold;
+              display: inline-block;
+              margin-bottom: 10px;
+            }
+            .country {
+              background: #F3F4F6;
+              padding: 4px 12px;
+              border-radius: 20px;
+              font-size: 12px;
+              display: inline-block;
+              margin-left: 10px;
+              margin-bottom: 10px;
+            }
+            .products {
+              background: #FEF3C7;
+              padding: 10px;
+              border-radius: 6px;
+              margin: 10px 0;
+              border-left: 3px solid #F59E0B;
+            }
+            .contact-info {
+              background: #ECFDF5;
+              padding: 10px;
+              border-radius: 6px;
+              margin: 10px 0;
+              border-left: 3px solid #10B981;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 30px;
+              padding: 15px;
+              background: #F9FAFB;
+              border-radius: 8px;
+              font-size: 12px;
+              color: #6B7280;
+            }
+            .page-break { page-break-before: always; }
+            .info-row { margin: 5px 0; }
+            .label { font-weight: 600; color: #374151; }
+            .value { color: #6B7280; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="event-title">${eventData.name}</div>
+            <div class="event-date">${new Date(eventData.start_date).toLocaleDateString('vi-VN')} - ${new Date(eventData.end_date).toLocaleDateString('vi-VN')}</div>
+          </div>
+          
+          <div class="visitor-info">
+            <h3 style="margin: 0 0 10px 0; color: #1F2937;">📋 Thông tin khách tham quan</h3>
+            <div class="info-row"><span class="label">Tên:</span> <span class="value">${visitorData.name}</span></div>
+            <div class="info-row"><span class="label">Email:</span> <span class="value">${visitorData.email}</span></div>
+            ${visitorData.company ? `<div class="info-row"><span class="label">Công ty:</span> <span class="value">${visitorData.company}</span></div>` : ''}
+            <div class="info-row"><span class="label">Ngày tạo:</span> <span class="value">${new Date().toLocaleDateString('vi-VN')} ${new Date().toLocaleTimeString('vi-VN')}</span></div>
+          </div>
+
+          <h2 style="color: #1F2937; border-bottom: 2px solid #EF4444; padding-bottom: 10px; margin-bottom: 20px;">
+            ❤️ Cẩm nang Exhibitors yêu thích (${favoriteExhibitorData.length} nhà triển lãm)
+          </h2>
+          
+          ${favoriteExhibitorData.map((exhibitor, index) => {
+            const exhibitorAny = exhibitor as any;
+            return `
+            <div class="exhibitor-card">
+              <div class="exhibitor-header">
+                ${exhibitor.company_logo ? `
+                  <div class="exhibitor-logo">
+                    <img src="${exhibitor.company_logo}" alt="${exhibitor.display_name} logo" onerror="this.parentElement.outerHTML='<div class=&quot;exhibitor-logo-placeholder&quot;>${exhibitor.display_name.charAt(0)}</div>'">
+                  </div>
+                ` : `
+                  <div class="exhibitor-logo-placeholder">
+                    ${exhibitor.display_name.charAt(0)}
+                  </div>
+                `}
+                <div class="exhibitor-info">
+                  <div class="exhibitor-name">${exhibitor.display_name}</div>
+                  <div style="margin-bottom: 10px;">
+                    ${exhibitorAny.booth_no ? `<span class="booth-number">Booth ${exhibitorAny.booth_no}</span>` : ''}
+                    <span class="country">${exhibitor.country}</span>
+                  </div>
+                </div>
+              </div>
+
+              ${exhibitor.vie_display_products || exhibitor.eng_display_products ? `
+                <div class="products">
+                  <strong>🎯 Sản phẩm/Dịch vụ:</strong><br>
+                  ${exhibitor.vie_display_products || exhibitor.eng_display_products}
+                </div>
+              ` : ''}
+
+              ${exhibitorAny.contact_person || exhibitorAny.email || exhibitorAny.phone || exhibitorAny.website ? `
+                <div class="contact-info">
+                  <strong>📞 Thông tin liên hệ:</strong><br>
+                  ${exhibitorAny.contact_person ? `<div class="info-row">Người liên hệ: ${exhibitorAny.contact_person}</div>` : ''}
+                  ${exhibitorAny.email ? `<div class="info-row">Email: ${exhibitorAny.email}</div>` : ''}
+                  ${exhibitorAny.phone ? `<div class="info-row">Điện thoại: ${exhibitorAny.phone}</div>` : ''}
+                  ${exhibitorAny.website ? `<div class="info-row">Website: ${exhibitorAny.website}</div>` : ''}
+                </div>
+              ` : ''}
+
+              ${exhibitorAny.vie_company_profile ? `
+                <div style="margin-top: 10px;">
+                  <strong>🏢 Giới thiệu công ty:</strong><br>
+                  <div style="background: #F9FAFB; padding: 10px; border-radius: 6px; margin-top: 5px; font-size: 14px;">
+                    ${exhibitorAny.vie_company_profile.substring(0, 300)}${exhibitorAny.vie_company_profile.length > 300 ? '...' : ''}
+                  </div>
+                </div>
+              ` : ''}
+              
+              <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #E5E7EB; font-size: 12px; color: #6B7280;">
+                <strong>📝 Ghi chú:</strong> ________________________________<br><br>
+                <strong>⭐ Đánh giá:</strong> ☐ Rất quan tâm &nbsp;&nbsp; ☐ Quan tâm &nbsp;&nbsp; ☐ Có thể hợp tác
+              </div>
+            </div>
+            ${index < favoriteExhibitorData.length - 1 ? '<div style="margin: 20px 0;"></div>' : ''}
+          `;
+          }).join('')}
+          
+          <div class="footer">
+            <p><strong>📱 Ứng dụng Visitor Dashboard</strong></p>
+            <p>Cẩm nang này được tạo tự động từ danh sách exhibitors yêu thích của bạn</p>
+            <p>Chúc bạn có một chuyến tham quan triển lãm thành công! 🎉</p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Create a temporary element to render HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlContent;
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.width = '800px';
+      document.body.appendChild(tempDiv);
+
+      // Use html2pdf if available, otherwise create simple download
+      if (typeof window !== 'undefined' && (window as any).html2pdf) {
+        const opt = {
+          margin: 0.5,
+          filename: `${eventData.name.replace(/[^a-zA-Z0-9]/g, '_')}_Favorites_${new Date().getTime()}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+        };
+        
+        await (window as any).html2pdf().set(opt).from(tempDiv).save();
+      } else {
+        // Fallback: create a new window with the content
+        const newWindow = window.open('', '_blank');
+        if (newWindow) {
+          newWindow.document.write(htmlContent);
+          newWindow.document.close();
+          newWindow.print();
+        }
+      }
+
+      // Clean up
+      document.body.removeChild(tempDiv);
+      
+      showToast('✅ PDF cẩm nang với logo exhibitors đã được tạo thành công!', 'success');
+      
+      // Add haptic feedback
+      if ('vibrate' in navigator) {
+        navigator.vibrate([100, 50, 100]);
+      }
+      
+    } catch (error) {
+      console.error('Error creating PDF:', error);
+      showToast('❌ Có lỗi khi tạo PDF. Vui lòng thử lại.', 'error');
+    }
+  };
+
   // Copy QR data to clipboard
   const copyQrDataToClipboard = async () => {
     if (!visitorData) return;
@@ -1219,6 +1504,19 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                     <p className="text-gray-600 mb-4">
                       Thả tim các exhibitors bạn quan tâm để lưu vào danh sách yêu thích
                     </p>
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                      <div className="flex items-start space-x-2">
+                        <svg className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div>
+                          <p className="text-sm text-yellow-800 font-medium">💡 Mẹo hay:</p>
+                          <p className="text-xs text-yellow-700 mt-1">
+                            Sau khi thêm exhibitors yêu thích, bạn có thể xuất PDF cẩm nang với logo và thông tin đầy đủ để mang theo khi tham quan triển lãm!
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                     <Button
                       onClick={() => setActiveTab('exhibitors')}
                       className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors duration-200"
@@ -1236,6 +1534,18 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                         Exhibitors yêu thích ({favoriteExhibitors.length})
                       </h3>
                       <div className="flex items-center space-x-2">
+                        {favoriteExhibitors.length > 0 && (
+                          <button
+                            onClick={exportFavoritesToPDF}
+                            className="text-sm text-white bg-green-600 hover:bg-green-700 transition-colors duration-200 px-3 py-2 rounded-lg flex items-center space-x-1"
+                            title="Xuất PDF cẩm nang exhibitors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>Xuất PDF</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => setActiveTab('exhibitors')}
                           className="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200 px-3 py-1 rounded-lg hover:bg-blue-50"
