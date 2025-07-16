@@ -27,6 +27,12 @@ export interface VisitorResponse {
   visitor: VisitorData;
 }
 
+export interface CheckinResponse {
+  success: boolean;
+  message: string;
+  data?: any;
+}
+
 export const visitorApi = {
   /**
    * Fetch visitor details by visitor ID
@@ -97,6 +103,38 @@ export const visitorApi = {
     } catch (error) {
       console.log('⚠️ Visitor validation failed:', error);
       return false;
+    }
+  },
+
+  /**
+   * Submit check-in data to Zoho Creator
+   * @param visitor - The visitor data to submit for check-in
+   * @returns Promise<CheckinResponse>
+   */
+  async submitCheckin(visitor: VisitorData): Promise<CheckinResponse> {
+    console.log('📝 Submitting check-in data for visitor:', visitor.id, visitor.name);
+    
+    const payload = { visitor };
+    console.log('📋 JSON payload being submitted to Zoho:');
+    console.log(JSON.stringify(payload, null, 2));
+    
+    try {
+      const response = await apiClient.post<CheckinResponse>('/api/visitors/checkin', payload);
+      
+      console.log('✅ Check-in submitted successfully:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Error submitting check-in:', error);
+      console.error('❌ Error response data:', error.response?.data);
+      
+      // Handle different error types
+      if (error.response?.status === 400) {
+        throw new Error('Invalid visitor data');
+      } else if (error.response?.status === 500) {
+        throw new Error('Server error: ' + (error.response?.data?.details || 'Failed to submit check-in'));
+      } else {
+        throw new Error('Failed to submit check-in to Zoho');
+      }
     }
   }
 }; 

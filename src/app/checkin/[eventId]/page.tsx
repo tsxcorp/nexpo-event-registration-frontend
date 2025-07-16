@@ -228,6 +228,17 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       if (response.visitor) {
         console.log('✅ Visitor found:', response.visitor);
         
+        // Submit check-in to Zoho Creator
+        try {
+          console.log('📝 Submitting check-in history to Zoho...');
+          const checkinResult = await visitorApi.submitCheckin(response.visitor);
+          console.log('✅ Check-in history submitted successfully:', checkinResult);
+        } catch (submitError: any) {
+          console.error('⚠️ Failed to submit check-in history:', submitError.message);
+          // Don't fail the whole process if check-in submission fails
+          // We still show success to user but log the error
+        }
+        
         setVisitor(response.visitor);
         setSuccess(`✅ Check-in thành công cho ${response.visitor.name}!`);
         
