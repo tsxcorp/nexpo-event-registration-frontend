@@ -310,13 +310,20 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     const badgeSize = (eventData as any)?.badge_size;
     if (!badgeSize) return { width: 85, height: 54 };
 
-    const match = badgeSize.match(/W(\d+)\s*x\s*H(\d+)\s*mm/i);
+    console.log('🎫 Badge size from backend:', badgeSize);
+
+    // Handle different formats: "W106mm x H72mm" or "W106 x H72 mm" 
+    const match = badgeSize.match(/W(\d+)mm?\s*x\s*H(\d+)mm?/i);
     if (match) {
-      return {
+      const size = {
         width: parseInt(match[1]),
         height: parseInt(match[2])
       };
+      console.log('🎫 Parsed badge size:', size);
+      return size;
     }
+    
+    console.log('🎫 Using default badge size');
     return { width: 85, height: 54 };
   };
 
