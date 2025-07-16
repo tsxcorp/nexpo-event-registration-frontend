@@ -220,10 +220,18 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     setSuccess('');
     setVisitor(null);
 
+    // Basic input validation
+    const trimmedId = visitorId.trim();
+    if (trimmedId.length < 3) {
+      setError('❌ ID visitor phải có ít nhất 3 ký tự.');
+      setIsProcessing(false);
+      return;
+    }
+
     try {
-      console.log('🔍 Processing visitor ID:', visitorId);
+      console.log('🔍 Processing visitor ID:', trimmedId);
       
-      const response = await visitorApi.getVisitorInfo(visitorId.trim());
+              const response = await visitorApi.getVisitorInfo(trimmedId);
       
       if (response.visitor) {
         console.log('✅ Visitor found:', response.visitor);
@@ -267,7 +275,21 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       }
     } catch (error: any) {
       console.error('❌ Check-in error:', error);
-      setError('❌ Có lỗi xảy ra khi check-in. Vui lòng thử lại.');
+      
+      // Handle specific error types
+      let errorMessage = '❌ Có lỗi xảy ra khi check-in. Vui lòng thử lại.';
+      
+      if (error.message === 'Visitor not found') {
+        errorMessage = '❌ Không tìm thấy visitor với ID này. Vui lòng kiểm tra lại mã QR hoặc ID.';
+      } else if (error.message === 'Visitor ID is required') {
+        errorMessage = '❌ Vui lòng nhập ID visitor.';
+      } else if (error.message.includes('Server error')) {
+        errorMessage = '❌ Lỗi hệ thống. Vui lòng thử lại sau.';
+      } else if (error.message.includes('Failed to fetch visitor data')) {
+        errorMessage = '❌ Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.';
+      }
+      
+      setError(errorMessage);
       
       if ('vibrate' in navigator) {
         navigator.vibrate([200, 100, 200]);
@@ -282,6 +304,15 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     e.preventDefault();
     if (manualInput.trim()) {
       processCheckin(manualInput.trim());
+    }
+  };
+
+  // Handle manual input change (clear errors when typing)
+  const handleManualInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setManualInput(e.target.value);
+    // Clear error when user starts typing again
+    if (error) {
+      setError('');
     }
   };
 
@@ -849,7 +880,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                       ref={inputRef}
                       type="text"
                       value={manualInput}
-                      onChange={(e) => setManualInput(e.target.value)}
+                      onChange={handleManualInputChange}
                       placeholder="Nhập Visitor ID để check-in..."
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                       disabled={isProcessing}
