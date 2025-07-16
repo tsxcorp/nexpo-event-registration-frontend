@@ -114,6 +114,12 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         setLoading(true);
         setError('');
         
+        // Test backend connection first
+        console.log('🔧 Environment:', process.env.NODE_ENV);
+        console.log('🔧 Backend URL config:', process.env.NEXT_PUBLIC_BACKEND_API_URL);
+        
+        await visitorApi.checkBackendConnection();
+        
         const response = await eventApi.getEventInfo(eventId);
         setEventData(response.event);
         
@@ -470,6 +476,14 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   const generateBadgeContent = (visitorData: VisitorData) => {
     console.log('🎨 generateBadgeContent called with visitor:', visitorData);
     
+    const companyInfo = getCompanyInfo(visitorData);
+    console.log('🏢 Badge company extraction:', {
+      originalCompany: visitorData.company,
+      extractedCompany: companyInfo,
+      hasCompany: !!companyInfo,
+      name: visitorData.name
+    });
+    
     const badgeSize = getBadgeSize();
     
     // Reserve space for header and footer (about 15mm each)
@@ -540,14 +554,15 @@ export default function CheckinPage({ params }: CheckinPageProps) {
             </div>
             
             {/* Company (if available) */}
-            {visitorData.company && (
+            {companyInfo && (
               <div style={{
-                fontSize: visitorData.company.length > 30 ? '10px' : '12px',
-                color: '#6B7280',
+                fontSize: companyInfo.length > 30 ? '10px' : '12px',
+                fontWeight: '600',
+                color: '#4B5563',
                 wordWrap: 'break-word',
                 lineHeight: '1.1'
               }}>
-                {visitorData.company}
+                {companyInfo}
               </div>
             )}
           </div>
@@ -570,9 +585,45 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     );
   };
 
+  // Extract company information from custom_fields or company field
+  const getCompanyInfo = (visitorData: VisitorData): string => {
+    // Try company field first
+    if (visitorData.company && visitorData.company.trim()) {
+      return visitorData.company.trim();
+    }
+    
+    // Try custom_fields
+    try {
+      const customFields = typeof visitorData.custom_fields === 'string' 
+        ? JSON.parse(visitorData.custom_fields) 
+        : visitorData.custom_fields;
+        
+      // Check various possible field names for company
+      const companyFieldNames = ['Tên Công Ty', 'Company', 'Công ty', 'company'];
+      
+      for (const fieldName of companyFieldNames) {
+        if (customFields[fieldName] && customFields[fieldName].trim()) {
+          return customFields[fieldName].trim();
+        }
+      }
+    } catch (error) {
+      console.log('⚠️ Error parsing custom_fields:', error);
+    }
+    
+    return '';
+  };
+
   // Print badge using pre-rendered approach
   const printBadge = (visitorData: VisitorData) => {
     console.log('🖨️ printBadge called with visitor:', visitorData);
+    
+    const companyInfo = getCompanyInfo(visitorData);
+    console.log('🏢 Company extraction result:', {
+      originalCompany: visitorData.company,
+      customFields: visitorData.custom_fields,
+      extractedCompany: companyInfo,
+      hasCompany: !!companyInfo
+    });
     
     const badgeSize = getBadgeSize();
     const contentHeight = badgeSize.height - 30; // Reserve space for header/footer
@@ -599,7 +650,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     
     // Auto-resize logic
     const nameSize = visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px';
-    const companySize = visitorData.company && visitorData.company.length > 30 ? '10px' : '12px';
+    const companySize = companyInfo && companyInfo.length > 30 ? '10px' : '12px';
     
     // Generate QR code URL
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
@@ -622,9 +673,9 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           ${visitorData.name}
         </div>
         
-        ${visitorData.company ? `
-          <div style="font-size: ${companySize}; color: #6B7280; word-wrap: break-word; line-height: 1.1;">
-            ${visitorData.company}
+        ${companyInfo ? `
+          <div style="font-size: ${companySize}; font-weight: 600; color: #4B5563; word-wrap: break-word; line-height: 1.1;">
+            ${companyInfo}
           </div>
         ` : ''}
       </div>

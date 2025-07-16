@@ -35,12 +35,43 @@ export interface CheckinResponse {
 
 export const visitorApi = {
   /**
+   * Test basic connectivity to backend
+   */
+  async checkBackendConnection(): Promise<boolean> {
+    try {
+      console.log('🏥 Testing backend connection...');
+      console.log('🌐 Backend URL:', apiClient.defaults.baseURL);
+      
+      // Try a simple request to check if backend is reachable
+      const response = await fetch(`${apiClient.defaults.baseURL}/api/visitors?visid=test`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      console.log('🏥 Backend response status:', response.status);
+      console.log('🏥 Backend reachable:', response.ok || response.status >= 400);
+      
+      return true; // Any response means backend is reachable
+    } catch (error: any) {
+      console.log('🏥 Backend connection failed:', error.message);
+      console.log('🏥 Possible issues:');
+      console.log('   - Backend server not running');
+      console.log('   - Wrong NEXT_PUBLIC_BACKEND_API_URL');
+      console.log('   - CORS configuration');
+      console.log('   - Network connectivity');
+      return false;
+    }
+  },
+
+  /**
    * Fetch visitor details by visitor ID
    * @param visitorId - The visitor ID from Zoho Creator
    * @returns Promise<VisitorResponse>
    */
   async getVisitorInfo(visitorId: string): Promise<VisitorResponse> {
     console.log('🔍 Fetching visitor data for ID:', visitorId);
+    console.log('🌐 API Base URL:', apiClient.defaults.baseURL);
+    console.log('🌐 Full request URL:', `${apiClient.defaults.baseURL}/api/visitors?visid=${visitorId}`);
     
     try {
       const response = await apiClient.get<VisitorResponse>('/api/visitors', {
@@ -61,8 +92,13 @@ export const visitorApi = {
       const visitor = response.data.visitor;
       
       // Validate essential visitor fields
-      if (!visitor.id || !visitor.name || !visitor.email) {
-        console.log('⚠️ Invalid visitor data - missing essential fields:', visitor);
+      // Handle backend's way of returning "not found" - empty/undefined fields
+      if (!visitor.id || visitor.id === 'undefined' || !visitor.name || visitor.name === '' || !visitor.email || visitor.email === '') {
+        console.log('⚠️ Visitor not found - backend returned empty/undefined fields:', {
+          id: visitor.id,
+          name: visitor.name, 
+          email: visitor.email
+        });
         throw new Error('Visitor not found');
       }
       
@@ -73,7 +109,16 @@ export const visitorApi = {
       
       return response.data;
     } catch (error: any) {
-      console.error('❌ Error fetching visitor data:', error);
+      console.log('❌ Error fetching visitor data:', error.message || error);
+      
+      // Safe logging without triggering Next.js console error interceptor
+      if (error.response) {
+        console.log('❌ Response status:', error.response.status);
+        console.log('❌ Response data:', error.response.data);
+      } else {
+        console.log('❌ Network/Connection error - no response from server');
+        console.log('❌ Possible causes: CORS, server down, wrong URL');
+      }
       
       // Handle different error types
       if (error.response?.status === 400) {
