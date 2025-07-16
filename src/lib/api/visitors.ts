@@ -60,10 +60,9 @@ export const visitorApi = {
         throw new Error('Visitor not found');
       }
       
-      // Check if visitor ID matches what we requested
+      // Log visitor ID mapping (QR code -> Visitor ID)
       if (visitor.id !== visitorId) {
-        console.log('⚠️ Visitor ID mismatch - requested:', visitorId, 'received:', visitor.id);
-        throw new Error('Visitor not found');
+        console.log('📋 QR Code to Visitor ID mapping - QR:', visitorId, 'Visitor ID:', visitor.id);
       }
       
       return response.data;
