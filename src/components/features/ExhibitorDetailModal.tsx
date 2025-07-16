@@ -158,34 +158,116 @@ export default function ExhibitorDetailModal({ exhibitor, onClose }: ExhibitorDe
           <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
         </div>
 
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-100">
-          <div className="flex items-center space-x-3 flex-1 min-w-0">
-            <div className="flex-shrink-0 w-12 h-12">
-              <ZohoImage
-                src={exhibitor.company_logo}
-                alt={`${exhibitor.display_name} logo`}
-                className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200"
-                fallbackText={exhibitor.display_name.charAt(0)}
-                fallbackClassName="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl flex items-center justify-center text-lg font-semibold"
-                sizes="48px"
-              />
+        {/* Enhanced Header */}
+        <div className="relative p-4 sm:p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50">
+          <div className="flex items-start gap-4">
+            {/* Logo */}
+            <div className="flex-shrink-0">
+              <div className="w-16 h-16 rounded-2xl bg-white p-2 shadow-sm border border-gray-200">
+                <ZohoImage
+                  src={exhibitor.company_logo}
+                  alt={`${exhibitor.display_name} logo`}
+                  className="w-full h-full object-contain rounded-xl"
+                  fallbackText={exhibitor.display_name.charAt(0)}
+                  fallbackClassName="w-full h-full bg-gradient-to-br from-slate-100 to-gray-100 rounded-xl flex items-center justify-center text-xl font-bold text-slate-600"
+                  sizes="64px"
+                />
+              </div>
             </div>
+            
+            {/* Company Info */}
             <div className="flex-1 min-w-0">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 break-words mb-2">
                 {exhibitor.display_name}
               </h2>
-              <p className="text-sm text-gray-500 truncate">{exhibitor.country}</p>
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                {/* Booth Number - Primary Position */}
+                {(exhibitor as any).booth_no && (
+                  <div className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-slate-600 to-slate-700 text-white text-xs font-bold rounded-full shadow-sm">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Booth {(exhibitor as any).booth_no}
+                  </div>
+                )}
+                
+                {/* Country */}
+                <div className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {exhibitor.country}
+                </div>
+                
+                {/* Category */}
+                {(exhibitor as any).category && (
+                  <div className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                    <span className="truncate max-w-[120px]">
+                      {Array.isArray((exhibitor as any).category) 
+                        ? (exhibitor as any).category[0] 
+                        : (exhibitor as any).category}
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Quick Contact Actions */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {exhibitor.email && (
+                  <a 
+                    href={`mailto:${exhibitor.email}`}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-full transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 7.89a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    Email
+                  </a>
+                )}
+                {exhibitor.tel && (
+                  <a 
+                    href={`tel:${exhibitor.tel}`}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-xs font-medium rounded-full transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                    Call
+                  </a>
+                )}
+                {getWebsiteUrl() && (
+                  <a 
+                    href={getWebsiteUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-xs font-medium rounded-full transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    Visit
+                  </a>
+                )}
+              </div>
             </div>
+            
+            {/* Close Button */}
+            <button
+              onClick={handleClose}
+              className="flex-shrink-0 p-2 hover:bg-white/50 rounded-xl transition-colors"
+            >
+              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-          <button
-            onClick={handleClose}
-            className="flex-shrink-0 p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
         </div>
 
         {/* Tabs */}
@@ -325,6 +407,20 @@ export default function ExhibitorDetailModal({ exhibitor, onClose }: ExhibitorDe
                       <p className="text-sm text-gray-500">{exhibitor.mobile}</p>
                     </div>
                   </a>
+                )}
+                
+                {exhibitor.fax && (
+                  <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl">
+                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                      <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 18h10a2 2 0 002-2V8a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2zm6-10h.01M13 16h.01" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">Fax</p>
+                      <p className="text-sm text-gray-500">{exhibitor.fax}</p>
+                    </div>
+                  </div>
                 )}
                 
                 {getWebsiteUrl() && (

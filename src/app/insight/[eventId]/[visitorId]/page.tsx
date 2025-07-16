@@ -63,6 +63,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [toastMessage, setToastMessage] = useState<{
     show: boolean;
     message: string;
@@ -92,13 +93,30 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       try {
         const storageKey = getFavoriteStorageKey();
         const savedFavorites = localStorage.getItem(storageKey);
+        console.log('🔍 Loading favorites from localStorage:', { storageKey, savedFavorites });
+        
         if (savedFavorites) {
           const parsed = JSON.parse(savedFavorites);
-          setFavoriteExhibitors(parsed);
-          console.log('📥 Loaded favorites from localStorage:', parsed);
+          
+          // Remove duplicates and ensure array is clean
+          const cleanedFavorites = Array.isArray(parsed) 
+            ? Array.from(new Set(parsed.filter(item => typeof item === 'string' && item.trim().length > 0)))
+            : [];
+          
+          console.log('📥 Cleaned favorites loaded:', {
+            original: parsed,
+            cleaned: cleanedFavorites,
+            duplicatesRemoved: parsed.length - cleanedFavorites.length
+          });
+          
+          setFavoriteExhibitors(cleanedFavorites);
+        } else {
+          console.log('📥 No saved favorites found, starting with empty array');
+          setFavoriteExhibitors([]);
         }
       } catch (error) {
         console.error('❌ Error loading favorites from localStorage:', error);
+        setFavoriteExhibitors([]);
       }
     };
 
@@ -126,20 +144,78 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
     }
   }, [favoriteExhibitors, eventId, visitorId]);
 
-  // Search functionality
+  // Get unique categories from exhibitors
+  const getUniqueCategories = () => {
+    const categories: string[] = exhibitors
+      .map(ex => {
+        const cat = (ex as any).category;
+        // Handle both string and array categories
+        if (Array.isArray(cat) && cat.length > 0) {
+          return typeof cat[0] === 'string' ? cat[0].trim() : '';
+        }
+        if (typeof cat === 'string') {
+          return cat.trim();
+        }
+        return '';
+      })
+      .filter(cat => cat.length > 0);
+    const uniqueCategories = Array.from(new Set(categories)).sort();
+    return uniqueCategories;
+  };
+
+  // Advanced search functionality
   useEffect(() => {
+    let filtered = exhibitors;
+
+    // Filter by category first
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(exhibitor => {
+        const category = (exhibitor as any).category;
+        
+        // Extract string from category (handle both string and array)
+        let categoryString: string = '';
+        if (Array.isArray(category) && category.length > 0) {
+          categoryString = typeof category[0] === 'string' ? category[0].trim() : '';
+        } else if (typeof category === 'string') {
+          categoryString = category.trim();
+        }
+        
+        return categoryString && categoryString === selectedCategory;
+      });
+    }
+
+    // Then filter by search query
     if (searchQuery.trim()) {
       setIsSearching(true);
-      const filtered = exhibitors.filter(exhibitor => 
-        exhibitor.display_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (exhibitor as any).booth_no?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredExhibitors(filtered);
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(exhibitor => {
+        const exhibitorAny = exhibitor as any;
+        const safeStringSearch = (value: any) => 
+          value && typeof value === 'string' && value.toLowerCase().includes(query);
+        
+        return (
+          // Company name
+          safeStringSearch(exhibitor.display_name) ||
+          // Booth number
+          safeStringSearch(exhibitorAny.booth_no) ||
+          // Category
+          safeStringSearch(exhibitorAny.category) ||
+          // Product services (Vietnamese)
+          safeStringSearch(exhibitor.vie_display_products) ||
+          // Product services (English)
+          safeStringSearch(exhibitor.eng_display_products) ||
+          // Country
+          safeStringSearch(exhibitor.country) ||
+          // Company profile
+          safeStringSearch(exhibitorAny.vie_company_profile) ||
+          safeStringSearch(exhibitorAny.eng_company_profile)
+        );
+      });
       setIsSearching(false);
-    } else {
-      setFilteredExhibitors(exhibitors);
     }
-  }, [searchQuery, exhibitors]);
+
+    setFilteredExhibitors(filtered);
+  }, [searchQuery, selectedCategory, exhibitors]);
 
   // Entrance animations and scroll effects
   useEffect(() => {
@@ -261,7 +337,11 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       // Load exhibitors from event data (only if visitor is valid)
       console.log('🔄 Loading exhibitors data from event');
       if (eventResponse.event.exhibitors) {
-        console.log('📥 Exhibitors data loaded:', eventResponse.event.exhibitors.length, 'exhibitors');
+        const exhibitorNames = eventResponse.event.exhibitors.map(ex => ex.display_name);
+        console.log('📥 Exhibitors data loaded:', {
+          count: eventResponse.event.exhibitors.length,
+          names: exhibitorNames
+        });
         setExhibitors(eventResponse.event.exhibitors);
         setFilteredExhibitors(eventResponse.event.exhibitors);
       } else {
@@ -347,21 +427,63 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
     setSwipeDirection(null);
   };
 
-  const toggleFavorite = (exhibitorName: string) => {
+  // Generate unique identifier for exhibitor
+  const getExhibitorId = (exhibitor: ExhibitorData) => {
+    const exhibitorAny = exhibitor as any;
+    // Use display_name if available, otherwise fallback to booth_no, otherwise use a combination
+    const name = exhibitor.display_name?.trim();
+    const booth = exhibitorAny.booth_no?.trim();
+    
+    if (name && name.length > 0) {
+      return name;
+    } else if (booth && booth.length > 0) {
+      return `Booth_${booth}`;
+    } else {
+      // Last resort: use country + random identifier
+      return `${exhibitor.country || 'Unknown'}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+  };
+
+  // Get display name for UI (with fallback)
+  const getExhibitorDisplayName = (exhibitor: ExhibitorData) => {
+    const exhibitorAny = exhibitor as any;
+    const name = exhibitor.display_name?.trim();
+    const booth = exhibitorAny.booth_no?.trim();
+    
+    if (name && name.length > 0) {
+      return name;
+    } else if (booth && booth.length > 0) {
+      return `Booth ${booth}`;
+    } else {
+      return `${exhibitor.country || 'Unknown Company'}`;
+    }
+  };
+
+  const toggleFavorite = (exhibitorId: string, displayName: string) => {
     // Add haptic feedback
     if ('vibrate' in navigator) {
       navigator.vibrate(30);
     }
     
     setFavoriteExhibitors(prev => {
-      const isCurrentlyFavorite = prev.includes(exhibitorName);
+      const isCurrentlyFavorite = prev.includes(exhibitorId);
       const newFavorites = isCurrentlyFavorite
-        ? prev.filter(name => name !== exhibitorName)
-        : [...prev, exhibitorName];
+        ? prev.filter(id => id !== exhibitorId)
+        : [...prev, exhibitorId];
+      
+      // Debug logging
+      console.log('🔍 Toggle Favorite Debug:', {
+        exhibitorId,
+        displayName,
+        isCurrentlyFavorite,
+        previousFavorites: prev,
+        newFavorites,
+        newFavoritesLength: newFavorites.length
+      });
       
       // Show toast notification
       const action = isCurrentlyFavorite ? 'đã xóa khỏi' : 'đã thêm vào';
-      showToast(`${exhibitorName} ${action} danh sách yêu thích`, 'success');
+      showToast(`${displayName} ${action} danh sách yêu thích`, 'success');
       
       return newFavorites;
     });
@@ -386,8 +508,28 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
     }
   };
 
-  const isFavorite = (exhibitorName: string) => {
-    return favoriteExhibitors.includes(exhibitorName);
+  const isFavorite = (exhibitor: ExhibitorData) => {
+    const exhibitorId = getExhibitorId(exhibitor);
+    const result = favoriteExhibitors.includes(exhibitorId);
+    return result;
+  };
+
+  // Get favorite exhibitors data with debug logging
+  const getFavoriteExhibitorsData = () => {
+    const favoriteData = exhibitors.filter(ex => isFavorite(ex));
+    
+    console.log('🔍 Favorites Debug:', {
+      favoriteExhibitorsArray: favoriteExhibitors,
+      favoriteExhibitorsLength: favoriteExhibitors.length,
+      totalExhibitors: exhibitors.length,
+      favoriteDataFound: favoriteData.length,
+      favoriteDataItems: favoriteData.map(ex => ({
+        id: getExhibitorId(ex),
+        name: getExhibitorDisplayName(ex)
+      }))
+    });
+    
+    return favoriteData;
   };
 
   const generateQRCode = () => {
@@ -572,7 +714,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       showToast('Đang tạo PDF cẩm nang...', 'info');
       
       // Get favorite exhibitor data
-      const favoriteExhibitorData = exhibitors.filter(ex => isFavorite(ex.display_name));
+      const favoriteExhibitorData = getFavoriteExhibitorsData();
       
       // Create HTML content for PDF
       const htmlContent = `
@@ -756,6 +898,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                   <div style="margin-bottom: 10px;">
                     ${exhibitorAny.booth_no ? `<span class="booth-number">Booth ${exhibitorAny.booth_no}</span>` : ''}
                     <span class="country">${exhibitor.country}</span>
+                    ${exhibitorAny.category ? `<span style="background: #F3E8FF; color: #7C3AED; padding: 4px 12px; border-radius: 20px; font-size: 12px; margin-left: 10px; font-weight: 600;">${Array.isArray(exhibitorAny.category) && exhibitorAny.category.length > 0 ? exhibitorAny.category[0] : exhibitorAny.category}</span>` : ''}
                   </div>
                 </div>
               </div>
@@ -997,15 +1140,15 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 relative overflow-hidden smooth-scroll">
+          <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-gray-50 relative overflow-hidden smooth-scroll">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div 
-          className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse"
+          className="absolute top-1/4 left-1/4 w-96 h-96 bg-slate-500/3 rounded-full blur-3xl animate-pulse"
           style={{ transform: `translateY(${scrollY * 0.1}px)` }}
         ></div>
         <div 
-          className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-500/5 rounded-full blur-3xl animate-pulse"
+          className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gray-500/3 rounded-full blur-3xl animate-pulse"
           style={{ transform: `translateY(${scrollY * -0.1}px)`, animationDelay: '1s' }}
         ></div>
       </div>
@@ -1041,12 +1184,12 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
         </div>
       )}
 
-      {/* Header */}
-      <div className={`bg-gradient-to-r from-blue-500 to-purple-600 shadow-xl sticky top-0 z-10 transition-all duration-300 ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
-        <div className="max-w-md mx-auto px-4 py-4">
+      {/* Header - Soft Gradient */}
+      <div className={`bg-gradient-to-r from-slate-600 to-slate-700 shadow-xl sticky top-0 z-10 transition-all duration-300 ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
+        <div className="max-w-md mx-auto px-4 py-3.5">
           <div className="flex items-start space-x-3">
             {eventData.logo && (
-              <div className="w-12 h-12 rounded-lg bg-white flex-shrink-0 shadow-sm mt-1 p-1">
+              <div className="w-10 h-10 rounded-xl bg-white flex-shrink-0 shadow-sm mt-0.5 p-1">
                 <img 
                   src={eventData.logo} 
                   alt={eventData.name}
@@ -1055,14 +1198,14 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <h1 className="text-lg font-bold text-white leading-tight break-words">
+              <h1 className="text-base font-semibold text-white leading-tight break-words">
                 {eventData.name || 'Event Dashboard'}
               </h1>
-              <p className="text-sm text-white/80 font-medium mt-1">
+              <p className="text-xs text-white/80 font-medium mt-1">
                 {new Date(eventData.start_date).toLocaleDateString('vi-VN')} - {new Date(eventData.end_date).toLocaleDateString('vi-VN')}
               </p>
               {visitorData.registration_date && (
-                <p className="text-xs text-white/70 mt-1">
+                <p className="text-xs text-white/70 mt-0.5">
                   Đăng ký: {new Date(visitorData.registration_date).toLocaleDateString('vi-VN')}
                 </p>
               )}
@@ -1084,44 +1227,118 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
 
 
 
-        {/* Search Bar - Only show in exhibitors tab */}
+        {/* Modern Search & Filter Bar */}
         {activeTab === 'exhibitors' && (
           <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-            <Card className="p-4 hover:shadow-lg transition-shadow duration-300">
-              <div className="relative">
-                <Icon name="MagnifyingGlassIcon" className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            {/* Search Input - Soft Style */}
+            <div className="relative mb-6 px-1">
+              <div className="relative bg-gray-50 rounded-3xl border border-gray-200 overflow-hidden">
+                <Icon name="MagnifyingGlassIcon" className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Tìm kiếm exhibitor hoặc booth..."
+                  placeholder="Search exhibitors, booth, products..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200"
+                  className="w-full pl-11 pr-11 py-3 text-sm focus:outline-none focus:ring-0 border-0 bg-transparent placeholder-gray-400 text-gray-700"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-200 rounded-full transition-colors"
                   >
-                    <Icon name="XMarkIcon" className="w-4 h-4 text-gray-400" />
+                    <Icon name="XMarkIcon" className="w-3.5 h-3.5 text-gray-400" />
                   </button>
                 )}
               </div>
-              {searchQuery && (
-                <div className="mt-2 flex items-center justify-between">
-                  <p className="text-sm text-gray-600">
-                    {isSearching ? 'Đang tìm kiếm...' : `Tìm thấy ${filteredExhibitors.length} kết quả`}
+            </div>
+
+            {/* Soft Category Filter Pills */}
+            {getUniqueCategories().length > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center gap-2 px-1 mb-3">
+                  <Icon name="AdjustmentsHorizontalIcon" className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm font-medium text-gray-600">Categories</span>
+                </div>
+                <div className="flex flex-wrap gap-2 px-1">
+                  <button
+                    onClick={() => setSelectedCategory('all')}
+                    className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                      selectedCategory === 'all'
+                        ? 'bg-slate-700 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    <span>All</span>
+                    <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-xs ${
+                      selectedCategory === 'all' ? 'bg-white/20' : 'bg-white'
+                    }`}>
+                      {exhibitors.length}
+                    </span>
+                  </button>
+                  {getUniqueCategories().map((category) => {
+                    const count = exhibitors.filter(ex => {
+                      const cat = (ex as any).category;
+                      let categoryString = '';
+                      if (Array.isArray(cat) && cat.length > 0) {
+                        categoryString = typeof cat[0] === 'string' ? cat[0].trim() : '';
+                      } else if (typeof cat === 'string') {
+                        categoryString = cat.trim();
+                      }
+                      return categoryString === category;
+                    }).length;
+                    
+                    // Truncate long category names
+                    const displayName = category.length > 20 ? category.substring(0, 20) + '...' : category;
+                    
+                    return (
+                      <button
+                        key={category}
+                        onClick={() => setSelectedCategory(category)}
+                        className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 max-w-[180px] ${
+                          selectedCategory === category
+                            ? 'bg-indigo-600 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-indigo-100 hover:text-indigo-600'
+                        }`}
+                        title={category}
+                      >
+                        <span className="truncate">{displayName}</span>
+                        <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-xs flex-shrink-0 ${
+                          selectedCategory === category ? 'bg-white/20' : 'bg-white'
+                        }`}>
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Search Results Info - Clean */}
+            {(searchQuery || selectedCategory !== 'all') && (
+              <div className="flex items-center justify-between px-1 mb-6">
+                <div className="flex items-center gap-2">
+                  <div className={`w-1.5 h-1.5 rounded-full ${isSearching ? 'bg-indigo-500 animate-pulse' : 'bg-emerald-500'}`}></div>
+                  <p className="text-xs text-gray-500 font-medium">
+                    {isSearching ? 'Searching...' : `${filteredExhibitors.length} results`}
                   </p>
-                  {searchQuery && (
+                </div>
+                <div className="flex items-center gap-2">
+                  {(searchQuery || selectedCategory !== 'all') && (
                     <button
-                      onClick={() => setSearchQuery('')}
-                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSelectedCategory('all');
+                      }}
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
                     >
-                      Xóa bộ lọc
+                      <Icon name="XMarkIcon" className="w-3 h-3" />
+                      Clear
                     </button>
                   )}
                 </div>
-              )}
-            </Card>
+              </div>
+            )}
           </div>
         )}
 
@@ -1133,12 +1350,12 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           )}
           
           {activeTab === 'overview' && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {/* Visitor Info Card */}
               <div className={`transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-                <Card className="p-4 hover:shadow-lg transition-shadow duration-300">
+                <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
                   <div className="insight-card-header">
-                    <h3 className="insight-h3 font-bold text-gray-900">Thông tin của bạn</h3>
+                    <h3 className="insight-h3">Thông tin của bạn</h3>
                     <div className={`insight-badge ${
                       hasCheckedIn
                         ? 'insight-status-success'
@@ -1251,20 +1468,20 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                             qrMode === 'personal' ? 'QR Check-in (Cá nhân)' : 'QR Check-in (Nhóm)'
                           )}
                         </p>
-                        <div className="inline-block p-2 bg-white rounded-lg shadow-sm relative">
+                        <div className="inline-block p-2 bg-white rounded-2xl shadow-sm relative">
                           {qrCodeLoading ? (
-                            <div className="w-24 h-24 flex items-center justify-center bg-gray-100 rounded animate-pulse">
-                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                            <div className="w-20 h-20 flex items-center justify-center bg-gray-50 rounded-xl animate-pulse">
+                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-slate-500"></div>
                             </div>
                           ) : qrCodeError ? (
-                            <div className="w-24 h-24 flex items-center justify-center bg-gray-100 rounded">
+                            <div className="w-20 h-20 flex items-center justify-center bg-gray-50 rounded-xl">
                               <span className="insight-text-muted">QR Error</span>
                             </div>
                           ) : (
                             <img 
                               src={generateQRCode()}
                               alt="QR Code"
-                              className="w-24 h-24 mx-auto"
+                              className="w-20 h-20 mx-auto rounded-lg"
                               onError={(e) => {
                                 console.error('QR Code failed to load');
                                 setQrCodeError(true);
@@ -1281,7 +1498,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                         <div className="mt-2">
                           <button
                             onClick={copyQrDataToClipboard}
-                            className="text-xs text-blue-600 hover:text-blue-800 transition-colors duration-200 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-full"
+                            className="text-xs text-slate-600 hover:text-slate-800 transition-colors duration-200 bg-slate-50 hover:bg-slate-100 px-3 py-1 rounded-full"
                           >
                             📋 Copy QR Data
                           </button>
@@ -1334,11 +1551,11 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
               {/* Check-in History */}
               {visitorData.check_in_history && visitorData.check_in_history.length > 0 && (
                 <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-                  <Card className="p-4 hover:shadow-lg transition-shadow duration-300">
-                    <h3 className="insight-h3 font-bold text-gray-900 mb-3">Lịch sử check-in</h3>
+                  <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
+                    <h3 className="insight-h3 mb-3">Lịch sử check-in</h3>
                     <div className="insight-content-spacing-sm">
                       {visitorData.check_in_history.map((checkin, index) => (
-                        <div key={index} className="insight-info-row p-2 bg-gray-50 rounded">
+                        <div key={index} className="insight-info-row p-2 bg-gray-50 rounded-xl">
                           <span className="insight-label">Check-in {index + 1}:</span>
                           <span className="insight-value-sm">{String(checkin)}</span>
                         </div>
@@ -1350,39 +1567,39 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
 
               {/* App Guide */}
               <div className={`transform transition-all duration-1000 delay-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-                <Card className="p-4 hover:shadow-lg transition-shadow duration-300 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
-                  <h3 className="insight-h3 font-bold text-blue-900 mb-3 flex items-center">
-                    <Icon name="InformationCircleIcon" className="w-5 h-5 mr-2 text-blue-600" />
+                <Card className="p-4 hover:shadow-md transition-shadow duration-300 bg-gradient-to-r from-slate-50 to-gray-50 border border-slate-200 rounded-3xl">
+                  <h3 className="insight-h3 text-slate-800 mb-3 flex items-center">
+                    <Icon name="InformationCircleIcon" className="w-4 h-4 mr-2 text-slate-600" />
                     Hướng dẫn sử dụng
                   </h3>
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                        <Icon name="BuildingOfficeIcon" className="w-4 h-4 text-white" />
+                      <div className="flex-shrink-0 w-7 h-7 bg-slate-500 rounded-full flex items-center justify-center">
+                        <Icon name="BuildingOfficeIcon" className="w-3.5 h-3.5 text-white" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-semibold text-blue-900">Exhibitors</h4>
-                        <p className="text-xs text-blue-700">Khám phá danh sách nhà triển lãm, tìm kiếm theo tên hoặc số booth</p>
+                        <h4 className="text-xs font-semibold text-slate-800">Exhibitors</h4>
+                        <p className="text-xs text-slate-600">Khám phá danh sách nhà triển lãm, tìm kiếm theo tên hoặc số booth</p>
                       </div>
                     </div>
                     
                     <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
-                        <Icon name="HeartIcon" className="w-4 h-4 text-white" fill="currentColor" />
+                      <div className="flex-shrink-0 w-7 h-7 bg-rose-500 rounded-full flex items-center justify-center">
+                        <Icon name="HeartIcon" className="w-3.5 h-3.5 text-white" fill="currentColor" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-semibold text-blue-900">Yêu thích</h4>
-                        <p className="text-xs text-blue-700">Lưu các exhibitors quan tâm để dễ dàng quay lại xem sau</p>
+                        <h4 className="text-xs font-semibold text-slate-800">Yêu thích</h4>
+                        <p className="text-xs text-slate-600">Lưu các exhibitors quan tâm để dễ dàng quay lại xem sau</p>
                       </div>
                     </div>
                     
                     <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0 w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
-                        <Icon name="Cog6ToothIcon" className="w-4 h-4 text-white" />
+                      <div className="flex-shrink-0 w-7 h-7 bg-indigo-500 rounded-full flex items-center justify-center">
+                        <Icon name="Cog6ToothIcon" className="w-3.5 h-3.5 text-white" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-semibold text-blue-900">Thêm</h4>
-                        <p className="text-xs text-blue-700">Truy cập Floor Plan, Directory và các liên kết hữu ích khác</p>
+                        <h4 className="text-xs font-semibold text-slate-800">Thêm</h4>
+                        <p className="text-xs text-slate-600">Truy cập Floor Plan, Directory và các liên kết hữu ích khác</p>
                       </div>
                     </div>
                   </div>
@@ -1392,14 +1609,14 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           )}
 
           {activeTab === 'exhibitors' && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {filteredExhibitors.length === 0 ? (
                 <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-                  <Card className="p-6 text-center">
-                    <div className="text-gray-400 mb-4">
+                  <Card className="p-6 text-center rounded-3xl border-gray-100">
+                    <div className="text-gray-300 mb-4">
                       <Icon name="BuildingOfficeIcon" className="w-16 h-16 mx-auto" />
                     </div>
-                    <p className="text-gray-600">
+                    <p className="insight-text-base">
                       {searchQuery ? 'Không tìm thấy exhibitor phù hợp' : 'Chưa có thông tin exhibitors'}
                     </p>
                   </Card>
@@ -1408,75 +1625,121 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                 <>
                   {/* All Exhibitors */}
                   <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-                    <Card className="p-4 hover:shadow-lg transition-shadow duration-300">
-                      <h3 className="insight-h3 font-bold text-gray-900 mb-3">
+                    <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
+                      <h3 className="insight-h3 mb-3">
                         {searchQuery ? `Kết quả tìm kiếm (${filteredExhibitors.length})` : `Exhibitors (${filteredExhibitors.length})`}
                       </h3>
-                      <div className="space-y-2">
+                      <div className="space-y-4">
                         {filteredExhibitors.map((exhibitor, index) => (
-                          <div 
-                            key={`${exhibitor.display_name}-${index}`} 
-                            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-all duration-200 cursor-pointer touch-manipulation transform hover:scale-[1.02] active:scale-[0.98] min-h-[68px]"
+                          <div
+                            key={`${exhibitor.display_name}-${index}`}
                             onClick={() => setSelectedExhibitor(exhibitor)}
-                            style={{ transitionDelay: `${index * 50}ms` }}
+                            className="group bg-white rounded-3xl p-4 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 border border-gray-100 hover:border-gray-200 overflow-hidden"
+                            style={{ animationDelay: `${index * 50}ms` }}
                           >
-                            {/* Logo */}
-                            <div className="flex-shrink-0 w-12 h-12 mr-3">
-                              <ZohoImage
-                                src={exhibitor.company_logo}
-                                alt={`${exhibitor.display_name} logo`}
-                                className="w-12 h-12 border border-gray-200 rounded-lg"
-                                fallbackText={exhibitor.display_name.charAt(0)}
-                                sizes="48px"
-                              />
-                            </div>
-                            
-                            {/* Info */}
-                            <div className="flex-1 min-w-0 pr-2">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="insight-h4 font-semibold text-gray-900 truncate">
-                                    {exhibitor.display_name}
-                                  </h4>
-                                  <div className="flex items-center flex-wrap gap-1 mt-1">
-                                    {(exhibitor as any).booth_no && (
-                                      <span className="insight-text-muted text-white bg-blue-500 px-2 py-0.5 rounded-full text-xs font-medium">
-                                        Booth {(exhibitor as any).booth_no}
-                                      </span>
-                                    )}
-                                    <span className="insight-text-muted bg-gray-100 px-2 py-0.5 rounded-full">
-                                      {exhibitor.country}
-                                    </span>
-                                    {(exhibitor.vie_display_products || exhibitor.eng_display_products) && (
-                                      <span className="insight-text-muted text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full truncate max-w-[120px]">
-                                        {exhibitor.vie_display_products || exhibitor.eng_display_products}
-                                      </span>
-                                    )}
-                                  </div>
+                            <div className="flex items-start gap-3">
+                              {/* Logo Section - Clean Rectangle */}
+                              <div className="flex-shrink-0">
+                                <div className="w-20 h-16 rounded-2xl bg-gray-50 border border-gray-100 group-hover:border-gray-200 transition-all duration-300 overflow-hidden">
+                                  <ZohoImage
+                                    src={exhibitor.company_logo}
+                                    alt={`${getExhibitorDisplayName(exhibitor)} logo`}
+                                    className="w-full h-full object-contain p-2"
+                                    fallbackClassName="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-lg font-medium text-gray-500"
+                                    fallbackText={getExhibitorDisplayName(exhibitor).charAt(0)}
+                                    sizes="80px"
+                                  />
                                 </div>
+                              </div>
+                              
+                              {/* Content Area */}
+                              <div className="flex-1 min-w-0">
+                                {/* Company Name (max 2 lines) */}
+                                <h3 className="text-sm font-semibold text-gray-800 leading-snug mb-1.5 line-clamp-2 group-hover:text-gray-900 transition-colors duration-300">
+                                  {getExhibitorDisplayName(exhibitor)}
+                                </h3>
                                 
-                                {/* Favorite button */}
+                                {/* Booth Number */}
+                                {(exhibitor as any).booth_no && (
+                                  <div className="mb-1.5">
+                                    <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-full">
+                                      <Icon name="MapPinIcon" className="w-2.5 h-2.5" />
+                                      Booth {(exhibitor as any).booth_no}
+                                    </span>
+                                  </div>
+                                )}
+                                
+                                {/* Category */}
+                                {(exhibitor as any).category && (
+                                  <div className="mb-1.5">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const category = (exhibitor as any).category;
+                                        let categoryString = '';
+                                        if (Array.isArray(category) && category.length > 0) {
+                                          categoryString = typeof category[0] === 'string' ? category[0].trim() : '';
+                                        } else if (typeof category === 'string') {
+                                          categoryString = category.trim();
+                                        }
+                                        setSelectedCategory(categoryString);
+                                        showToast('Filtered by: ' + categoryString, 'info');
+                                      }}
+                                      className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-0.5 rounded-full transition-colors duration-200 max-w-full"
+                                    >
+                                      <Icon name="TagIcon" className="w-2.5 h-2.5 flex-shrink-0" />
+                                      <span className="truncate">
+                                        {(() => {
+                                          const cat = (exhibitor as any).category;
+                                          if (Array.isArray(cat) && cat.length > 0) {
+                                            const categoryStr = typeof cat[0] === 'string' ? cat[0] : cat[0];
+                                            return categoryStr.length > 30 ? categoryStr.substring(0, 30) + '...' : categoryStr;
+                                          }
+                                          return cat.length > 30 ? cat.substring(0, 30) + '...' : cat;
+                                        })()}
+                                      </span>
+                                    </button>
+                                  </div>
+                                )}
+                                
+                                {/* Products/Services */}
+                                {(exhibitor.vie_display_products || exhibitor.eng_display_products) && (
+                                  <div className="mb-1">
+                                    <span className="inline-flex items-center gap-1 text-xs text-gray-500 bg-gray-50 px-2.5 py-0.5 rounded-full max-w-full">
+                                      <Icon name="CubeIcon" className="w-2.5 h-2.5 flex-shrink-0" />
+                                      <span className="truncate">
+                                        {(() => {
+                                          const products = exhibitor.vie_display_products || exhibitor.eng_display_products;
+                                          return products.length > 35 ? products.substring(0, 35) + '...' : products;
+                                        })()}
+                                      </span>
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Right Side Actions */}
+                              <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                                {/* Favorite Button */}
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    toggleFavorite(exhibitor.display_name);
+                                    toggleFavorite(getExhibitorId(exhibitor), getExhibitorDisplayName(exhibitor));
                                   }}
-                                  className={`p-3 rounded-full transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center ${
-                                    isFavorite(exhibitor.display_name)
-                                      ? 'text-red-500 bg-red-50 hover:bg-red-100'
-                                      : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
+                                  className={`p-1.5 rounded-full transition-all duration-200 ${
+                                    isFavorite(exhibitor)
+                                      ? 'text-rose-500 bg-rose-50 hover:bg-rose-100'
+                                      : 'text-gray-300 hover:text-rose-400 hover:bg-rose-50'
                                   }`}
                                 >
-                                  <Icon name="HeartIcon" className="w-5 h-5" fill={isFavorite(exhibitor.display_name) ? 'currentColor' : 'none'} />
+                                  <Icon name="HeartIcon" className="w-3.5 h-3.5" fill={isFavorite(exhibitor) ? 'currentColor' : 'none'} />
                                 </button>
+                                
+                                {/* Action Arrow */}
+                                <div className="p-1.5 rounded-full bg-gray-50 group-hover:bg-gray-100 transition-all duration-300">
+                                  <Icon name="ChevronRightIcon" className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-400" />
+                                </div>
                               </div>
-                            </div>
-                            
-                            {/* Arrow */}
-                            <div className="flex-shrink-0 ml-1">
-                              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                              </svg>
                             </div>
                           </div>
                         ))}
@@ -1491,35 +1754,35 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           )}
 
           {activeTab === 'favorites' && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {favoriteExhibitors.length === 0 ? (
                 <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-                  <Card className="p-8 text-center">
-                    <div className="text-gray-400 mb-4">
-                      <Icon name="HeartIcon" className="w-20 h-20 mx-auto" />
+                  <Card className="p-6 text-center rounded-3xl border-gray-100">
+                    <div className="text-gray-300 mb-4">
+                      <Icon name="HeartIcon" className="w-16 h-16 mx-auto" />
                     </div>
-                    <h3 className="insight-h3 font-bold text-gray-900 mb-2">
+                    <h3 className="insight-h3 mb-2">
                       Chưa có exhibitors yêu thích
                     </h3>
-                    <p className="text-gray-600 mb-4">
+                    <p className="insight-text-base mb-4">
                       Thả tim các exhibitors bạn quan tâm để lưu vào danh sách yêu thích
                     </p>
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-4">
                       <div className="flex items-start space-x-2">
-                        <svg className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <div>
-                          <p className="text-sm text-yellow-800 font-medium">💡 Mẹo hay:</p>
-                          <p className="text-xs text-yellow-700 mt-1">
-                            Sau khi thêm exhibitors yêu thích, bạn có thể xuất PDF cẩm nang với logo và thông tin đầy đủ để mang theo khi tham quan triển lãm!
+                          <p className="text-xs text-amber-800 font-medium">💡 Mẹo hay:</p>
+                          <p className="text-xs text-amber-700 mt-1">
+                            Sử dụng search để tìm theo tên, booth, category, sản phẩm/dịch vụ. Sau khi thêm exhibitors yêu thích, bạn có thể xuất PDF cẩm nang với logo để mang theo khi tham quan!
                           </p>
                         </div>
                       </div>
                     </div>
                     <Button
                       onClick={() => setActiveTab('exhibitors')}
-                      className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors duration-200"
+                      className="bg-slate-500 hover:bg-slate-600 text-white px-6 py-2 rounded-2xl transition-colors duration-200"
                     >
                       Khám phá Exhibitors
                     </Button>
@@ -1527,10 +1790,10 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                 </div>
               ) : (
                 <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-                  <Card className="p-4 hover:shadow-lg transition-shadow duration-300">
+                  <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="insight-h3 font-bold text-gray-900 flex items-center">
-                        <Icon name="HeartIcon" className="w-5 h-5 text-red-500 mr-2" fill="currentColor" />
+                      <h3 className="insight-h3 flex items-center">
+                        <Icon name="HeartIcon" className="w-4 h-4 text-rose-500 mr-2" fill="currentColor" />
                         Exhibitors yêu thích ({favoriteExhibitors.length})
                       </h3>
                       <div className="flex items-center space-x-2">
@@ -1559,67 +1822,135 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                         >
                           Xóa tất cả
                         </button>
+                        <button
+                          onClick={() => {
+                            const storageKey = getFavoriteStorageKey();
+                            localStorage.removeItem(storageKey);
+                            setFavoriteExhibitors([]);
+                            showToast('🔧 Đã xóa localStorage và reset favorites', 'info');
+                            console.log('🔧 Debug: Cleared localStorage key:', storageKey);
+                          }}
+                          className="text-sm text-orange-500 hover:text-orange-700 transition-colors duration-200 px-3 py-1 rounded-lg hover:bg-orange-50"
+                          title="Debug: Clear localStorage"
+                        >
+                          🔧 Debug
+                        </button>
                       </div>
                     </div>
-                    <div className="space-y-3">
-                      {exhibitors
-                        .filter(ex => isFavorite(ex.display_name))
+                    <div className="space-y-4">
+                      {getFavoriteExhibitorsData()
                         .map((exhibitor, index) => (
-                          <div 
-                            key={`fav-${exhibitor.display_name}-${index}`} 
-                            className="flex items-center p-4 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-lg hover:from-red-100 hover:to-pink-100 transition-all duration-200 cursor-pointer touch-manipulation transform hover:scale-[1.02] active:scale-[0.98] min-h-[72px]"
+                          <div
+                            key={`fav-${exhibitor.display_name}-${index}`}
                             onClick={() => setSelectedExhibitor(exhibitor)}
-                            style={{ transitionDelay: `${index * 100}ms` }}
+                            className="group bg-gradient-to-r from-rose-50 to-pink-50 hover:from-rose-100 hover:to-pink-100 rounded-3xl p-4 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 border border-rose-200 hover:border-rose-300 overflow-hidden"
+                            style={{ animationDelay: `${index * 100}ms` }}
                           >
-                            {/* Logo */}
-                            <div className="flex-shrink-0 w-12 h-12 mr-4">
-                              <ZohoImage
-                                src={exhibitor.company_logo}
-                                alt={`${exhibitor.display_name} logo`}
-                                className="w-12 h-12 border-2 border-red-200 rounded-lg shadow-sm"
-                                fallbackText={exhibitor.display_name.charAt(0)}
-                                fallbackClassName="w-12 h-12 bg-gradient-to-br from-red-200 to-pink-200 rounded-lg flex items-center justify-center text-red-700 font-bold shadow-sm"
-                                sizes="48px"
-                              />
-                            </div>
-                            
-                            <div className="flex-1 min-w-0 pr-3">
-                              <h4 className="insight-h4 font-bold text-gray-900 truncate mb-1">
-                                {exhibitor.display_name}
-                              </h4>
-                              <div className="flex items-center flex-wrap gap-2 mb-1">
-                                {(exhibitor as any).booth_no && (
-                                  <span className="text-xs font-semibold text-white bg-red-500 px-2 py-1 rounded-full">
-                                    Booth {(exhibitor as any).booth_no}
-                                  </span>
-                                )}
-                                <span className="text-xs text-gray-600 bg-red-100 px-2 py-1 rounded-full">
-                                  {exhibitor.country}
-                                </span>
+                            <div className="flex items-start gap-3">
+                              {/* Logo Section - Clean Rectangle with Favorite Indicator */}
+                              <div className="flex-shrink-0 relative">
+                                <div className="w-20 h-16 rounded-2xl bg-rose-50 border border-rose-200 group-hover:border-rose-300 transition-all duration-300 overflow-hidden">
+                                  <ZohoImage
+                                    src={exhibitor.company_logo}
+                                    alt={`${getExhibitorDisplayName(exhibitor)} logo`}
+                                    className="w-full h-full object-contain p-2"
+                                    fallbackClassName="w-full h-full bg-gradient-to-br from-rose-100 to-rose-200 flex items-center justify-center text-lg font-medium text-rose-600"
+                                    fallbackText={getExhibitorDisplayName(exhibitor).charAt(0)}
+                                    sizes="80px"
+                                  />
+                                </div>
+                                {/* Favorite Heart Badge */}
+                                <div className="absolute -bottom-0.5 -left-0.5 bg-rose-500 text-white p-1 rounded-full shadow-sm">
+                                  <Icon name="HeartIcon" className="w-2.5 h-2.5" fill="currentColor" />
+                                </div>
                               </div>
-                              {(exhibitor.vie_display_products || exhibitor.eng_display_products) && (
-                                <p className="text-xs text-red-600 bg-red-100 px-2 py-1 rounded-full inline-block max-w-[200px] truncate">
-                                  {exhibitor.vie_display_products || exhibitor.eng_display_products}
-                                </p>
-                              )}
-                            </div>
-                            
-                            {/* Favorite button */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleFavorite(exhibitor.display_name);
-                              }}
-                              className="flex-shrink-0 p-3 rounded-full bg-red-100 hover:bg-red-200 transition-colors duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                            >
-                              <Icon name="HeartIcon" className="w-5 h-5 text-red-500" fill="currentColor" />
-                            </button>
-                            
-                            {/* Arrow */}
-                            <div className="flex-shrink-0 ml-2">
-                              <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                              </svg>
+                              
+                              {/* Content Area */}
+                              <div className="flex-1 min-w-0">
+                                {/* Company Name (max 2 lines) */}
+                                <h3 className="text-sm font-semibold text-gray-800 leading-snug mb-1.5 line-clamp-2 group-hover:text-gray-900 transition-colors duration-300">
+                                  {getExhibitorDisplayName(exhibitor)}
+                                </h3>
+                                
+                                {/* Booth Number */}
+                                {(exhibitor as any).booth_no && (
+                                  <div className="mb-1.5">
+                                    <span className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 bg-rose-100 px-2.5 py-0.5 rounded-full">
+                                      <Icon name="MapPinIcon" className="w-2.5 h-2.5" />
+                                      Booth {(exhibitor as any).booth_no}
+                                    </span>
+                                  </div>
+                                )}
+                                
+                                {/* Category */}
+                                {(exhibitor as any).category && (
+                                  <div className="mb-1.5">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const category = (exhibitor as any).category;
+                                        let categoryString = '';
+                                        if (Array.isArray(category) && category.length > 0) {
+                                          categoryString = typeof category[0] === 'string' ? category[0].trim() : '';
+                                        } else if (typeof category === 'string') {
+                                          categoryString = category.trim();
+                                        }
+                                        setSelectedCategory(categoryString);
+                                        setActiveTab('exhibitors');
+                                        showToast('Filtered by: ' + categoryString, 'info');
+                                      }}
+                                      className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-0.5 rounded-full transition-colors duration-200 max-w-full"
+                                    >
+                                      <Icon name="TagIcon" className="w-2.5 h-2.5 flex-shrink-0" />
+                                      <span className="truncate">
+                                        {(() => {
+                                          const cat = (exhibitor as any).category;
+                                          if (Array.isArray(cat) && cat.length > 0) {
+                                            const categoryStr = typeof cat[0] === 'string' ? cat[0] : cat[0];
+                                            return categoryStr.length > 30 ? categoryStr.substring(0, 30) + '...' : categoryStr;
+                                          }
+                                          return cat.length > 30 ? cat.substring(0, 30) + '...' : cat;
+                                        })()}
+                                      </span>
+                                    </button>
+                                  </div>
+                                )}
+                                
+                                {/* Products/Services */}
+                                {(exhibitor.vie_display_products || exhibitor.eng_display_products) && (
+                                  <div className="mb-1">
+                                    <span className="inline-flex items-center gap-1 text-xs text-gray-500 bg-gray-50 px-2.5 py-0.5 rounded-full max-w-full">
+                                      <Icon name="CubeIcon" className="w-2.5 h-2.5 flex-shrink-0" />
+                                      <span className="truncate">
+                                        {(() => {
+                                          const products = exhibitor.vie_display_products || exhibitor.eng_display_products;
+                                          return products.length > 35 ? products.substring(0, 35) + '...' : products;
+                                        })()}
+                                      </span>
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Right Side Actions */}
+                              <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                                {/* Remove from Favorites Button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleFavorite(getExhibitorId(exhibitor), getExhibitorDisplayName(exhibitor));
+                                  }}
+                                  className="p-1.5 rounded-full bg-rose-100 text-rose-500 hover:bg-rose-200 hover:text-rose-600 transition-all duration-200"
+                                  title="Remove from favorites"
+                                >
+                                  <Icon name="HeartIcon" className="w-3.5 h-3.5" fill="currentColor" />
+                                </button>
+                                
+                                {/* Action Arrow */}
+                                <div className="p-1.5 rounded-full bg-rose-50 group-hover:bg-rose-100 transition-all duration-300">
+                                  <Icon name="ChevronRightIcon" className="w-3.5 h-3.5 text-rose-300 group-hover:text-rose-400" />
+                                </div>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -1631,50 +1962,50 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           )}
 
           {activeTab === 'more' && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {/* Social & External Links */}
               <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-                <Card className="p-4 hover:shadow-lg transition-shadow duration-300">
-                  <h3 className="insight-h3 font-bold text-gray-900 mb-3">Liên kết ngoài</h3>
-                  <div className="space-y-3">
+                <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
+                  <h3 className="insight-h3 mb-3">Liên kết ngoài</h3>
+                  <div className="space-y-2.5">
                     <Button 
                       variant="outline" 
-                      className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[52px]"
+                      className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[48px] rounded-2xl border-gray-200 hover:border-gray-300"
                       onClick={openFacebookEvent}
                     >
                       <div className="flex items-center">
-                        <Icon name="ShareIcon" className="w-5 h-5 mr-3 text-blue-600" />
-                        <span className="font-medium">Facebook Event</span>
+                        <Icon name="ShareIcon" className="w-4 h-4 mr-3 text-slate-600" />
+                        <span className="text-sm font-medium text-slate-700">Facebook Event</span>
                       </div>
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </Button>
                     
                     <Button 
                       variant="outline" 
-                      className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[52px]"
+                      className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[48px] rounded-2xl border-gray-200 hover:border-gray-300"
                       onClick={() => openFileViewer('Floor Plan', (eventData as any)?.floor_plan_url, 'pdf')}
                     >
                       <div className="flex items-center">
-                        <Icon name="MapIcon" className="w-5 h-5 mr-3 text-emerald-600" />
-                        <span className="font-medium">Floor Plan</span>
+                        <Icon name="MapIcon" className="w-4 h-4 mr-3 text-emerald-600" />
+                        <span className="text-sm font-medium text-slate-700">Floor Plan</span>
                       </div>
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </Button>
                     
                     <Button 
                       variant="outline" 
-                      className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[52px]"
+                      className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[48px] rounded-2xl border-gray-200 hover:border-gray-300"
                       onClick={() => openFileViewer('Directory', (eventData as any)?.directory_url, 'pdf')}
                     >
                       <div className="flex items-center">
-                        <Icon name="BookOpenIcon" className="w-5 h-5 mr-3 text-purple-600" />
-                        <span className="font-medium">Directory</span>
+                        <Icon name="BookOpenIcon" className="w-4 h-4 mr-3 text-indigo-600" />
+                        <span className="text-sm font-medium text-slate-700">Directory</span>
                       </div>
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </Button>
@@ -1684,8 +2015,8 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
 
               {/* Settings */}
               <div className={`transform transition-all duration-1000 delay-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-                <Card className="p-4 hover:shadow-lg transition-shadow duration-300">
-                  <h3 className="insight-h3 font-bold text-gray-900 mb-3">Cài đặt</h3>
+                <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
+                  <h3 className="insight-h3 mb-3">Cài đặt</h3>
                   <div className="space-y-3">
                     <Button 
                       variant="outline" 
