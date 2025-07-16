@@ -233,11 +233,13 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         
         // Auto-print badge
         setTimeout(() => {
+          console.log('🖨️ Auto-printing badge for visitor:', response.visitor);
           printBadge(response.visitor);
         }, 500);
         
         // Show success screen
         setTimeout(() => {
+          console.log('🎉 Setting showSuccessScreen to true');
           setShowSuccessScreen(true);
           startAutoReturnCountdown();
         }, 1000);
@@ -288,6 +290,21 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     }, 1000);
   };
 
+  // Debug success screen rendering
+  useEffect(() => {
+    if (showSuccessScreen && visitor) {
+      console.log('🎉 Success screen is now visible with visitor:', visitor);
+      console.log('🎯 Attempting to call generateBadgeContent...');
+      // Test direct call
+      try {
+        const testBadge = generateBadgeContent(visitor);
+        console.log('🎨 Badge content generated:', testBadge);
+      } catch (error) {
+        console.error('❌ Error generating badge content:', error);
+      }
+    }
+  }, [showSuccessScreen, visitor]);
+
   // Reset for next check-in
   const resetForNextCheckin = () => {
     setVisitor(null);
@@ -327,9 +344,95 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     return { width: 85, height: 54 };
   };
 
+  // Generate QR image with fallback (no React hooks)
+  const generateQRImage = (qrData: string) => {
+    console.log('🔥 Generating QR image for data:', qrData);
+    
+    // Primary QR API
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
+    console.log('🔗 QR API URL:', qrUrl);
+    
+    return (
+      <img 
+        src={qrUrl}
+        alt={`QR Code: ${qrData}`}
+        style={{
+          width: '18mm',
+          height: '18mm',
+          objectFit: 'contain'
+        }}
+        onError={(e) => {
+          console.error('❌ QR API failed, showing fallback');
+          // Replace with text fallback
+          const img = e.target as HTMLImageElement;
+          const fallback = document.createElement('div');
+          fallback.style.cssText = `
+            width: 18mm;
+            height: 18mm;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #000;
+            font-size: 6px;
+            text-align: center;
+            color: #000;
+            padding: 1mm;
+            background: #fff;
+            font-weight: bold;
+          `;
+          fallback.innerHTML = `QR<br/><small style="word-break: break-all; line-height: 1.1;">${qrData.slice(-12)}</small>`;
+          img.parentNode?.replaceChild(fallback, img);
+        }}
+        onLoad={() => {
+          console.log('✅ QR Code loaded successfully');
+        }}
+      />
+    );
+  };
+
+  // Generate QR code for visitor  
+  const generateQRCode = (visitorData: VisitorData) => {
+    console.log('🎯 generateQRCode called with visitor:', visitorData);
+    
+    // Use badge_qr field directly (no decoding)
+    const qrData = (visitorData as any)?.badge_qr || visitorData.id || '';
+    
+    console.log('🎫 QR Data for badge:', { 
+      raw_badge_qr: (visitorData as any)?.badge_qr, 
+      visitor_id: visitorData.id, 
+      final_qr_data: qrData,
+      qr_data_length: qrData.length,
+      visitor_keys: Object.keys(visitorData)
+    });
+    
+    return (
+      <div style={{
+        width: '20mm',
+        height: '20mm',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#f8f9fa',
+        border: '1px solid #dee2e6',
+        borderRadius: '4px',
+        flexShrink: 0,
+        position: 'relative'
+      }}>
+        {generateQRImage(qrData)}
+      </div>
+    );
+  };
+
   // Generate badge content
   const generateBadgeContent = (visitorData: VisitorData) => {
+    console.log('🎨 generateBadgeContent called with visitor:', visitorData);
+    
     const badgeSize = getBadgeSize();
+    
+    // Reserve space for header and footer (about 15mm each)
+    const contentHeight = badgeSize.height - 30; // 30mm total for header + footer
+    const headerFooterHeight = 15; // 15mm each
 
     return (
       <div 
@@ -340,112 +443,271 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           background: 'white',
           border: '2px solid #E5E7EB',
           borderRadius: '8px',
-          padding: '8mm',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          textAlign: 'center',
           fontFamily: 'Arial, sans-serif',
           position: 'relative'
         }}
       >
-        {/* Visitor Name */}
+        {/* Header Space - will be printed separately */}
         <div style={{
-          fontSize: '18px',
+          height: `${headerFooterHeight}mm`,
+          background: '#FEE2E2',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '12px',
           fontWeight: 'bold',
-          marginBottom: '8mm',
-          color: '#1F2937'
+          color: '#666'
         }}>
-          {visitorData.name}
+          HEADER
         </div>
-        
-        {/* Company (if available) */}
-        {visitorData.company && (
+
+        {/* Main Content */}
+        <div style={{
+          height: `${contentHeight}mm`,
+          padding: '4mm',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4mm'
+        }}>
+          {/* QR Code */}
+          {(() => {
+            console.log('🎯 About to call generateQRCode from generateBadgeContent');
+            return generateQRCode(visitorData);
+          })()}
+          
+          {/* Visitor Info */}
           <div style={{
-            fontSize: '14px',
-            color: '#6B7280'
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            minWidth: 0 // Allow text to shrink
           }}>
-            {visitorData.company}
+            {/* Visitor Name - with auto resize */}
+            <div style={{
+              fontSize: visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px',
+              fontWeight: 'bold',
+              marginBottom: '2mm',
+              color: '#1F2937',
+              wordWrap: 'break-word',
+              lineHeight: '1.2'
+            }}>
+              {visitorData.name}
+            </div>
+            
+            {/* Company (if available) */}
+            {visitorData.company && (
+              <div style={{
+                fontSize: visitorData.company.length > 30 ? '10px' : '12px',
+                color: '#6B7280',
+                wordWrap: 'break-word',
+                lineHeight: '1.1'
+              }}>
+                {visitorData.company}
+              </div>
+            )}
           </div>
-        )}
+        </div>
+
+        {/* Footer Space - will be printed separately */}
+        <div style={{
+          height: `${headerFooterHeight}mm`,
+          background: '#FEE2E2',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '12px',
+          fontWeight: 'bold',
+          color: '#666'
+        }}>
+          FOOTER
+        </div>
       </div>
     );
   };
 
-  // Print badge
+  // Print badge using pre-rendered approach
   const printBadge = (visitorData: VisitorData) => {
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
-    if (!printWindow) return;
-
-    const badgeSize = getBadgeSize();
+    console.log('🖨️ printBadge called with visitor:', visitorData);
     
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Badge - ${visitorData.name}</title>
-        <style>
-          @media print {
-            @page {
-              size: ${badgeSize.width}mm ${badgeSize.height}mm;
-              margin: 0;
+    const badgeSize = getBadgeSize();
+    const contentHeight = badgeSize.height - 30; // Reserve space for header/footer
+    const qrData = (visitorData as any)?.badge_qr || visitorData.id || '';
+    
+    console.log('🖨️ Print QR data:', qrData);
+    
+    // Create hidden staging area to pre-render badge
+    const stagingDiv = document.createElement('div');
+    stagingDiv.style.cssText = `
+      position: absolute; 
+      top: -9999px; 
+      left: -9999px; 
+      width: ${badgeSize.width}mm; 
+      height: ${contentHeight}mm;
+      padding: 4mm;
+      display: flex;
+      align-items: center;
+      gap: 4mm;
+      box-sizing: border-box;
+      background: white;
+      font-family: Arial, sans-serif;
+    `;
+    
+    // Auto-resize logic
+    const nameSize = visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px';
+    const companySize = visitorData.company && visitorData.company.length > 30 ? '10px' : '12px';
+    
+    // Generate QR code URL
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
+    console.log('🔗 Print QR URL:', qrUrl);
+    
+    stagingDiv.innerHTML = `
+      <!-- QR Code -->
+      <div style="width: 20mm; height: 20mm; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0;">
+        <img 
+          id="print-qr-img"
+          src="${qrUrl}" 
+          alt="QR Code: ${qrData}"
+          style="width: 18mm; height: 18mm; object-fit: contain;"
+        />
+      </div>
+      
+      <!-- Visitor Info -->
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; min-width: 0;">
+        <div style="font-size: ${nameSize}; font-weight: bold; margin-bottom: 2mm; color: #1F2937; word-wrap: break-word; line-height: 1.2;">
+          ${visitorData.name}
+        </div>
+        
+        ${visitorData.company ? `
+          <div style="font-size: ${companySize}; color: #6B7280; word-wrap: break-word; line-height: 1.1;">
+            ${visitorData.company}
+          </div>
+        ` : ''}
+      </div>
+    `;
+    
+    // Add to DOM temporarily
+    document.body.appendChild(stagingDiv);
+    
+    // Wait for QR image to load, then print
+    const qrImg = stagingDiv.querySelector('#print-qr-img') as HTMLImageElement;
+    
+    const handleQRLoad = () => {
+      console.log('✅ QR image pre-loaded, starting print...');
+      
+      // Create print window
+      const printWindow = window.open('', '_blank', 'width=800,height=600');
+      if (!printWindow) {
+        console.error('❌ Failed to open print window');
+        document.body.removeChild(stagingDiv);
+        return;
+      }
+      
+      // Write HTML with pre-rendered content
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Badge - ${visitorData.name}</title>
+          <style>
+            @media print {
+              @page {
+                size: ${badgeSize.width}mm ${contentHeight}mm;
+                margin: 0;
+              }
+              body {
+                margin: 0;
+                padding: 0;
+                font-family: Arial, sans-serif;
+              }
             }
             body {
               margin: 0;
               padding: 0;
               font-family: Arial, sans-serif;
+              background: white;
             }
-          }
-          body {
-            margin: 0;
-            padding: 20px;
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: #f5f5f5;
-          }
-          .badge-container {
-            width: ${badgeSize.width}mm;
-            height: ${badgeSize.height}mm;
-            background: white;
-            border: 2px solid #E5E7EB;
-            border-radius: 8px;
-            padding: 8mm;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            position: relative;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-          }
-        </style>
-      </head>
-      <body>
-        <div class="badge-container">
-          <!-- Visitor Name -->
-          <div style="font-size: 18px; font-weight: bold; margin-bottom: 8mm; color: #1F2937;">
-            ${visitorData.name}
+            .badge-content {
+              width: ${badgeSize.width}mm;
+              height: ${contentHeight}mm;
+              padding: 4mm;
+              display: flex;
+              align-items: center;
+              gap: 4mm;
+              box-sizing: border-box;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="badge-content">
+            ${stagingDiv.innerHTML}
           </div>
-          
-          <!-- Company (if available) -->
-          ${visitorData.company ? `
-            <div style="font-size: 14px; color: #6B7280;">
-              ${visitorData.company}
-            </div>
-          ` : ''}
-        </div>
-      </body>
-      </html>
-    `);
-
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
+        </body>
+        </html>
+      `);
+      
+      printWindow.document.close();
+      
+      // Wait a bit for content to render, then print
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+        console.log('🖨️ Print completed');
+      }, 500);
+      
+      // Clean up staging div
+      document.body.removeChild(stagingDiv);
+    };
+    
+    const handleQRError = () => {
+      console.error('❌ QR image failed to load, using text fallback');
+      
+      // Replace QR image with text fallback
+      const qrContainer = stagingDiv.querySelector('div:first-child');
+      if (qrContainer) {
+        qrContainer.innerHTML = `
+          <div style="
+            width: 18mm; 
+            height: 18mm; 
+            border: 2px solid #000; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            justify-content: center; 
+            font-size: 6px; 
+            text-align: center; 
+            color: #000; 
+            background: #fff; 
+            font-weight: bold;
+          ">
+            QR<br/>
+            <small style="word-break: break-all; line-height: 1.1;">${qrData.slice(-12)}</small>
+          </div>
+        `;
+      }
+      
+      // Proceed with print
+      handleQRLoad();
+    };
+    
+    // Set up QR image load handlers
+    if (qrImg.complete) {
+      handleQRLoad();
+    } else {
+      qrImg.onload = handleQRLoad;
+      qrImg.onerror = handleQRError;
+      
+      // Timeout fallback after 5 seconds
+      setTimeout(() => {
+        if (!qrImg.complete) {
+          console.log('⏰ QR load timeout, proceeding with fallback');
+          handleQRError();
+        }
+      }, 5000);
+    }
   };
 
   // Cleanup on unmount
