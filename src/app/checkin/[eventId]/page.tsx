@@ -38,6 +38,10 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   const [autoReturnCountdown, setAutoReturnCountdown] = useState(0);
   const [showSuccessScreen, setShowSuccessScreen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [lastScannedCode, setLastScannedCode] = useState('');
+  const [lastScanTime, setLastScanTime] = useState(0);
+  const [scanCooldown, setScanCooldown] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const { generateShareUrls } = useEventMetadata({ 
     event: eventData, 
@@ -185,7 +189,45 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         config,
         (decodedText) => {
           console.log('🔍 QR Code detected:', decodedText);
+          
+          // Prevent duplicate scans in cooldown period
+          if (scanCooldown) {
+            console.log('🚫 Scan ignored - cooldown period active');
+            return;
+          }
+          
+          // Prevent duplicate scans of same code within 3 seconds
+          const now = Date.now();
+          if (lastScannedCode === decodedText && now - lastScanTime < 3000) {
+            console.log('🚫 Scan ignored - duplicate code within 3s');
+            return;
+          }
+          
+          // Set cooldown to prevent rapid scanning
+          setScanCooldown(true);
+          setLastScannedCode(decodedText);
+          setLastScanTime(now);
+          
+          console.log('✅ Processing scan:', decodedText);
+          
+          // Stop camera immediately to prevent multiple scans
+          stopCamera();
+          
+          // Visual feedback for successful scan
+          setSuccess('📷 QR Code được quét thành công!');
+          
+          // Haptic feedback
+          if ('vibrate' in navigator) {
+            navigator.vibrate([100, 50, 100]);
+          }
+          
+          // Process the scanned code
           processCheckin(decodedText);
+          
+          // Clear cooldown after processing
+          setTimeout(() => {
+            setScanCooldown(false);
+          }, 2000);
         },
         () => {
           // Ignore scan errors
@@ -219,7 +261,10 @@ export default function CheckinPage({ params }: CheckinPageProps) {
 
   // Process check-in (unified for both manual and scanner)
   const processCheckin = async (visitorId: string) => {
-    if (!visitorId.trim() || isProcessing) return;
+    if (!visitorId.trim() || isProcessing) {
+      console.log('🚫 processCheckin ignored - empty ID or already processing');
+      return;
+    }
 
     setIsProcessing(true);
     setError('');
@@ -361,6 +406,18 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     setShowSuccessScreen(false);
     setAutoReturnCountdown(0);
     setManualInput('');
+    
+    // Reset camera states for next scan
+    setScanning(false);
+    setCameraEnabled(false);
+    
+    // Reset scan protection states
+    setScanCooldown(false);
+    setLastScannedCode('');
+    setLastScanTime(0);
+    
+    // Reset printing state
+    setIsPrinting(false);
     
     // Focus back to input
     setTimeout(() => {
@@ -615,21 +672,29 @@ export default function CheckinPage({ params }: CheckinPageProps) {
 
   // Print badge using pre-rendered approach
   const printBadge = (visitorData: VisitorData) => {
+    // Prevent multiple print calls
+    if (isPrinting) {
+      console.log('🚫 printBadge ignored - already printing');
+      return;
+    }
+    
+    setIsPrinting(true);
     console.log('🖨️ printBadge called with visitor:', visitorData);
     
-    const companyInfo = getCompanyInfo(visitorData);
-    console.log('🏢 Company extraction result:', {
-      originalCompany: visitorData.company,
-      customFields: visitorData.custom_fields,
-      extractedCompany: companyInfo,
-      hasCompany: !!companyInfo
-    });
-    
-    const badgeSize = getBadgeSize();
-    const contentHeight = badgeSize.height - 30; // Reserve space for header/footer
-    const qrData = (visitorData as any)?.badge_qr || visitorData.id || '';
-    
-    console.log('🖨️ Print QR data:', qrData);
+    try {
+      const companyInfo = getCompanyInfo(visitorData);
+      console.log('🏢 Company extraction result:', {
+        originalCompany: visitorData.company,
+        customFields: visitorData.custom_fields,
+        extractedCompany: companyInfo,
+        hasCompany: !!companyInfo
+      });
+      
+      const badgeSize = getBadgeSize();
+      const contentHeight = badgeSize.height - 30; // Reserve space for header/footer
+      const qrData = (visitorData as any)?.badge_qr || visitorData.id || '';
+      
+      console.log('🖨️ Print QR data:', qrData);
     
     // Create hidden staging area to pre-render badge
     const stagingDiv = document.createElement('div');
@@ -753,6 +818,11 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       
       // Clean up staging div
       document.body.removeChild(stagingDiv);
+      
+      // Clear printing flag
+      setTimeout(() => {
+        setIsPrinting(false);
+      }, 1000);
     };
     
     const handleQRError = () => {
@@ -800,6 +870,10 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           handleQRError();
         }
       }, 5000);
+    }
+    } catch (error) {
+      console.error('❌ Error in printBadge:', error);
+      setIsPrinting(false);
     }
   };
 
@@ -974,13 +1048,31 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                       Bật Camera
                     </Button>
                   ) : (
-                    <Button
-                      onClick={stopCamera}
-                      variant="outline"
-                      className="text-red-600 border-red-300"
-                    >
-                      Tắt Camera
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => {
+                          stopCamera();
+                          setTimeout(() => {
+                            setScanning(true);
+                            setTimeout(() => {
+                              initializeCamera();
+                            }, 100);
+                          }, 200);
+                        }}
+                        variant="outline"
+                        className="text-blue-600 border-blue-300 flex items-center gap-1 text-sm px-3 py-1"
+                      >
+                        <Icon name="ArrowRightIcon" className="w-3 h-3" />
+                        Scan Lại
+                      </Button>
+                      <Button
+                        onClick={stopCamera}
+                        variant="outline"
+                        className="text-red-600 border-red-300"
+                      >
+                        Tắt Camera
+                      </Button>
+                    </div>
                   )}
                 </div>
 
