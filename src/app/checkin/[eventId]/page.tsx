@@ -189,18 +189,18 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         { facingMode: "environment" },
         config,
         (decodedText) => {
-          console.log('🔍 QR Code detected:', decodedText);
+          console.log('🔍 Camera QR Code detected:', decodedText);
           
           // Prevent duplicate scans in cooldown period
           if (scanCooldown) {
-            console.log('🚫 Scan ignored - cooldown period active');
+            console.log('🚫 Camera scan ignored - cooldown period active');
             return;
           }
           
           // Prevent duplicate scans of same code within 3 seconds
           const now = Date.now();
           if (lastScannedCode === decodedText && now - lastScanTime < 3000) {
-            console.log('🚫 Scan ignored - duplicate code within 3s');
+            console.log('🚫 Camera scan ignored - duplicate code within 3s');
             return;
           }
           
@@ -209,7 +209,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           setLastScannedCode(decodedText);
           setLastScanTime(now);
           
-          console.log('✅ Processing scan:', decodedText);
+          console.log('✅ Processing camera scan:', decodedText);
           
           // Stop camera only if not in continuous mode
           if (!continuousMode) {
@@ -217,7 +217,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           }
           
           // Visual feedback for successful scan
-          setSuccess('📷 QR Code được quét thành công!');
+          setSuccess('📷 Camera QR được quét thành công!');
           
           // Haptic feedback
           if ('vibrate' in navigator) {
@@ -239,6 +239,14 @@ export default function CheckinPage({ params }: CheckinPageProps) {
 
       setCameraEnabled(true);
       console.log('📹 Camera initialized successfully');
+      
+      // IMPORTANT: Keep focus on manual input for barcode scanner
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          console.log('🎯 Manual input refocused for barcode scanner compatibility');
+        }
+      }, 500);
 
     } catch (err: any) {
       console.error('Camera initialization error:', err);
@@ -260,6 +268,14 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     }
     setCameraEnabled(false);
     setScanning(false);
+    
+    // Always refocus input after stopping camera
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+        console.log('🎯 Manual input refocused after stopping camera');
+      }
+    }, 100);
   };
 
   // Process check-in (unified for both manual and scanner)
@@ -362,20 +378,79 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     }
   };
 
-  // Handle manual input submit
+  // Handle manual input submit (supports both manual typing and barcode scanner)
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (manualInput.trim()) {
+      console.log('🔍 Manual/Barcode QR Code detected:', manualInput.trim());
+      
+      // Distinguish between manual typing and barcode scanner
+      const isLikelyBarcodeScanner = manualInput.length > 8 && /^[A-Za-z0-9+/=]+$/.test(manualInput);
+      
+      if (isLikelyBarcodeScanner) {
+        console.log('📟 Detected barcode scanner input');
+        setSuccess('📟 Barcode scanner QR được quét thành công!');
+      } else {
+        console.log('⌨️ Detected manual typing input');
+        setSuccess('⌨️ Manual input được xử lý thành công!');
+      }
+      
       processCheckin(manualInput.trim());
     }
   };
 
-  // Handle manual input change (clear errors when typing)
+  // Enhanced input change handler with auto-focus maintenance
   const handleManualInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setManualInput(e.target.value);
+    const value = e.target.value;
+    setManualInput(value);
+    
     // Clear error when user starts typing again
     if (error) {
       setError('');
+    }
+    
+    // Auto-submit for barcode scanner (when input looks complete)
+    // Only trigger if input length suggests barcode scanner and not already processing
+    if (value.length > 15 && /^[A-Za-z0-9+/=]+$/.test(value) && !isProcessing) {
+      console.log('📟 Auto-submitting barcode scanner input:', value);
+      setTimeout(() => {
+        // Double check conditions before auto-submit
+        if (manualInput === value && !isProcessing && value.trim()) {
+          console.log('📟 Executing auto-submit for barcode scanner');
+          const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+          handleManualSubmit(fakeEvent);
+        }
+      }, 200); // Slightly longer delay to ensure input is complete
+    }
+  };
+
+  // Maintain input focus when camera is running
+  useEffect(() => {
+    if (cameraEnabled && inputRef.current) {
+      const interval = setInterval(() => {
+        if (document.activeElement !== inputRef.current) {
+          inputRef.current?.focus();
+          console.log('🎯 Auto-refocused manual input for barcode scanner');
+        }
+      }, 2000); // Check every 2 seconds
+      
+      return () => clearInterval(interval);
+    }
+  }, [cameraEnabled]);
+
+  // Handle key events for better barcode scanner support
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Handle Enter key for manual submission
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleManualSubmit(e as any);
+    }
+    
+    // Handle Escape key to clear input
+    if (e.key === 'Escape') {
+      setManualInput('');
+      setError('');
+      setSuccess('');
     }
   };
 
@@ -444,12 +519,13 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       }, 500);
     }
     
-    // Focus back to input
+    // ALWAYS focus back to input (critical for barcode scanner)
     setTimeout(() => {
       if (inputRef.current) {
         inputRef.current.focus();
+        console.log('🎯 Manual input refocused after reset');
       }
-    }, 100);
+    }, cameraEnabled ? 100 : 50); // Faster focus if camera not running
   };
 
   // Parse badge size
@@ -1357,8 +1433,26 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                   Check-in Visitor
                 </h2>
                 <p className="text-sm text-gray-600">
-                  Nhập Visitor ID hoặc quét QR code để check-in
+                  {cameraEnabled 
+                    ? "Sử dụng máy scan barcode HOẶC camera để quét QR code"
+                    : "Nhập Visitor ID hoặc quét QR code để check-in"
+                  }
                 </p>
+                
+                {/* Hybrid Mode Indicator */}
+                {cameraEnabled && (
+                  <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full text-xs text-blue-700">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span>📟 Barcode Scanner</span>
+                    </div>
+                    <span className="text-blue-400">+</span>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span>📷 Camera</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Manual Input Form */}
@@ -1370,10 +1464,23 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                       type="text"
                       value={manualInput}
                       onChange={handleManualInputChange}
-                      placeholder="Nhập Visitor ID để check-in..."
+                      onKeyDown={handleKeyDown}
+                      placeholder={cameraEnabled 
+                        ? "Máy scan barcode sẽ tự động nhập ở đây..."
+                        : "Nhập Visitor ID để check-in..."
+                      }
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                       disabled={isProcessing}
+                      autoFocus
                     />
+                    
+                    {/* Input Hints */}
+                    {cameraEnabled && (
+                      <div className="mt-2 text-xs text-gray-500 flex items-center gap-2">
+                        <Icon name="CheckCircleIcon" className="w-3 h-3 text-green-500" />
+                        <span>Input tự động focus để nhận dữ liệu từ máy scan</span>
+                      </div>
+                    )}
                   </div>
                   <Button
                     type="submit"
@@ -1396,7 +1503,9 @@ export default function CheckinPage({ params }: CheckinPageProps) {
               <div className="border-t border-gray-200 pt-4">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-gray-700">QR Scanner (Tùy chọn)</h3>
+                    <h3 className="text-sm font-semibold text-gray-700">
+                      Hybrid Scanning {cameraEnabled && "(📟 + 📷)"}
+                    </h3>
                   </div>
                   
                   {!scanning ? (
@@ -1441,6 +1550,25 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                       </Button>
                     </div>
                   )}
+                </div>
+
+                {/* Hybrid Mode Instructions */}
+                <div className="mb-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <h4 className="text-sm font-medium text-yellow-900 mb-2">💡 Hướng dẫn Hybrid Scanning</h4>
+                  <div className="text-xs text-yellow-800 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span>📟</span>
+                      <span><strong>Máy scan barcode:</strong> Quét trực tiếp vào ô input (luôn focus)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span>📷</span>
+                      <span><strong>Camera phone:</strong> Quét QR code bằng camera</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span>⌨️</span>
+                      <span><strong>Manual:</strong> Gõ tay Visitor ID vào ô input</span>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Continuous Mode Toggle */}
@@ -1512,7 +1640,20 @@ export default function CheckinPage({ params }: CheckinPageProps) {
               {success && !showSuccessScreen && (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4 flex items-center gap-3">
                   <Icon name="CheckCircleIcon" className="w-6 h-6 text-emerald-600" />
-                  <span className="text-sm text-emerald-800 font-medium">{success}</span>
+                  <div className="flex-1">
+                    <span className="text-sm text-emerald-800 font-medium">{success}</span>
+                    
+                    {/* Show scanning method used */}
+                    {success.includes('Camera') && (
+                      <div className="text-xs text-emerald-700 mt-1">📷 Sử dụng camera phone để quét</div>
+                    )}
+                    {success.includes('Barcode scanner') && (
+                      <div className="text-xs text-emerald-700 mt-1">📟 Sử dụng máy scan barcode</div>
+                    )}
+                    {success.includes('Manual input') && (
+                      <div className="text-xs text-emerald-700 mt-1">⌨️ Sử dụng nhập tay</div>
+                    )}
+                  </div>
                 </div>
               )}
 
