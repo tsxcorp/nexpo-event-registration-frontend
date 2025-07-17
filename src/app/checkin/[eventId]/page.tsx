@@ -42,6 +42,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   const [lastScanTime, setLastScanTime] = useState(0);
   const [scanCooldown, setScanCooldown] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [continuousMode, setContinuousMode] = useState(false);
 
   const { generateShareUrls } = useEventMetadata({ 
     event: eventData, 
@@ -210,8 +211,10 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           
           console.log('✅ Processing scan:', decodedText);
           
-          // Stop camera immediately to prevent multiple scans
-          stopCamera();
+          // Stop camera only if not in continuous mode
+          if (!continuousMode) {
+            stopCamera();
+          }
           
           // Visual feedback for successful scan
           setSuccess('📷 QR Code được quét thành công!');
@@ -224,10 +227,10 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           // Process the scanned code
           processCheckin(decodedText);
           
-          // Clear cooldown after processing
+          // Clear cooldown after processing (shorter in continuous mode)
           setTimeout(() => {
             setScanCooldown(false);
-          }, 2000);
+          }, continuousMode ? 1000 : 2000);
         },
         () => {
           // Ignore scan errors
@@ -297,6 +300,15 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           // Don't fail the whole process if check-in submission fails
           // We still show success to user but log the error
         }
+        
+        // Test company extraction immediately after getting visitor data
+        console.log('🔍 Testing company extraction for visitor:', response.visitor.id);
+        const testCompanyInfo = getCompanyInfo(response.visitor);
+        console.log('🏢 Company extraction test result:', {
+          found: !!testCompanyInfo,
+          company: testCompanyInfo,
+          willShowOnBadge: !!testCompanyInfo
+        });
         
         setVisitor(response.visitor);
         setSuccess(`✅ Check-in thành công cho ${response.visitor.name}!`);
@@ -369,7 +381,8 @@ export default function CheckinPage({ params }: CheckinPageProps) {
 
   // Auto-return countdown
   const startAutoReturnCountdown = () => {
-    let countdown = 4;
+    // Shorter countdown in continuous mode for faster batch processing
+    let countdown = continuousMode ? 2 : 4;
     setAutoReturnCountdown(countdown);
     
     const timer = setInterval(() => {
@@ -407,9 +420,11 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     setAutoReturnCountdown(0);
     setManualInput('');
     
-    // Reset camera states for next scan
-    setScanning(false);
-    setCameraEnabled(false);
+    // Reset camera states for next scan only if not in continuous mode
+    if (!continuousMode) {
+      setScanning(false);
+      setCameraEnabled(false);
+    }
     
     // Reset scan protection states
     setScanCooldown(false);
@@ -418,6 +433,16 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     
     // Reset printing state
     setIsPrinting(false);
+    
+    // Restart camera immediately if in continuous mode
+    if (continuousMode && !scanning) {
+      setTimeout(() => {
+        setScanning(true);
+        setTimeout(() => {
+          initializeCamera();
+        }, 100);
+      }, 500);
+    }
     
     // Focus back to input
     setTimeout(() => {
@@ -534,11 +559,9 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     console.log('🎨 generateBadgeContent called with visitor:', visitorData);
     
     const companyInfo = getCompanyInfo(visitorData);
-    console.log('🏢 Badge company extraction:', {
-      originalCompany: visitorData.company,
-      extractedCompany: companyInfo,
+    console.log('🏢 Badge company extraction result:', {
       hasCompany: !!companyInfo,
-      name: visitorData.name
+      company: companyInfo
     });
     
     const badgeSize = getBadgeSize();
@@ -644,8 +667,12 @@ export default function CheckinPage({ params }: CheckinPageProps) {
 
   // Extract company information from custom_fields or company field
   const getCompanyInfo = (visitorData: VisitorData): string => {
+    console.log('🏢 Extracting company info for visitor:', visitorData.name);
+    console.log('🏢 Raw custom_fields:', visitorData.custom_fields);
+    
     // Try company field first
     if (visitorData.company && visitorData.company.trim()) {
+      console.log('✅ Found company in company field:', visitorData.company);
       return visitorData.company.trim();
     }
     
@@ -655,18 +682,38 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         ? JSON.parse(visitorData.custom_fields) 
         : visitorData.custom_fields;
         
+      console.log('🏢 Parsed custom_fields:', customFields);
+        
       // Check various possible field names for company
-      const companyFieldNames = ['Tên Công Ty', 'Company', 'Công ty', 'company'];
+      const companyFieldNames = [
+        'cng_company',          // For current event
+        'Tên Công Ty', 
+        'Company', 
+        'Công ty', 
+        'company',
+        'ten_cong_ty',
+        'company_name',
+        'CompanyName',
+        'Công ty làm việc',
+        'Nơi làm việc',
+        'Đơn vị công tác',
+        'don_vi_cong_tac'
+      ];
       
       for (const fieldName of companyFieldNames) {
         if (customFields[fieldName] && customFields[fieldName].trim()) {
+          console.log(`✅ Found company in field "${fieldName}":`, customFields[fieldName]);
           return customFields[fieldName].trim();
         }
       }
+      
+      // Log all available field names for debugging
+      console.log('📋 Available custom field names:', Object.keys(customFields));
     } catch (error) {
       console.log('⚠️ Error parsing custom_fields:', error);
     }
     
+    console.log('❌ No company information found');
     return '';
   };
 
@@ -683,11 +730,9 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     
     try {
       const companyInfo = getCompanyInfo(visitorData);
-      console.log('🏢 Company extraction result:', {
-        originalCompany: visitorData.company,
-        customFields: visitorData.custom_fields,
-        extractedCompany: companyInfo,
-        hasCompany: !!companyInfo
+      console.log('🏢 Print company extraction result:', {
+        hasCompany: !!companyInfo,
+        company: companyInfo
       });
       
       const badgeSize = getBadgeSize();
@@ -871,11 +916,53 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         }
       }, 5000);
     }
-    } catch (error) {
-      console.error('❌ Error in printBadge:', error);
-      setIsPrinting(false);
-    }
+  } catch (error) {
+    console.error('❌ Error in printBadge:', error);
+    setIsPrinting(false);
+  }
+};
+
+  // Demo function to test company extraction with different formats
+  const testCompanyExtractionFormats = () => {
+    console.log('🧪 Testing company extraction with different formats:');
+    
+    const testCases = [
+      {
+        name: 'Current Event (cng_company)',
+        custom_fields: '{"cng_company":"Công ty Cổ phần BLUSaigon","cng_events":"Event ABC"}'
+      },
+      {
+        name: 'Vietnamese Standard',
+        custom_fields: '{"Tên Công Ty":"Công ty TNHH ABC","Job Function":"Manager"}'
+      },
+      {
+        name: 'English Standard',
+        custom_fields: '{"Company":"ABC Corp Ltd","company_name":"XYZ Company"}'
+      },
+      {
+        name: 'No Company Info',
+        custom_fields: '{"Job Function":"Developer","Event":"Conference 2024"}'
+      }
+    ];
+    
+    testCases.forEach((testCase, index) => {
+      const mockVisitor = {
+        name: `Test User ${index + 1}`,
+        company: '',
+        custom_fields: testCase.custom_fields
+      } as unknown as VisitorData;
+      
+      const result = getCompanyInfo(mockVisitor);
+      console.log(`📋 ${testCase.name}:`, result || '(no company found)');
+    });
   };
+
+  // Call test function in development mode
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      testCompanyExtractionFormats();
+    }
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -1031,7 +1118,10 @@ export default function CheckinPage({ params }: CheckinPageProps) {
               {/* Camera Scanner Toggle */}
               <div className="border-t border-gray-200 pt-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-700">QR Scanner (Tùy chọn)</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-gray-700">QR Scanner (Tùy chọn)</h3>
+                  </div>
+                  
                   {!scanning ? (
                     <Button
                       onClick={() => {
@@ -1076,6 +1166,34 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                   )}
                 </div>
 
+                {/* Continuous Mode Toggle */}
+                <div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium text-blue-900">Chế độ quét liên tục</h4>
+                      <p className="text-xs text-blue-700 mt-1">Camera sẽ luôn bật để quét hàng loạt QR codes</p>
+                    </div>
+                    <button
+                      onClick={() => setContinuousMode(!continuousMode)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        continuousMode ? 'bg-blue-600' : 'bg-gray-200'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          continuousMode ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  
+                  {continuousMode && (
+                    <div className="mt-2 text-xs text-blue-800 bg-blue-100 px-2 py-1 rounded">
+                      💡 Camera sẽ tự động restart sau mỗi lần check-in thành công
+                    </div>
+                  )}
+                </div>
+
                 {/* QR Scanner */}
                 {scanning && (
                   <div className="relative">
@@ -1091,6 +1209,14 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                           <LoadingSpinner size="lg" />
                           <p className="text-sm text-gray-600 mt-2">Đang khởi tạo camera...</p>
                         </div>
+                      </div>
+                    )}
+                    
+                    {/* Continuous Mode Status */}
+                    {continuousMode && cameraEnabled && (
+                      <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        Chế độ liên tục
                       </div>
                     )}
                   </div>
@@ -1172,45 +1298,68 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                 <p className="text-lg font-semibold text-gray-900 mb-2">
                   {visitor.name}
                 </p>
-                {visitor.company && (
-                  <p className="text-sm text-gray-600 mb-1">
-                    {visitor.company}
-                  </p>
-                )}
-                <p className="text-sm text-gray-600">
-                  {visitor.email}
-                </p>
+                {(() => {
+                  const companyInfo = getCompanyInfo(visitor);
+                  return companyInfo ? (
+                    <p className="text-sm text-gray-600">
+                      {companyInfo}
+                    </p>
+                  ) : null;
+                })()}
               </div>
-              
+
               <div className="space-y-2 mb-6">
                 <div className="flex items-center justify-center gap-2 text-sm text-emerald-700">
                   <Icon name="PrinterIcon" className="w-4 h-4" />
                   <span>✓ Badge đã được in tự động</span>
                 </div>
               </div>
-              
-              <div className="text-center">
-                <p className="text-sm text-gray-600 mb-2">
-                  Tự động quay lại trong:
-                </p>
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-emerald-100 rounded-full">
-                  <span className="text-xl font-bold text-emerald-600">
-                    {autoReturnCountdown}
-                  </span>
+
+              {/* Continuous Mode Info */}
+              {continuousMode && (
+                <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-center gap-2 text-sm text-blue-700 mb-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <span>Chế độ quét liên tục đang bật</span>
+                  </div>
+                  <p className="text-xs text-blue-600">
+                    Camera sẽ tự động khởi động lại sau {autoReturnCountdown}s
+                  </p>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Sẵn sàng check-in visitor tiếp theo
+              )}
+
+              {/* Auto countdown */}
+              <div className="text-center mb-4">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-full border-4 border-emerald-200 mb-2">
+                  <span className="text-lg font-bold text-emerald-600">{autoReturnCountdown}</span>
+                </div>
+                <p className="text-sm text-emerald-700">
+                  {continuousMode ? 'Tự động quét tiếp sau' : 'Về trang chính sau'} {autoReturnCountdown} giây
                 </p>
               </div>
-              
-              <div className="mt-6 pt-4 border-t border-gray-200">
+
+              {/* Manual controls */}
+              <div className="flex gap-3">
                 <Button
                   onClick={resetForNextCheckin}
                   variant="outline"
-                  className="text-gray-600 border-gray-300 text-sm"
+                  className="flex-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
                 >
-                  Check-in ngay ⚡
+                  {continuousMode ? 'Quét tiếp ngay' : 'Check-in tiếp'}
                 </Button>
+                
+                {continuousMode && (
+                  <Button
+                    onClick={() => {
+                      setContinuousMode(false);
+                      resetForNextCheckin();
+                    }}
+                    variant="outline"
+                    className="flex-1 border-orange-300 text-orange-700 hover:bg-orange-50"
+                  >
+                    Tắt chế độ liên tục
+                  </Button>
+                )}
               </div>
             </Card>
           </div>
