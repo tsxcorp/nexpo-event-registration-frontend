@@ -717,6 +717,244 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     return '';
   };
 
+  // Generate QR fallback using Canvas (for mobile reliability)
+  const generateQRFallback = (qrData: string): string => {
+    try {
+      console.log('🎨 Generating Canvas QR fallback for:', qrData);
+      
+      const canvas = document.createElement('canvas');
+      const size = 200;
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        throw new Error('Canvas context not available');
+      }
+      
+      // Simple QR-like pattern (placeholder)
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, size, size);
+      
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(10, 10, size - 20, size - 20);
+      
+      ctx.fillStyle = '#000';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('QR CODE', size / 2, size / 2 - 10);
+      ctx.fillText(qrData.slice(-12), size / 2, size / 2 + 10);
+      
+      const dataUrl = canvas.toDataURL('image/png');
+      console.log('✅ Canvas QR fallback generated');
+      return dataUrl;
+    } catch (error) {
+      console.error('❌ Canvas QR fallback failed:', error);
+      return '';
+    }
+  };
+
+  // Enhanced mobile print with progressive loading
+  const printBadgeWithProgressiveLoading = (visitorData: VisitorData) => {
+    console.log('📱 Using progressive loading for mobile print');
+    
+    const companyInfo = getCompanyInfo(visitorData);
+    const badgeSize = getBadgeSize();
+    const contentHeight = badgeSize.height - 30;
+    const qrData = (visitorData as any)?.badge_qr || visitorData.id || '';
+    
+    // Try multiple QR sources
+    const qrSources = [
+      `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}&format=png&ecc=M`,
+      `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encodeURIComponent(qrData)}`,
+      generateQRFallback(qrData) // Canvas fallback
+    ].filter(Boolean);
+    
+    let currentSourceIndex = 0;
+    
+    const tryNextQRSource = () => {
+      if (currentSourceIndex >= qrSources.length) {
+        console.error('❌ All QR sources failed, using text fallback');
+        printWithTextQR();
+        return;
+      }
+      
+      const qrUrl = qrSources[currentSourceIndex];
+      console.log(`🔄 Trying QR source ${currentSourceIndex + 1}/${qrSources.length}`);
+      
+      const testImg = new Image();
+      testImg.crossOrigin = 'anonymous';
+      
+      testImg.onload = () => {
+        console.log(`✅ QR source ${currentSourceIndex + 1} loaded successfully`);
+        printWithQRImage(qrUrl);
+      };
+      
+      testImg.onerror = () => {
+        console.log(`❌ QR source ${currentSourceIndex + 1} failed, trying next...`);
+        currentSourceIndex++;
+        setTimeout(tryNextQRSource, 500);
+      };
+      
+      testImg.src = qrUrl;
+      
+      // Timeout for this source
+      setTimeout(() => {
+        if (!testImg.complete) {
+          console.log(`⏰ QR source ${currentSourceIndex + 1} timeout`);
+          testImg.onerror = null;
+          testImg.onload = null;
+          currentSourceIndex++;
+          tryNextQRSource();
+        }
+      }, 3000);
+    };
+    
+    const printWithQRImage = (qrUrl: string) => {
+      // ... existing print logic with working QR URL
+      printBadgeWithQR(visitorData, companyInfo, qrUrl);
+    };
+    
+    const printWithTextQR = () => {
+      // Direct print with text QR
+      printBadgeWithTextQR(visitorData, companyInfo, qrData);
+    };
+    
+    // Start trying QR sources
+    tryNextQRSource();
+  };
+
+  // Helper function to print with working QR URL
+  const printBadgeWithQR = (visitorData: VisitorData, companyInfo: string, qrUrl: string) => {
+    const badgeSize = getBadgeSize();
+    const contentHeight = badgeSize.height - 30;
+    const nameSize = visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px';
+    const companySize = companyInfo && companyInfo.length > 30 ? '10px' : '12px';
+    
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      console.error('❌ Failed to open print window');
+      setIsPrinting(false);
+      return;
+    }
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Badge - ${visitorData.name}</title>
+        <style>
+          @media print {
+            @page { size: ${badgeSize.width}mm ${contentHeight}mm; margin: 0; }
+            body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+          }
+          body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: white; }
+          .badge-content {
+            width: ${badgeSize.width}mm; height: ${contentHeight}mm; padding: 4mm;
+            display: flex; align-items: center; gap: 4mm; box-sizing: border-box;
+          }
+          .qr-container { width: 20mm; height: 20mm; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0; }
+          .qr-img { width: 18mm; height: 18mm; object-fit: contain; }
+          .info { flex: 1; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+          .name { font-size: ${nameSize}; font-weight: bold; margin-bottom: 2mm; color: #1F2937; word-wrap: break-word; line-height: 1.2; }
+          .company { font-size: ${companySize}; font-weight: 600; color: #4B5563; word-wrap: break-word; line-height: 1.1; }
+        </style>
+      </head>
+      <body>
+        <div class="badge-content">
+          <div class="qr-container">
+            <img src="${qrUrl}" alt="QR Code" class="qr-img" />
+          </div>
+          <div class="info">
+            <div class="name">${visitorData.name}</div>
+            ${companyInfo ? `<div class="company">${companyInfo}</div>` : ''}
+          </div>
+        </div>
+      </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+      setIsPrinting(false);
+      console.log('🖨️ Print completed with QR image');
+    }, 1000);
+  };
+
+  // Helper function to print with text QR fallback
+  const printBadgeWithTextQR = (visitorData: VisitorData, companyInfo: string, qrData: string) => {
+    console.log('📝 Printing with text QR fallback');
+    
+    const badgeSize = getBadgeSize();
+    const contentHeight = badgeSize.height - 30;
+    const nameSize = visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px';
+    const companySize = companyInfo && companyInfo.length > 30 ? '10px' : '12px';
+    
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      console.error('❌ Failed to open print window');
+      setIsPrinting(false);
+      return;
+    }
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Badge - ${visitorData.name}</title>
+        <style>
+          @media print {
+            @page { size: ${badgeSize.width}mm ${contentHeight}mm; margin: 0; }
+            body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+          }
+          body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: white; }
+          .badge-content {
+            width: ${badgeSize.width}mm; height: ${contentHeight}mm; padding: 4mm;
+            display: flex; align-items: center; gap: 4mm; box-sizing: border-box;
+          }
+          .qr-fallback {
+            width: 20mm; height: 20mm; border: 2px solid #000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 8px; text-align: center; color: #000; background: #fff; font-weight: bold;
+            flex-shrink: 0;
+          }
+          .info { flex: 1; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+          .name { font-size: ${nameSize}; font-weight: bold; margin-bottom: 2mm; color: #1F2937; word-wrap: break-word; line-height: 1.2; }
+          .company { font-size: ${companySize}; font-weight: 600; color: #4B5563; word-wrap: break-word; line-height: 1.1; }
+        </style>
+      </head>
+      <body>
+        <div class="badge-content">
+          <div class="qr-fallback">
+            <div>QR CODE</div>
+            <div style="font-size: 6px; margin-top: 2px; word-break: break-all; line-height: 1.1;">
+              ${qrData.slice(-16)}
+            </div>
+          </div>
+          <div class="info">
+            <div class="name">${visitorData.name}</div>
+            ${companyInfo ? `<div class="company">${companyInfo}</div>` : ''}
+          </div>
+        </div>
+      </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+      setIsPrinting(false);
+      console.log('🖨️ Print completed with text QR fallback');
+    }, 1000);
+  };
+
   // Print badge using pre-rendered approach
   const printBadge = (visitorData: VisitorData) => {
     // Prevent multiple print calls
@@ -728,6 +966,17 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     setIsPrinting(true);
     console.log('🖨️ printBadge called with visitor:', visitorData);
     
+    // Detect mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    console.log('📱 Device type:', isMobile ? 'Mobile' : 'Desktop');
+    
+    // Use progressive loading for mobile devices
+    if (isMobile) {
+      printBadgeWithProgressiveLoading(visitorData);
+      return;
+    }
+    
+    // Original desktop approach for backward compatibility
     try {
       const companyInfo = getCompanyInfo(visitorData);
       console.log('🏢 Print company extraction result:', {
@@ -740,187 +989,215 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       const qrData = (visitorData as any)?.badge_qr || visitorData.id || '';
       
       console.log('🖨️ Print QR data:', qrData);
-    
-    // Create hidden staging area to pre-render badge
-    const stagingDiv = document.createElement('div');
-    stagingDiv.style.cssText = `
-      position: absolute; 
-      top: -9999px; 
-      left: -9999px; 
-      width: ${badgeSize.width}mm; 
-      height: ${contentHeight}mm;
-      padding: 4mm;
-      display: flex;
-      align-items: center;
-      gap: 4mm;
-      box-sizing: border-box;
-      background: white;
-      font-family: Arial, sans-serif;
-    `;
-    
-    // Auto-resize logic
-    const nameSize = visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px';
-    const companySize = companyInfo && companyInfo.length > 30 ? '10px' : '12px';
-    
-    // Generate QR code URL
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
-    console.log('🔗 Print QR URL:', qrUrl);
-    
-    stagingDiv.innerHTML = `
-      <!-- QR Code -->
-      <div style="width: 20mm; height: 20mm; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0;">
-        <img 
-          id="print-qr-img"
-          src="${qrUrl}" 
-          alt="QR Code: ${qrData}"
-          style="width: 18mm; height: 18mm; object-fit: contain;"
-        />
-      </div>
       
-      <!-- Visitor Info -->
-      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; min-width: 0;">
-        <div style="font-size: ${nameSize}; font-weight: bold; margin-bottom: 2mm; color: #1F2937; word-wrap: break-word; line-height: 1.2;">
-          ${visitorData.name}
+      // Create hidden staging area to pre-render badge
+      const stagingDiv = document.createElement('div');
+      stagingDiv.style.cssText = `
+        position: absolute; 
+        top: -9999px; 
+        left: -9999px; 
+        width: ${badgeSize.width}mm; 
+        height: ${contentHeight}mm;
+        padding: 4mm;
+        display: flex;
+        align-items: center;
+        gap: 4mm;
+        box-sizing: border-box;
+        background: white;
+        font-family: Arial, sans-serif;
+      `;
+      
+      // Auto-resize logic
+      const nameSize = visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px';
+      const companySize = companyInfo && companyInfo.length > 30 ? '10px' : '12px';
+      
+      // Generate QR code URL with mobile-friendly settings
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}&format=png&ecc=M`;
+      console.log('🔗 Print QR URL:', qrUrl);
+      
+      stagingDiv.innerHTML = `
+        <!-- QR Code -->
+        <div style="width: 20mm; height: 20mm; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0;">
+          <img 
+            id="print-qr-img"
+            src="${qrUrl}" 
+            alt="QR Code: ${qrData}"
+            style="width: 18mm; height: 18mm; object-fit: contain;"
+            crossorigin="anonymous"
+          />
         </div>
         
-        ${companyInfo ? `
-          <div style="font-size: ${companySize}; font-weight: 600; color: #4B5563; word-wrap: break-word; line-height: 1.1;">
-            ${companyInfo}
+        <!-- Visitor Info -->
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; min-width: 0;">
+          <div style="font-size: ${nameSize}; font-weight: bold; margin-bottom: 2mm; color: #1F2937; word-wrap: break-word; line-height: 1.2;">
+            ${visitorData.name}
           </div>
-        ` : ''}
-      </div>
-    `;
-    
-    // Add to DOM temporarily
-    document.body.appendChild(stagingDiv);
-    
-    // Wait for QR image to load, then print
-    const qrImg = stagingDiv.querySelector('#print-qr-img') as HTMLImageElement;
-    
-    const handleQRLoad = () => {
-      console.log('✅ QR image pre-loaded, starting print...');
+          
+          ${companyInfo ? `
+            <div style="font-size: ${companySize}; font-weight: 600; color: #4B5563; word-wrap: break-word; line-height: 1.1;">
+              ${companyInfo}
+            </div>
+          ` : ''}
+        </div>
+      `;
       
-      // Create print window
-      const printWindow = window.open('', '_blank', 'width=800,height=600');
-      if (!printWindow) {
-        console.error('❌ Failed to open print window');
-        document.body.removeChild(stagingDiv);
-        return;
-      }
+      // Add to DOM temporarily
+      document.body.appendChild(stagingDiv);
       
-      // Write HTML with pre-rendered content
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Badge - ${visitorData.name}</title>
-          <style>
-            @media print {
-              @page {
-                size: ${badgeSize.width}mm ${contentHeight}mm;
-                margin: 0;
+      // Wait for QR image to load, then print
+      const qrImg = stagingDiv.querySelector('#print-qr-img') as HTMLImageElement;
+      let printExecuted = false;
+      
+      const handleQRLoad = () => {
+        if (printExecuted) return;
+        printExecuted = true;
+        
+        console.log('✅ QR image pre-loaded, starting print...');
+        
+        // Create print window
+        const printWindow = window.open('', '_blank', 'width=800,height=600');
+        if (!printWindow) {
+          console.error('❌ Failed to open print window');
+          document.body.removeChild(stagingDiv);
+          setIsPrinting(false);
+          return;
+        }
+        
+        // Write HTML with pre-rendered content
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Badge - ${visitorData.name}</title>
+            <style>
+              @media print {
+                @page {
+                  size: ${badgeSize.width}mm ${contentHeight}mm;
+                  margin: 0;
+                }
+                body {
+                  margin: 0;
+                  padding: 0;
+                  font-family: Arial, sans-serif;
+                }
               }
               body {
                 margin: 0;
                 padding: 0;
                 font-family: Arial, sans-serif;
+                background: white;
               }
-            }
-            body {
-              margin: 0;
-              padding: 0;
-              font-family: Arial, sans-serif;
-              background: white;
-            }
-            .badge-content {
-              width: ${badgeSize.width}mm;
-              height: ${contentHeight}mm;
-              padding: 4mm;
-              display: flex;
-              align-items: center;
-              gap: 4mm;
-              box-sizing: border-box;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="badge-content">
-            ${stagingDiv.innerHTML}
-          </div>
-        </body>
-        </html>
-      `);
+              .badge-content {
+                width: ${badgeSize.width}mm;
+                height: ${contentHeight}mm;
+                padding: 4mm;
+                display: flex;
+                align-items: center;
+                gap: 4mm;
+                box-sizing: border-box;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="badge-content">
+              ${stagingDiv.innerHTML}
+            </div>
+          </body>
+          </html>
+        `);
+        
+        printWindow.document.close();
+        
+        // Wait a bit for content to render, then print
+        setTimeout(() => {
+          printWindow.focus();
+          printWindow.print();
+          printWindow.close();
+          console.log('🖨️ Print completed');
+        }, isMobile ? 1000 : 500); // Longer wait on mobile
+        
+        // Clean up staging div
+        document.body.removeChild(stagingDiv);
+        
+        // Clear printing flag
+        setTimeout(() => {
+          setIsPrinting(false);
+        }, 1000);
+      };
       
-      printWindow.document.close();
-      
-      // Wait a bit for content to render, then print
-      setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
-        console.log('🖨️ Print completed');
-      }, 500);
-      
-      // Clean up staging div
-      document.body.removeChild(stagingDiv);
-      
-      // Clear printing flag
-      setTimeout(() => {
-        setIsPrinting(false);
-      }, 1000);
-    };
-    
-    const handleQRError = () => {
-      console.error('❌ QR image failed to load, using text fallback');
-      
-      // Replace QR image with text fallback
-      const qrContainer = stagingDiv.querySelector('div:first-child');
-      if (qrContainer) {
-        qrContainer.innerHTML = `
-          <div style="
-            width: 18mm; 
-            height: 18mm; 
-            border: 2px solid #000; 
-            display: flex; 
-            flex-direction: column;
-            align-items: center; 
-            justify-content: center; 
-            font-size: 6px; 
-            text-align: center; 
-            color: #000; 
-            background: #fff; 
-            font-weight: bold;
-          ">
-            QR<br/>
-            <small style="word-break: break-all; line-height: 1.1;">${qrData.slice(-12)}</small>
-          </div>
-        `;
-      }
-      
-      // Proceed with print
-      handleQRLoad();
-    };
-    
-    // Set up QR image load handlers
-    if (qrImg.complete) {
-      handleQRLoad();
-    } else {
-      qrImg.onload = handleQRLoad;
-      qrImg.onerror = handleQRError;
-      
-      // Timeout fallback after 5 seconds
-      setTimeout(() => {
-        if (!qrImg.complete) {
-          console.log('⏰ QR load timeout, proceeding with fallback');
-          handleQRError();
+      const handleQRError = () => {
+        if (printExecuted) return;
+        printExecuted = true;
+        
+        console.error('❌ QR image failed to load, using text fallback');
+        
+        // Replace QR image with text fallback
+        const qrContainer = stagingDiv.querySelector('div:first-child');
+        if (qrContainer) {
+          qrContainer.innerHTML = `
+            <div style="
+              width: 18mm; 
+              height: 18mm; 
+              border: 2px solid #000; 
+              display: flex; 
+              flex-direction: column;
+              align-items: center; 
+              justify-content: center; 
+              font-size: 6px; 
+              text-align: center; 
+              color: #000; 
+              background: #fff; 
+              font-weight: bold;
+            ">
+              QR<br/>
+              <small style="word-break: break-all; line-height: 1.1;">${qrData.slice(-12)}</small>
+            </div>
+          `;
         }
-      }, 5000);
+        
+        // Proceed with print
+        handleQRLoad();
+      };
+      
+      // Force QR image loading with better mobile support
+      if (qrImg.complete && qrImg.naturalWidth > 0) {
+        console.log('✅ QR image already loaded');
+        handleQRLoad();
+      } else {
+        console.log('⏳ Waiting for QR image to load...');
+        
+        qrImg.onload = () => {
+          console.log('✅ QR image onload event fired');
+          handleQRLoad();
+        };
+        
+        qrImg.onerror = () => {
+          console.error('❌ QR image onerror event fired');
+          handleQRError();
+        };
+        
+        // Mobile-friendly timeout (longer for slow connections)
+        const timeoutDuration = isMobile ? 10000 : 5000;
+        setTimeout(() => {
+          if (!printExecuted) {
+            console.log(`⏰ QR load timeout after ${timeoutDuration}ms, proceeding with fallback`);
+            handleQRError();
+          }
+        }, timeoutDuration);
+        
+        // Force image loading by setting src again (mobile fix)
+        setTimeout(() => {
+          if (!printExecuted && !qrImg.complete) {
+            console.log('🔄 Force reloading QR image for mobile...');
+            qrImg.src = qrUrl + '&t=' + Date.now(); // Add timestamp to force reload
+          }
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('❌ Error in printBadge:', error);
+      setIsPrinting(false);
     }
-  } catch (error) {
-    console.error('❌ Error in printBadge:', error);
-    setIsPrinting(false);
-  }
-};
+  };
 
   // Demo function to test company extraction with different formats
   const testCompanyExtractionFormats = () => {
