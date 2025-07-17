@@ -120,15 +120,16 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         setError('');
         
         // Test backend connection first
-        console.log('🔧 Environment:', process.env.NODE_ENV);
-        console.log('🔧 Backend URL config:', process.env.NEXT_PUBLIC_BACKEND_API_URL);
-        
         await visitorApi.checkBackendConnection();
         
         const response = await eventApi.getEventInfo(eventId);
         setEventData(response.event);
         
         console.log('📥 Event data loaded:', response.event);
+        console.log('🖨️ Badge printing setting:', {
+          badge_printing: response.event.badge_printing,
+          enabled: !!response.event.badge_printing
+        });
         
         // Trigger entrance animation
         setTimeout(() => setIsVisible(true), 100);
@@ -285,11 +286,6 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       return;
     }
 
-    setIsProcessing(true);
-    setError('');
-    setSuccess('');
-    setVisitor(null);
-
     // Basic input validation
     const trimmedId = visitorId.trim();
     if (trimmedId.length < 3) {
@@ -298,13 +294,47 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       return;
     }
 
+    setIsProcessing(true);
+    setError('');
+    setSuccess('');
+    setVisitor(null);
+
     try {
       console.log('🔍 Processing visitor ID:', trimmedId);
       
-              const response = await visitorApi.getVisitorInfo(trimmedId);
+      const response = await visitorApi.getVisitorInfo(trimmedId);
       
       if (response.visitor) {
         console.log('✅ Visitor found:', response.visitor);
+        
+        // IMPORTANT: Validate event_id match
+        const visitorEventId = String(response.visitor.event_id);
+        const currentEventId = String(eventId);
+        
+        console.log('🔍 Event validation:', {
+          visitorEventId,
+          currentEventId,
+          match: visitorEventId === currentEventId
+        });
+        
+        if (visitorEventId !== currentEventId) {
+          console.error('❌ Event ID mismatch:', {
+            visitor: response.visitor.name,
+            visitorEventId,
+            currentEventId,
+            eventName: response.visitor.event_name
+          });
+          
+          setError('❌ Không tìm thấy visitor với ID này. Vui lòng kiểm tra lại mã QR hoặc ID.');
+          setIsProcessing(false);
+          
+          // Strong haptic feedback for error
+          if ('vibrate' in navigator) {
+            navigator.vibrate([200, 100, 200, 100, 200]);
+          }
+          
+          return;
+        }
         
         // Submit check-in to Zoho Creator
         try {
@@ -329,11 +359,15 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         setVisitor(response.visitor);
         setSuccess(`✅ Check-in thành công cho ${response.visitor.name}!`);
         
-        // Auto-print badge
-        setTimeout(() => {
-          console.log('🖨️ Auto-printing badge for visitor:', response.visitor);
-          printBadge(response.visitor);
-        }, 500);
+        // Auto-print badge only if badge_printing is enabled
+        if (eventData?.badge_printing) {
+          setTimeout(() => {
+            console.log('🖨️ Auto-printing badge for visitor (badge_printing=true):', response.visitor);
+            printBadge(response.visitor);
+          }, 500);
+        } else {
+          console.log('🚫 Badge printing disabled (badge_printing=false)');
+        }
         
         // Show success screen
         setTimeout(() => {
@@ -1308,6 +1342,14 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       const result = getCompanyInfo(mockVisitor);
       console.log(`📋 ${testCase.name}:`, result || '(no company found)');
     });
+    
+    // Test event validation scenarios
+    console.log('🧪 Testing event validation scenarios:');
+    console.log('📋 Current Event ID:', eventId);
+    console.log('📋 Test scenarios:');
+    console.log('  ✅ Same event: visitor.event_id === currentEventId → Allow check-in');
+    console.log('  ❌ Different event: visitor.event_id !== currentEventId → Show error');
+    console.log('📋 Badge printing status:', eventData?.badge_printing ? 'ENABLED' : 'DISABLED');
   };
 
   // Call test function in development mode
@@ -1315,7 +1357,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     if (process.env.NODE_ENV === 'development') {
       testCompanyExtractionFormats();
     }
-  }, []);
+  }, [eventData]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -1407,6 +1449,21 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                   <p className="text-xs text-white/80">
                     {eventData.name}
                   </p>
+                  
+                  {/* Badge Printing Status */}
+                  <div className="flex items-center gap-1 mt-1">
+                    {eventData.badge_printing ? (
+                      <div className="flex items-center gap-1 text-xs text-green-300">
+                        <Icon name="PrinterIcon" className="w-3 h-3" />
+                        <span>Event này sẽ tự động in thẻ đeo</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 text-xs text-orange-300">
+                        <Icon name="ExclamationTriangleIcon" className="w-3 h-3" />
+                        <span>Event này không tự động in thẻ đeo</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <Button
@@ -1438,6 +1495,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                     : "Nhập Visitor ID hoặc quét QR code để check-in"
                   }
                 </p>
+
                 
                 {/* Hybrid Mode Indicator */}
                 {cameraEnabled && (
@@ -1659,11 +1717,35 @@ export default function CheckinPage({ params }: CheckinPageProps) {
 
               {/* Error message */}
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4 flex items-center gap-3">
-                  <Icon name="ExclamationTriangleIcon" className="w-6 h-6 text-red-600" />
-                  <span className="text-sm text-red-800 font-medium">{error}</span>
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+                  <div className="flex items-start gap-3">
+                    <Icon name="ExclamationTriangleIcon" className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <div className="text-sm text-red-800 font-medium">
+                        {error.includes('\n') ? (
+                          <div className="space-y-1">
+                            {error.split('\n').map((line, index) => (
+                              <div key={index} className={line.startsWith('•') ? 'ml-2' : ''}>
+                                {line}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          error
+                        )}
+                      </div>
+                      
+                      {/* Additional help for event mismatch errors */}
+                      {error.includes('Event ID') && (
+                        <div className="mt-2 text-xs text-red-700 bg-red-100 px-2 py-1 rounded">
+                          💡 Đảm bảo bạn đang scan QR code đúng cho event này
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
+
             </Card>
           </div>
         </div>
@@ -1728,9 +1810,16 @@ export default function CheckinPage({ params }: CheckinPageProps) {
 
               <div className="space-y-2 mb-6">
                 <div className="flex items-center justify-center gap-2 text-sm text-emerald-700">
-                  <Icon name="PrinterIcon" className="w-4 h-4" />
-                  <span>✓ Badge đã được in tự động</span>
+                  <Icon name="CheckCircleIcon" className="w-4 h-4" />
+                  <span>✓ Check-in thành công</span>
                 </div>
+                
+                {eventData?.badge_printing && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-emerald-700">
+                    <Icon name="PrinterIcon" className="w-4 h-4" />
+                    <span>✓ Thẻ đeo đã được in tự động</span>
+                  </div>
+                )}
               </div>
 
               {/* Continuous Mode Info */}
@@ -1740,7 +1829,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                     <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                     <span>Chế độ quét liên tục đang bật</span>
                   </div>
-                  <p className="text-xs text-blue-600">
+                  <p className="text-xs text-blue-600 text-center">
                     Camera sẽ tự động khởi động lại sau {autoReturnCountdown}s
                   </p>
                 </div>

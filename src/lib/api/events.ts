@@ -71,6 +71,11 @@ export interface EventData {
   footer?: string;
   formFields: FormField[];
   exhibitors?: ExhibitorData[];
+  registration_form: any[];
+  status: string;
+  created_date: string;
+  badge_size: string;
+  badge_printing: boolean;
 }
 
 export const eventApi = {
