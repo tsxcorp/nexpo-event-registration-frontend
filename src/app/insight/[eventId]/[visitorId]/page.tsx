@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use, useRef } from 'react';
+import { useState, useEffect, use, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -53,6 +53,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
   });
   const [qrCodeError, setQrCodeError] = useState(false);
   const [qrCodeLoading, setQrCodeLoading] = useState(false);
+  const [qrCodeImage, setQrCodeImage] = useState<string>('');
   const [isVisible, setIsVisible] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -554,6 +555,124 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
     return favoriteData;
   };
 
+  // Generate QR Code with Nexpo favicon in center
+  const generateQRCodeWithLogo = async (data: string, size: number = 200): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      try {
+        // Import QRCode library dynamically for client-side only
+        import('qrcode').then(QRCode => {
+          // Create canvas
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject('Canvas context not available');
+            return;
+          }
+
+          canvas.width = size;
+          canvas.height = size;
+
+                     // Generate QR code with higher error correction to allow logo overlay
+           QRCode.toCanvas(canvas, data, {
+             width: size,
+             margin: 1,
+             color: {
+               dark: '#000000',
+               light: '#ffffff'
+             },
+             errorCorrectionLevel: 'H' // High error correction for logo overlay
+          }, (error: Error | null | undefined) => {
+            if (error) {
+              console.error('QR generation error:', error);
+              reject(error);
+              return;
+            }
+
+                         // Load and draw Nexpo favicon
+             const logo = new Image();
+             logo.crossOrigin = 'anonymous';
+             logo.onload = () => {
+               try {
+                 // Calculate favicon size (about 25% of QR code size for better visibility)
+                 const logoSize = Math.floor(size * 0.25);
+                 const logoX = (size - logoSize) / 2;
+                 const logoY = (size - logoSize) / 2;
+
+                 // Create a white background with shadow effect
+                 const bgRadius = logoSize / 2 + 8;
+                 
+                 // Draw shadow
+                 ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
+                 ctx.shadowBlur = 4;
+                 ctx.shadowOffsetX = 2;
+                 ctx.shadowOffsetY = 2;
+                 
+                 // White background circle
+                 ctx.fillStyle = '#ffffff';
+                 ctx.beginPath();
+                 ctx.arc(size / 2, size / 2, bgRadius, 0, 2 * Math.PI);
+                 ctx.fill();
+
+                 // Reset shadow
+                 ctx.shadowColor = 'transparent';
+                 ctx.shadowBlur = 0;
+                 ctx.shadowOffsetX = 0;
+                 ctx.shadowOffsetY = 0;
+
+                 // Add gradient border around logo background
+                 const gradient = ctx.createRadialGradient(size / 2, size / 2, bgRadius - 3, size / 2, size / 2, bgRadius);
+                 gradient.addColorStop(0, '#3b82f6');
+                 gradient.addColorStop(1, '#1d4ed8');
+                 ctx.strokeStyle = gradient;
+                 ctx.lineWidth = 2;
+                 ctx.stroke();
+
+                 // Draw the logo with rounded corners effect
+                 ctx.save();
+                 ctx.beginPath();
+                 ctx.arc(size / 2, size / 2, logoSize / 2 - 2, 0, 2 * Math.PI);
+                 ctx.clip();
+                 ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+                 ctx.restore();
+
+                 // Add subtle inner glow
+                 ctx.save();
+                 ctx.globalCompositeOperation = 'multiply';
+                 ctx.fillStyle = 'rgba(59, 130, 246, 0.1)';
+                 ctx.beginPath();
+                 ctx.arc(size / 2, size / 2, bgRadius - 1, 0, 2 * Math.PI);
+                 ctx.fill();
+                 ctx.restore();
+
+                 // Convert canvas to data URL
+                 const dataURL = canvas.toDataURL('image/png');
+                 resolve(dataURL);
+               } catch (err) {
+                 console.error('Logo drawing error:', err);
+                 reject(err);
+               }
+             };
+
+            logo.onerror = (err) => {
+              console.error('Logo load error:', err);
+              // Fallback: return QR code without logo
+              resolve(canvas.toDataURL('image/png'));
+            };
+
+                         // Set logo source - use favicon for center logo
+             logo.src = '/nexpo-favicon.ico';
+          });
+        }).catch(err => {
+          console.error('QRCode import error:', err);
+          reject(err);
+        });
+      } catch (error) {
+        console.error('QR generation setup error:', error);
+        reject(error);
+      }
+    });
+  };
+
   const generateQRCode = () => {
     if (!visitorData) return '';
     
@@ -582,7 +701,8 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       }
     }
     
-    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
+    // Return data for async QR generation with logo
+    return qrData;
   };
 
   const openFileViewer = (title: string, fileUrl?: string, fileType?: 'pdf' | 'image' | 'unknown') => {
@@ -1202,33 +1322,36 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
 
 
 
-  // Generate QR code with loading state
-  const generateQRCodeWithLoading = () => {
+  // Generate QR code with loading state and logo
+  const generateQRCodeWithLoading = useCallback(async () => {
     setQrCodeLoading(true);
     setQrCodeError(false);
+    setQrCodeImage('');
     
-    const qrUrl = generateQRCode();
-    
-    // Simulate loading delay for better UX
-    setTimeout(() => {
+    try {
+      const qrData = generateQRCode();
+      if (qrData) {
+        const qrImageUrl = await generateQRCodeWithLogo(qrData, 320);
+        setQrCodeImage(qrImageUrl);
+      }
+    } catch (error) {
+      console.error('Error generating QR code with logo:', error);
+      setQrCodeError(true);
+      // Fallback to simple QR code without logo
+      const qrData = generateQRCode();
+      const fallbackUrl = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(qrData)}`;
+      setQrCodeImage(fallbackUrl);
+    } finally {
       setQrCodeLoading(false);
-    }, 300);
-    
-    return qrUrl;
-  };
+    }
+  }, [visitorData, qrMode, hasCheckedIn, visitorId]);
 
   // Trigger QR code regeneration when mode changes
   useEffect(() => {
     if (visitorData && qrMode) {
-      setQrCodeLoading(true);
-      setQrCodeError(false);
-      
-      // Simulate loading delay for better UX
-      setTimeout(() => {
-        setQrCodeLoading(false);
-      }, 300);
+      generateQRCodeWithLoading();
     }
-  }, [qrMode, visitorData]);
+  }, [qrMode, visitorData, generateQRCodeWithLoading]);
 
   if (loading) {
     return (
@@ -1631,42 +1754,85 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                       </div>
 
                       {/* QR Code Display */}
-                      <div className="mb-4">
-                        <p className="insight-text-secondary mb-2">
+                      <div className="mb-2">
+                        <p className="insight-text-secondary mb-1">
                           {hasCheckedIn ? (
                             qrMode === 'badge' ? 'Badge QR Code' : 'Redeem QR Code (để in lại thẻ)'
                           ) : (
                             qrMode === 'personal' ? 'QR Check-in (Cá nhân)' : 'QR Check-in (Nhóm)'
                           )}
                         </p>
-                        <div className="inline-block p-2 bg-white rounded-2xl shadow-sm relative">
+                        <div className="inline-block p-1.5 bg-white rounded-2xl shadow-sm relative">
                           {qrCodeLoading ? (
-                            <div className="w-20 h-20 flex items-center justify-center bg-gray-50 rounded-xl animate-pulse">
-                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-slate-500"></div>
+                            <div className="w-32 h-32 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-100 relative overflow-hidden">
+                              {/* Animated background */}
+                              <div className="absolute inset-0 bg-gradient-to-r from-blue-100/50 via-indigo-100/50 to-blue-100/50 animate-pulse"></div>
+                              {/* Spinning logo indicator */}
+                              <div className="relative z-10 flex flex-col items-center">
+                                <div className="animate-spin rounded-full h-8 w-8 border-3 border-blue-200 border-t-blue-600"></div>
+                                <div className="text-[10px] text-blue-600 font-semibold mt-2 animate-pulse">Generating</div>
+                              </div>
+                              {/* Shimmer effect */}
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent transform -skew-x-12 animate-shimmer"></div>
                             </div>
                           ) : qrCodeError ? (
-                            <div className="w-20 h-20 flex items-center justify-center bg-gray-50 rounded-xl">
-                              <span className="insight-text-muted">QR Error</span>
+                            <div className="w-32 h-32 flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-50 rounded-xl border-2 border-red-200 relative">
+                              <div className="text-center relative z-10">
+                                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-2 mx-auto">
+                                  <span className="text-red-500 text-lg">⚠️</span>
+                                </div>
+                                <div className="text-[10px] text-red-600 font-semibold">Error</div>
+                              </div>
+                              <div className="absolute inset-0 bg-gradient-to-r from-red-100/30 to-orange-100/30 rounded-xl"></div>
+                            </div>
+                          ) : qrCodeImage ? (
+                            <div className="relative group">
+                              <img 
+                                src={qrCodeImage}
+                                alt="QR Code with Nexpo Favicon"
+                                className="w-32 h-32 mx-auto rounded-xl shadow-lg border-2 border-gradient-to-r from-blue-100 to-indigo-100 group-hover:shadow-xl transition-all duration-300"
+                                onError={(e) => {
+                                  console.error('QR Code failed to load');
+                                  setQrCodeError(true);
+                                }}
+                              />
+                              {/* Nexpo Full Logo Badge */}
+                              <div className="absolute -bottom-3 -right-3 w-12 h-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+                                <div className="w-7 h-7 relative">
+                                  <div className="absolute inset-0 bg-white rounded-full"></div>
+                                  <div className="absolute inset-0.5 bg-white rounded-full flex items-center justify-center overflow-hidden">
+                                    <img 
+                                      src="/nexpo-logo.png" 
+                                      alt="Nexpo"
+                                      className="w-full h-full object-contain p-0.5"
+                                      onError={(e) => {
+                                        // Fallback to text if logo fails to load
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                        target.parentElement!.innerHTML = '<span class="text-blue-600 text-[6px] font-extrabold">N</span>';
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                              {/* Premium glow effect */}
+                              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400/20 to-indigo-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                             </div>
                           ) : (
-                            <img 
-                              src={generateQRCode()}
-                              alt="QR Code"
-                              className="w-20 h-20 mx-auto rounded-lg"
-                              onError={(e) => {
-                                console.error('QR Code failed to load');
-                                setQrCodeError(true);
-                                setQrCodeLoading(false);
-                              }}
-                              onLoad={() => {
-                                setQrCodeLoading(false);
-                              }}
-                            />
+                            <div className="w-32 h-32 flex items-center justify-center bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl border-2 border-gray-200 relative">
+                              <div className="text-center relative z-10">
+                                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2 mx-auto">
+                                  <span className="text-gray-400 text-lg">📱</span>
+                                </div>
+                                <div className="text-[10px] text-gray-500 font-semibold">No QR</div>
+                              </div>
+                              <div className="absolute inset-0 bg-gradient-to-r from-gray-100/30 to-slate-100/30 rounded-xl"></div>
+                            </div>
                           )}
                         </div>
                         
                         {/* Copy Button */}
-                        <div className="mt-2">
+                        <div className="mt-1">
                           <button
                             onClick={copyQrDataToClipboard}
                             className="text-xs text-slate-600 hover:text-slate-800 transition-colors duration-200 bg-slate-50 hover:bg-slate-100 px-3 py-1 rounded-full"
@@ -1678,7 +1844,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
 
                       {/* Additional Info for Group Mode */}
                       {!hasCheckedIn && qrMode === 'group' && visitorData.group_id && (
-                        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                        <div className="mb-2 p-2 bg-blue-50 rounded-lg">
                           <p className="insight-text-caption text-blue-700">
                             <strong>Group ID:</strong> {visitorData.group_id}
                           </p>
@@ -1690,7 +1856,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
 
                       {/* Warning for missing Group ID */}
                       {!hasCheckedIn && qrMode === 'group' && !visitorData.group_id && (
-                        <div className="mb-4 p-3 bg-yellow-50 rounded-lg">
+                        <div className="mb-2 p-2 bg-yellow-50 rounded-lg">
                           <p className="insight-text-caption text-yellow-700">
                             ⚠️ Bạn chưa được phân vào nhóm nào
                           </p>
@@ -1701,16 +1867,23 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                       )}
 
                       {/* QR Code Description */}
-                      <div className="text-center">
-                        <p className="insight-text-caption text-gray-500">
+                      <div className="text-center bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-3 border border-blue-100">
+                        <div className="flex items-center justify-center mb-1">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                          <span className="text-blue-700 font-semibold text-xs uppercase tracking-wider">
+                            {hasCheckedIn ? 'Active Badge' : 'Check-in Ready'}
+                          </span>
+                          <div className="w-2 h-2 bg-blue-500 rounded-full ml-2"></div>
+                        </div>
+                        <p className="text-sm text-gray-700 leading-relaxed font-medium">
                           {hasCheckedIn ? (
                             qrMode === 'badge' 
-                              ? 'Sử dụng QR này để truy cập các dịch vụ tại sự kiện'
-                              : 'Scan QR này để in lại thẻ đeo nếu bạn làm mất thẻ'
+                              ? '✨ Sử dụng QR này để truy cập các dịch vụ tại sự kiện'
+                              : '🎫 Scan QR này để in lại thẻ đeo nếu bạn làm mất thẻ'
                           ) : (
                             qrMode === 'personal'
-                              ? 'Scan QR này để check-in cá nhân và nhận thẻ đeo'
-                              : 'Scan QR này để check-in theo nhóm và nhận thẻ đeo'
+                              ? '👤 Scan QR này để check-in cá nhân và nhận thẻ đeo'
+                              : '👥 Scan QR này để check-in theo nhóm và nhận thẻ đeo'
                           )}
                         </p>
                       </div>
@@ -2396,15 +2569,31 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                       />
                     </div>
                     
-                    <div className="max-h-48 overflow-y-auto space-y-2">
-                      {getFilteredMatchingExhibitors().slice(0, 10).map((exhibitor, index) => (
-                                                 <button
-                           key={`matching-${exhibitor.display_name}-${index}`}
-                           onClick={() => setMatchingFormData({...matchingFormData, exhibitor})}
-                           className="w-full bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-200 rounded-xl p-3 transition-colors duration-200 text-left"
-                         >
+                    <div className="max-h-64 overflow-y-auto space-y-2 border border-gray-100 rounded-xl p-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400 relative">
+                      {/* Results count indicator */}
+                      {getFilteredMatchingExhibitors().length > 0 && (
+                        <div className="sticky top-0 bg-white/95 backdrop-blur-sm p-2 rounded-lg border border-gray-100 mb-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-600 font-medium">
+                              📋 {getFilteredMatchingExhibitors().length} exhibitors
+                            </span>
+                            {getFilteredMatchingExhibitors().length > 5 && (
+                              <span className="text-xs text-indigo-600 font-medium">
+                                👆 Scroll để xem thêm
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {getFilteredMatchingExhibitors().map((exhibitor, index) => (
+                        <button
+                          key={`matching-${exhibitor.display_name}-${index}`}
+                          onClick={() => setMatchingFormData({...matchingFormData, exhibitor})}
+                          className="w-full bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-200 rounded-xl p-3 transition-colors duration-200 text-left group"
+                        >
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-8 rounded-lg bg-white border border-gray-200 overflow-hidden flex-shrink-0">
+                            <div className="w-10 h-8 rounded-lg bg-white border border-gray-200 overflow-hidden flex-shrink-0 group-hover:border-indigo-300 transition-colors">
                               <ZohoImage
                                 src={exhibitor.company_logo}
                                 alt={`${getExhibitorDisplayName(exhibitor)} logo`}
@@ -2415,23 +2604,40 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                               />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h4 className="text-sm font-medium text-gray-800 truncate">
+                              <h4 className="text-sm font-medium text-gray-800 truncate group-hover:text-indigo-800 transition-colors">
                                 {getExhibitorDisplayName(exhibitor)}
                               </h4>
                               {(exhibitor as any).booth_no && (
-                                <p className="text-xs text-gray-500">
-                                  Booth {(exhibitor as any).booth_no}
+                                <p className="text-xs text-gray-500 group-hover:text-indigo-600 transition-colors">
+                                  🏢 Booth {(exhibitor as any).booth_no}
+                                </p>
+                              )}
+                              {(exhibitor as any).category && (
+                                <p className="text-xs text-gray-400 truncate group-hover:text-indigo-500 transition-colors">
+                                  🏷️ {(exhibitor as any).category}
                                 </p>
                               )}
                             </div>
+                            <div className="text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
+                            </div>
                           </div>
                         </button>
-                      ))}
+                                              ))}
                       
                       {getFilteredMatchingExhibitors().length === 0 && (
-                        <div className="text-center py-4 text-gray-500 text-sm">
-                          Không tìm thấy exhibitor phù hợp
+                        <div className="text-center py-8 text-gray-500 text-sm">
+                          <div className="text-2xl mb-2">🔍</div>
+                          <p className="font-medium">Không tìm thấy exhibitor phù hợp</p>
+                          <p className="text-xs text-gray-400 mt-1">Thử tìm kiếm với từ khóa khác</p>
                         </div>
+                      )}
+                      
+                      {/* Fade gradient at bottom when there are many items */}
+                      {getFilteredMatchingExhibitors().length > 5 && (
+                        <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white to-transparent pointer-events-none rounded-b-xl"></div>
                       )}
                     </div>
                   </div>
