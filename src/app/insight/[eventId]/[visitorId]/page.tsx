@@ -71,6 +71,17 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
   }>({ show: false, message: '', type: 'info' });
   const [qrMode, setQrMode] = useState<'personal' | 'group' | 'badge' | 'redeem'>('personal');
   const contentRef = useRef<HTMLDivElement>(null);
+  
+  // Matching state
+  const [isMatchingFormOpen, setIsMatchingFormOpen] = useState(false);
+  const [selectedMatchingExhibitor, setSelectedMatchingExhibitor] = useState<ExhibitorData | null>(null);
+  const [matchingSearchQuery, setMatchingSearchQuery] = useState('');
+  const [matchingFormData, setMatchingFormData] = useState({
+    exhibitor: null as ExhibitorData | null,
+    date: '',
+    time: '',
+    message: ''
+  });
 
   const { generateShareUrls } = useEventMetadata({ 
     event: eventData, 
@@ -81,6 +92,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
     { id: 'overview', label: 'Check-in', icon: 'ChartBarIcon' },
     { id: 'exhibitors', label: 'Exhibitors', icon: 'BuildingOfficeIcon' },
     { id: 'favorites', label: 'Yêu thích', icon: 'HeartIcon', count: favoriteExhibitors.length },
+    { id: 'matching', label: 'Matching', icon: 'UserGroupIcon' },
     { id: 'more', label: 'Thêm', icon: 'Cog6ToothIcon' }
   ];
 
@@ -427,7 +439,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
     setSwipeDirection(null);
   };
 
-  // Generate unique identifier for exhibitor
+  // Generate unique identifier for exhibitor (for favorites)
   const getExhibitorId = (exhibitor: ExhibitorData) => {
     const exhibitorAny = exhibitor as any;
     // Use display_name if available, otherwise fallback to booth_no, otherwise use a combination
@@ -442,6 +454,16 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       // Last resort: use country + random identifier
       return `${exhibitor.country || 'Unknown'}_${Math.random().toString(36).substr(2, 9)}`;
     }
+  };
+
+  // Get exhibitor profile ID for backend matching API
+  const getExhibitorProfileId = (exhibitor: ExhibitorData) => {
+    const exhibitorAny = exhibitor as any;
+    return exhibitorAny.id || 
+           exhibitorAny.profile_id || 
+           exhibitorAny.exhibitor_id || 
+           exhibitorAny.exhibitor_profile_id ||
+           exhibitor.display_name; // Fallback to display name
   };
 
   // Get display name for UI (with fallback)
@@ -649,6 +671,37 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       HeartIcon: (
         <svg className={className} fill={fill} stroke="currentColor" viewBox="0 0 24 24" {...props}>
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        </svg>
+      ),
+      UserGroupIcon: (
+        <svg className={className} fill={fill} stroke="currentColor" viewBox="0 0 24 24" {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      ),
+      ChevronRightIcon: (
+        <svg className={className} fill={fill} stroke="currentColor" viewBox="0 0 24 24" {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      ),
+      MapPinIcon: (
+        <svg className={className} fill={fill} stroke="currentColor" viewBox="0 0 24 24" {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      ),
+      TagIcon: (
+        <svg className={className} fill={fill} stroke="currentColor" viewBox="0 0 24 24" {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+        </svg>
+      ),
+      CubeIcon: (
+        <svg className={className} fill={fill} stroke="currentColor" viewBox="0 0 24 24" {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      ),
+      AdjustmentsHorizontalIcon: (
+        <svg className={className} fill={fill} stroke="currentColor" viewBox="0 0 24 24" {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
         </svg>
       ),
     };
@@ -1030,6 +1083,124 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       showToast('Không thể copy QR data', 'error');
     }
   };
+
+  // Generate available dates from event
+  const getEventDates = () => {
+    if (!eventData) return [];
+    
+    const startDate = new Date(eventData.start_date);
+    const endDate = new Date(eventData.end_date);
+    const dates = [];
+    
+    const currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+      dates.push(new Date(currentDate).toISOString().split('T')[0]);
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return dates;
+  };
+
+  // Open matching form
+  const openMatchingForm = (exhibitor?: ExhibitorData) => {
+    setMatchingFormData({
+      exhibitor: exhibitor || null,
+      date: '',
+      time: '',
+      message: ''
+    });
+    setIsMatchingFormOpen(true);
+    
+    // Add haptic feedback
+    if ('vibrate' in navigator) {
+      navigator.vibrate(50);
+    }
+  };
+
+  // Close matching form
+  const closeMatchingForm = () => {
+    setIsMatchingFormOpen(false);
+    setMatchingFormData({
+      exhibitor: null,
+      date: '',
+      time: '',
+      message: ''
+    });
+    setMatchingSearchQuery('');
+  };
+
+  // Submit matching request
+  const submitMatchingRequest = async () => {
+    if (!eventData || !visitorData || !matchingFormData.exhibitor) {
+      showToast('Vui lòng điền đầy đủ thông tin', 'error');
+      return;
+    }
+
+    if (!matchingFormData.date || !matchingFormData.time) {
+      showToast('Vui lòng chọn ngày và giờ', 'error');
+      return;
+    }
+
+    try {
+      const exhibitorProfileId = getExhibitorProfileId(matchingFormData.exhibitor);
+
+      const matchingData = {
+        event_id: eventId,
+        registration_id: visitorId,
+        exhibitor_company: exhibitorProfileId,
+        date: matchingFormData.date,
+        time: matchingFormData.time,
+        message: matchingFormData.message || 'Looking forward to the meeting.'
+      };
+
+      const { matchingApi } = await import('@/lib/api/matching');
+      
+      // Validate locally first
+      const validation = matchingApi.validateLocally(matchingData);
+      if (!validation.isValid) {
+        showToast(`Validation Error: ${validation.errors.join(', ')}`, 'error');
+        return;
+      }
+      
+      // Submit to backend
+      const response = await matchingApi.submitRequest(matchingData);
+      
+      showToast(`✅ ${response.message}`, 'success');
+      closeMatchingForm();
+      
+      // Add haptic feedback
+      if ('vibrate' in navigator) {
+        navigator.vibrate([100, 50, 100]);
+      }
+      
+    } catch (error: any) {
+      const errorMessage = error.message || 'Có lỗi khi gửi yêu cầu matching';
+      showToast(errorMessage, 'error');
+    }
+  };
+
+  // Filter exhibitors for matching search
+  const getFilteredMatchingExhibitors = () => {
+    if (!matchingSearchQuery.trim()) return exhibitors;
+    
+    const query = matchingSearchQuery.toLowerCase();
+    return exhibitors.filter(exhibitor => {
+      const exhibitorAny = exhibitor as any;
+      const safeStringSearch = (value: any) => 
+        value && typeof value === 'string' && value.toLowerCase().includes(query);
+      
+      return (
+        safeStringSearch(exhibitor.display_name) ||
+        safeStringSearch(exhibitorAny.booth_no) ||
+        safeStringSearch(exhibitorAny.category) ||
+        safeStringSearch(exhibitor.country)
+      );
+    });
+  };
+
+
+
+
 
   // Generate QR code with loading state
   const generateQRCodeWithLoading = () => {
@@ -1961,6 +2132,72 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
             </div>
           )}
 
+          {activeTab === 'matching' && (
+            <div className="space-y-3">
+              {/* Quick Matching Button */}
+              <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+                <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
+                  <h3 className="insight-h3 mb-3 flex items-center">
+                    <Icon name="UserGroupIcon" className="w-4 h-4 text-indigo-600 mr-2" />
+                    Business Matching
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Tạo yêu cầu kết nối với các exhibitors để tối ưu hóa cơ hội kinh doanh tại sự kiện
+                  </p>
+                  
+                  <Button
+                    onClick={() => openMatchingForm()}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl transition-colors duration-200 flex items-center justify-center space-x-2"
+                  >
+                    <Icon name="UserGroupIcon" className="w-5 h-5" />
+                    <span>Tạo yêu cầu Matching</span>
+                  </Button>
+                </Card>
+              </div>
+
+              {/* Matching Guide */}
+              <div className={`transform transition-all duration-1000 delay-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+                <Card className="p-4 hover:shadow-md transition-shadow duration-300 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-3xl">
+                  <h3 className="insight-h3 text-indigo-800 mb-3 flex items-center">
+                    <Icon name="InformationCircleIcon" className="w-4 h-4 mr-2 text-indigo-600" />
+                    Hướng dẫn Matching
+                  </h3>
+                  <div className="space-y-2.5">
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 w-7 h-7 bg-indigo-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">1</span>
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-semibold text-indigo-800">Chọn Exhibitor</h4>
+                        <p className="text-xs text-indigo-600">Tìm kiếm và chọn exhibitor bạn muốn kết nối</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 w-7 h-7 bg-purple-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">2</span>
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-semibold text-indigo-800">Chọn thời gian</h4>
+                        <p className="text-xs text-indigo-600">Đặt lịch gặp mặt trong thời gian diễn ra sự kiện</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">3</span>
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-semibold text-indigo-800">Gửi yêu cầu</h4>
+                        <p className="text-xs text-indigo-600">Exhibitor sẽ nhận được thông báo và phản hồi</p>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'more' && (
             <div className="space-y-3">
               {/* Social & External Links */}
@@ -2081,7 +2318,218 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
         <ExhibitorDetailModal
           exhibitor={selectedExhibitor}
           onClose={() => setSelectedExhibitor(null)}
+          onMatching={() => openMatchingForm(selectedExhibitor)}
         />
+      )}
+
+      {/* Matching Form Modal */}
+      {isMatchingFormOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full max-h-[90vh] overflow-hidden shadow-2xl">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold flex items-center">
+                  <Icon name="UserGroupIcon" className="w-5 h-5 mr-2" />
+                  Business Matching
+                </h2>
+                <button
+                  onClick={closeMatchingForm}
+                  className="p-1 hover:bg-white/20 rounded-full transition-colors duration-200"
+                >
+                  <Icon name="XMarkIcon" className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-4 max-h-[70vh] overflow-y-auto">
+              {/* Exhibitor Selection */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Chọn Exhibitor
+                </label>
+                
+                {matchingFormData.exhibitor ? (
+                  // Selected Exhibitor Display
+                  <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-3 mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-10 rounded-lg bg-white border border-indigo-200 overflow-hidden flex-shrink-0">
+                        <ZohoImage
+                          src={matchingFormData.exhibitor.company_logo}
+                          alt={`${getExhibitorDisplayName(matchingFormData.exhibitor)} logo`}
+                          className="w-full h-full object-contain p-1"
+                          fallbackClassName="w-full h-full bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center text-sm font-medium text-indigo-600"
+                          fallbackText={getExhibitorDisplayName(matchingFormData.exhibitor).charAt(0)}
+                          sizes="48px"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-semibold text-indigo-800 truncate">
+                          {getExhibitorDisplayName(matchingFormData.exhibitor)}
+                        </h4>
+                                                 {(matchingFormData.exhibitor as any).booth_no && (
+                           <p className="text-xs text-indigo-600">
+                             Booth {(matchingFormData.exhibitor as any).booth_no}
+                           </p>
+                         )}
+                      </div>
+                      <button
+                        onClick={() => setMatchingFormData({...matchingFormData, exhibitor: null})}
+                        className="p-1 hover:bg-indigo-200 rounded-full transition-colors duration-200 flex-shrink-0"
+                      >
+                        <Icon name="XMarkIcon" className="w-4 h-4 text-indigo-600" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  // Exhibitor Search & Selection
+                  <div>
+                    <div className="relative mb-3">
+                      <Icon name="MagnifyingGlassIcon" className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Tìm kiếm exhibitor..."
+                        value={matchingSearchQuery}
+                        onChange={(e) => setMatchingSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                      />
+                    </div>
+                    
+                    <div className="max-h-48 overflow-y-auto space-y-2">
+                      {getFilteredMatchingExhibitors().slice(0, 10).map((exhibitor, index) => (
+                                                 <button
+                           key={`matching-${exhibitor.display_name}-${index}`}
+                           onClick={() => setMatchingFormData({...matchingFormData, exhibitor})}
+                           className="w-full bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-200 rounded-xl p-3 transition-colors duration-200 text-left"
+                         >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-8 rounded-lg bg-white border border-gray-200 overflow-hidden flex-shrink-0">
+                              <ZohoImage
+                                src={exhibitor.company_logo}
+                                alt={`${getExhibitorDisplayName(exhibitor)} logo`}
+                                className="w-full h-full object-contain p-1"
+                                fallbackClassName="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-xs font-medium text-gray-500"
+                                fallbackText={getExhibitorDisplayName(exhibitor).charAt(0)}
+                                sizes="40px"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm font-medium text-gray-800 truncate">
+                                {getExhibitorDisplayName(exhibitor)}
+                              </h4>
+                              {(exhibitor as any).booth_no && (
+                                <p className="text-xs text-gray-500">
+                                  Booth {(exhibitor as any).booth_no}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                      
+                      {getFilteredMatchingExhibitors().length === 0 && (
+                        <div className="text-center py-4 text-gray-500 text-sm">
+                          Không tìm thấy exhibitor phù hợp
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Date Selection */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ngày gặp mặt
+                </label>
+                <select
+                  value={matchingFormData.date}
+                  onChange={(e) => setMatchingFormData({...matchingFormData, date: e.target.value})}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                  required
+                >
+                  <option value="">Chọn ngày...</option>
+                  {getEventDates().map(date => (
+                    <option key={date} value={date}>
+                      {new Date(date).toLocaleDateString('vi-VN', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Time Selection */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Giờ gặp mặt
+                </label>
+                <select
+                  value={matchingFormData.time}
+                  onChange={(e) => setMatchingFormData({...matchingFormData, time: e.target.value})}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                  required
+                >
+                  <option value="">Chọn giờ...</option>
+                  <option value="09:00">09:00</option>
+                  <option value="09:30">09:30</option>
+                  <option value="10:00">10:00</option>
+                  <option value="10:30">10:30</option>
+                  <option value="11:00">11:00</option>
+                  <option value="11:30">11:30</option>
+                  <option value="12:00">12:00</option>
+                  <option value="12:30">12:30</option>
+                  <option value="13:00">13:00</option>
+                  <option value="13:30">13:30</option>
+                  <option value="14:00">14:00</option>
+                  <option value="14:30">14:30</option>
+                  <option value="15:00">15:00</option>
+                  <option value="15:30">15:30</option>
+                  <option value="16:00">16:00</option>
+                  <option value="16:30">16:30</option>
+                  <option value="17:00">17:00</option>
+                  <option value="17:30">17:30</option>
+                </select>
+              </div>
+
+              {/* Message */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tin nhắn (tùy chọn)
+                </label>
+                <textarea
+                  value={matchingFormData.message}
+                  onChange={(e) => setMatchingFormData({...matchingFormData, message: e.target.value})}
+                  placeholder="Mô tả ngắn gọn về mục đích gặp mặt..."
+                  rows={3}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm resize-none"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <Button
+                  onClick={closeMatchingForm}
+                  variant="outline"
+                  className="flex-1 py-2.5 text-sm rounded-xl border-gray-200 hover:border-gray-300"
+                >
+                  Hủy
+                </Button>
+                <Button
+                  onClick={submitMatchingRequest}
+                  disabled={!matchingFormData.exhibitor || !matchingFormData.date || !matchingFormData.time}
+                  className="flex-1 py-2.5 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  Gửi yêu cầu
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Toast Notification */}
@@ -2145,7 +2593,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
         )}
         
         <div className="max-w-md mx-auto px-4 pt-2 pb-safe">
-          <div className="grid grid-cols-4 gap-1">
+          <div className="grid grid-cols-5 gap-1">
             {tabs.map((tab, index) => (
               <button
                 key={tab.id}

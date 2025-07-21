@@ -584,6 +584,27 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     return { width: 85, height: 54 };
   };
 
+  // Determine badge layout based on dimensions
+  const getBadgeLayout = () => {
+    const badgeSize = getBadgeSize();
+    const aspectRatio = badgeSize.height / badgeSize.width;
+    
+    // If height is significantly more than width (aspect ratio > 1.2), use vertical layout
+    const isVerticalLayout = aspectRatio > 1.2;
+    
+    console.log('🎫 Badge layout decision:', {
+      width: badgeSize.width,
+      height: badgeSize.height,
+      aspectRatio: aspectRatio.toFixed(2),
+      layout: isVerticalLayout ? 'vertical' : 'horizontal'
+    });
+    
+    return {
+      ...badgeSize,
+      isVerticalLayout
+    };
+  };
+
   // Generate QR image with fallback (no React hooks)
   const generateQRImage = (qrData: string) => {
     console.log('🔥 Generating QR image for data:', qrData);
@@ -674,18 +695,18 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       company: companyInfo
     });
     
-    const badgeSize = getBadgeSize();
+    const badgeLayout = getBadgeLayout();
     
     // Reserve space for header and footer (about 15mm each)
-    const contentHeight = badgeSize.height - 30; // 30mm total for header + footer
+    const contentHeight = badgeLayout.height - 30; // 30mm total for header + footer
     const headerFooterHeight = 15; // 15mm each
 
     return (
       <div 
         className="badge-container"
         style={{
-          width: `${badgeSize.width}mm`,
-          height: `${badgeSize.height}mm`,
+          width: `${badgeLayout.width}mm`,
+          height: `${badgeLayout.height}mm`,
           background: 'white',
           border: '2px solid #E5E7EB',
           borderRadius: '8px',
@@ -714,26 +735,39 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           height: `${contentHeight}mm`,
           padding: '4mm',
           display: 'flex',
-          alignItems: 'center',
+          flexDirection: badgeLayout.isVerticalLayout ? 'column' : 'row',
+          alignItems: badgeLayout.isVerticalLayout ? 'center' : 'center',
+          justifyContent: badgeLayout.isVerticalLayout ? 'center' : 'flex-start',
           gap: '4mm'
         }}>
           {/* QR Code */}
-          {(() => {
-            console.log('🎯 About to call generateQRCode from generateBadgeContent');
-            return generateQRCode(visitorData);
-          })()}
+          <div style={{
+            order: badgeLayout.isVerticalLayout ? 1 : 0,
+            flexShrink: 0
+          }}>
+            {(() => {
+              console.log('🎯 About to call generateQRCode from generateBadgeContent');
+              return generateQRCode(visitorData);
+            })()}
+          </div>
           
           {/* Visitor Info */}
           <div style={{
-            flex: 1,
+            order: badgeLayout.isVerticalLayout ? 2 : 1,
+            flex: badgeLayout.isVerticalLayout ? 0 : 1,
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
-            minWidth: 0 // Allow text to shrink
+            alignItems: badgeLayout.isVerticalLayout ? 'center' : 'flex-start',
+            textAlign: badgeLayout.isVerticalLayout ? 'center' : 'left',
+            minWidth: 0, // Allow text to shrink
+            marginTop: badgeLayout.isVerticalLayout ? '4mm' : 0
           }}>
             {/* Visitor Name - with auto resize */}
             <div style={{
-              fontSize: visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px',
+              fontSize: badgeLayout.isVerticalLayout ? 
+                (visitorData.name.length > 20 ? '16px' : visitorData.name.length > 15 ? '18px' : '20px') :
+                (visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px'),
               fontWeight: 'bold',
               marginBottom: '2mm',
               color: '#1F2937',
@@ -746,7 +780,9 @@ export default function CheckinPage({ params }: CheckinPageProps) {
             {/* Company (if available) */}
             {companyInfo && (
               <div style={{
-                fontSize: companyInfo.length > 30 ? '10px' : '12px',
+                fontSize: badgeLayout.isVerticalLayout ?
+                  (companyInfo.length > 30 ? '12px' : '14px') :
+                  (companyInfo.length > 30 ? '10px' : '12px'),
                 fontWeight: '600',
                 color: '#4B5563',
                 wordWrap: 'break-word',
@@ -936,10 +972,14 @@ export default function CheckinPage({ params }: CheckinPageProps) {
 
   // Helper function to print with working QR URL
   const printBadgeWithQR = (visitorData: VisitorData, companyInfo: string, qrUrl: string) => {
-    const badgeSize = getBadgeSize();
-    const contentHeight = badgeSize.height - 30;
-    const nameSize = visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px';
-    const companySize = companyInfo && companyInfo.length > 30 ? '10px' : '12px';
+    const badgeLayout = getBadgeLayout();
+    const contentHeight = badgeLayout.height - 30;
+    const nameSize = badgeLayout.isVerticalLayout ? 
+      (visitorData.name.length > 20 ? '16px' : visitorData.name.length > 15 ? '18px' : '20px') :
+      (visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px');
+    const companySize = badgeLayout.isVerticalLayout ?
+      (companyInfo && companyInfo.length > 30 ? '12px' : '14px') :
+      (companyInfo && companyInfo.length > 30 ? '10px' : '12px');
     
     const printWindow = window.open('', '_blank', 'width=800,height=600');
     if (!printWindow) {
@@ -955,17 +995,32 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         <title>Badge - ${visitorData.name}</title>
         <style>
           @media print {
-            @page { size: ${badgeSize.width}mm ${contentHeight}mm; margin: 0; }
+            @page { size: ${badgeLayout.width}mm ${contentHeight}mm; margin: 0; }
             body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
           }
           body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: white; }
           .badge-content {
-            width: ${badgeSize.width}mm; height: ${contentHeight}mm; padding: 4mm;
-            display: flex; align-items: center; gap: 4mm; box-sizing: border-box;
+            width: ${badgeLayout.width}mm; height: ${contentHeight}mm; padding: 4mm;
+            display: flex; 
+            flex-direction: ${badgeLayout.isVerticalLayout ? 'column' : 'row'};
+            align-items: center; 
+            justify-content: ${badgeLayout.isVerticalLayout ? 'center' : 'flex-start'};
+            gap: 4mm; box-sizing: border-box;
           }
-          .qr-container { width: 20mm; height: 20mm; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0; }
+          .qr-container { 
+            width: 20mm; height: 20mm; display: flex; align-items: center; justify-content: center; 
+            background: #fff; flex-shrink: 0; order: ${badgeLayout.isVerticalLayout ? '1' : '0'}; 
+          }
           .qr-img { width: 18mm; height: 18mm; object-fit: contain; }
-          .info { flex: 1; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+          .info { 
+            flex: ${badgeLayout.isVerticalLayout ? '0' : '1'}; 
+            display: flex; flex-direction: column; justify-content: center; 
+            align-items: ${badgeLayout.isVerticalLayout ? 'center' : 'flex-start'};
+            text-align: ${badgeLayout.isVerticalLayout ? 'center' : 'left'};
+            min-width: 0;
+            margin-top: ${badgeLayout.isVerticalLayout ? '4mm' : '0'};
+            order: ${badgeLayout.isVerticalLayout ? '2' : '1'};
+          }
           .name { font-size: ${nameSize}; font-weight: bold; margin-bottom: 2mm; color: #1F2937; word-wrap: break-word; line-height: 1.2; }
           .company { font-size: ${companySize}; font-weight: 600; color: #4B5563; word-wrap: break-word; line-height: 1.1; }
         </style>
@@ -999,10 +1054,14 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   const printBadgeWithTextQR = (visitorData: VisitorData, companyInfo: string, qrData: string) => {
     console.log('📝 Printing with text QR fallback');
     
-    const badgeSize = getBadgeSize();
-    const contentHeight = badgeSize.height - 30;
-    const nameSize = visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px';
-    const companySize = companyInfo && companyInfo.length > 30 ? '10px' : '12px';
+    const badgeLayout = getBadgeLayout();
+    const contentHeight = badgeLayout.height - 30;
+    const nameSize = badgeLayout.isVerticalLayout ? 
+      (visitorData.name.length > 20 ? '16px' : visitorData.name.length > 15 ? '18px' : '20px') :
+      (visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px');
+    const companySize = badgeLayout.isVerticalLayout ?
+      (companyInfo && companyInfo.length > 30 ? '12px' : '14px') :
+      (companyInfo && companyInfo.length > 30 ? '10px' : '12px');
     
     const printWindow = window.open('', '_blank', 'width=800,height=600');
     if (!printWindow) {
@@ -1018,21 +1077,33 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         <title>Badge - ${visitorData.name}</title>
         <style>
           @media print {
-            @page { size: ${badgeSize.width}mm ${contentHeight}mm; margin: 0; }
+            @page { size: ${badgeLayout.width}mm ${contentHeight}mm; margin: 0; }
             body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
           }
           body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: white; }
           .badge-content {
-            width: ${badgeSize.width}mm; height: ${contentHeight}mm; padding: 4mm;
-            display: flex; align-items: center; gap: 4mm; box-sizing: border-box;
+            width: ${badgeLayout.width}mm; height: ${contentHeight}mm; padding: 4mm;
+            display: flex; 
+            flex-direction: ${badgeLayout.isVerticalLayout ? 'column' : 'row'};
+            align-items: center; 
+            justify-content: ${badgeLayout.isVerticalLayout ? 'center' : 'flex-start'};
+            gap: 4mm; box-sizing: border-box;
           }
           .qr-fallback {
             width: 20mm; height: 20mm; border: 2px solid #000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             font-size: 8px; text-align: center; color: #000; background: #fff; font-weight: bold;
-            flex-shrink: 0;
+            flex-shrink: 0; order: ${badgeLayout.isVerticalLayout ? '1' : '0'};
           }
-          .info { flex: 1; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+          .info { 
+            flex: ${badgeLayout.isVerticalLayout ? '0' : '1'}; 
+            display: flex; flex-direction: column; justify-content: center; 
+            align-items: ${badgeLayout.isVerticalLayout ? 'center' : 'flex-start'};
+            text-align: ${badgeLayout.isVerticalLayout ? 'center' : 'left'};
+            min-width: 0;
+            margin-top: ${badgeLayout.isVerticalLayout ? '4mm' : '0'};
+            order: ${badgeLayout.isVerticalLayout ? '2' : '1'};
+          }
           .name { font-size: ${nameSize}; font-weight: bold; margin-bottom: 2mm; color: #1F2937; word-wrap: break-word; line-height: 1.2; }
           .company { font-size: ${companySize}; font-weight: 600; color: #4B5563; word-wrap: break-word; line-height: 1.1; }
         </style>
@@ -1094,8 +1165,8 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         company: companyInfo
       });
       
-      const badgeSize = getBadgeSize();
-      const contentHeight = badgeSize.height - 30; // Reserve space for header/footer
+      const badgeLayout = getBadgeLayout();
+      const contentHeight = badgeLayout.height - 30; // Reserve space for header/footer
       const qrData = (visitorData as any)?.badge_qr || visitorData.id || '';
       
       console.log('🖨️ Print QR data:', qrData);
@@ -1106,20 +1177,26 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         position: absolute; 
         top: -9999px; 
         left: -9999px; 
-        width: ${badgeSize.width}mm; 
+        width: ${badgeLayout.width}mm; 
         height: ${contentHeight}mm;
         padding: 4mm;
         display: flex;
+        flex-direction: ${badgeLayout.isVerticalLayout ? 'column' : 'row'};
         align-items: center;
+        justify-content: ${badgeLayout.isVerticalLayout ? 'center' : 'flex-start'};
         gap: 4mm;
         box-sizing: border-box;
         background: white;
         font-family: Arial, sans-serif;
       `;
       
-      // Auto-resize logic
-      const nameSize = visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px';
-      const companySize = companyInfo && companyInfo.length > 30 ? '10px' : '12px';
+      // Auto-resize logic based on layout
+      const nameSize = badgeLayout.isVerticalLayout ? 
+        (visitorData.name.length > 20 ? '16px' : visitorData.name.length > 15 ? '18px' : '20px') :
+        (visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px');
+      const companySize = badgeLayout.isVerticalLayout ?
+        (companyInfo && companyInfo.length > 30 ? '12px' : '14px') :
+        (companyInfo && companyInfo.length > 30 ? '10px' : '12px');
       
       // Generate QR code URL with mobile-friendly settings
       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}&format=png&ecc=M`;
@@ -1127,7 +1204,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       
       stagingDiv.innerHTML = `
         <!-- QR Code -->
-        <div style="width: 20mm; height: 20mm; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0;">
+        <div style="width: 20mm; height: 20mm; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0; order: ${badgeLayout.isVerticalLayout ? '1' : '0'};">
           <img 
             id="print-qr-img"
             src="${qrUrl}" 
@@ -1138,7 +1215,17 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         </div>
         
         <!-- Visitor Info -->
-        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; min-width: 0;">
+        <div style="
+          flex: ${badgeLayout.isVerticalLayout ? '0' : '1'}; 
+          display: flex; 
+          flex-direction: column; 
+          justify-content: center; 
+          align-items: ${badgeLayout.isVerticalLayout ? 'center' : 'flex-start'};
+          text-align: ${badgeLayout.isVerticalLayout ? 'center' : 'left'};
+          min-width: 0;
+          margin-top: ${badgeLayout.isVerticalLayout ? '4mm' : '0'};
+          order: ${badgeLayout.isVerticalLayout ? '2' : '1'};
+        ">
           <div style="font-size: ${nameSize}; font-weight: bold; margin-bottom: 2mm; color: #1F2937; word-wrap: break-word; line-height: 1.2;">
             ${visitorData.name}
           </div>
@@ -1182,7 +1269,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
             <style>
               @media print {
                 @page {
-                  size: ${badgeSize.width}mm ${contentHeight}mm;
+                  size: ${badgeLayout.width}mm ${contentHeight}mm;
                   margin: 0;
                 }
                 body {
@@ -1198,11 +1285,13 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                 background: white;
               }
               .badge-content {
-                width: ${badgeSize.width}mm;
+                width: ${badgeLayout.width}mm;
                 height: ${contentHeight}mm;
                 padding: 4mm;
                 display: flex;
+                flex-direction: ${badgeLayout.isVerticalLayout ? 'column' : 'row'};
                 align-items: center;
+                justify-content: ${badgeLayout.isVerticalLayout ? 'center' : 'flex-start'};
                 gap: 4mm;
                 box-sizing: border-box;
               }

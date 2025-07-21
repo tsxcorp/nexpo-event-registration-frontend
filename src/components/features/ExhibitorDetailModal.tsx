@@ -10,9 +10,10 @@ import { ExhibitorData } from '@/lib/api/events';
 interface ExhibitorDetailModalProps {
   exhibitor: ExhibitorData;
   onClose: () => void;
+  onMatching?: () => void;
 }
 
-export default function ExhibitorDetailModal({ exhibitor, onClose }: ExhibitorDetailModalProps) {
+export default function ExhibitorDetailModal({ exhibitor, onClose, onMatching }: ExhibitorDetailModalProps) {
   const [videoError, setVideoError] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -293,12 +294,12 @@ export default function ExhibitorDetailModal({ exhibitor, onClose }: ExhibitorDe
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className="flex-1 overflow-y-auto p-5 sm:p-7">
           {activeTab === 'info' && (
-            <div className="space-y-6">
+            <div className="space-y-8">
               {/* Cover Image */}
               {exhibitor.cover_image && (
-                <div className="relative rounded-2xl overflow-hidden bg-gray-100 aspect-video">
+                <div className="relative rounded-2xl overflow-hidden bg-gray-100 aspect-video mb-6">
                   <ZohoImage
                     src={exhibitor.cover_image}
                     alt={`${exhibitor.display_name} cover`}
@@ -313,40 +314,46 @@ export default function ExhibitorDetailModal({ exhibitor, onClose }: ExhibitorDe
 
               {/* Products */}
               {getProducts() && (
-                <div className="bg-blue-50 rounded-2xl p-4">
-                  <h3 className="text-sm font-semibold text-blue-900 mb-2">Sản phẩm & Dịch vụ</h3>
-                  <p className="text-blue-800">{getProducts()}</p>
+                <div className="bg-blue-50 rounded-2xl p-5 mb-6">
+                  <h3 className="text-sm font-semibold text-blue-900 mb-3">🎯 Sản phẩm & Dịch vụ</h3>
+                  <p className="text-blue-800 leading-relaxed">{getProducts()}</p>
                 </div>
               )}
 
               {/* Company Description */}
               {getDescription() && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-3 text-gray-900">Giới thiệu công ty</h3>
-                  <p className="text-gray-700 leading-relaxed">{getDescription()}</p>
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-900 flex items-center">
+                    🏢 <span className="ml-2">Giới thiệu công ty</span>
+                  </h3>
+                  <div className="bg-gray-50 rounded-2xl p-5">
+                    <p className="text-gray-700 leading-relaxed">{getDescription()}</p>
+                  </div>
                 </div>
               )}
 
               {/* Address */}
-              <div>
-                <h3 className="text-lg font-semibold mb-3 text-gray-900">Địa chỉ</h3>
-                <div className="space-y-3 text-gray-700">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-4 text-gray-900 flex items-center">
+                  📍 <span className="ml-2">Địa chỉ</span>
+                </h3>
+                <div className="space-y-4 text-gray-700">
                   {exhibitor.vie_address && (
-                    <div className="bg-gray-50 rounded-xl p-3">
-                      <p className="text-xs font-medium text-gray-500 mb-1">Tiếng Việt</p>
-                      <p>{exhibitor.vie_address}</p>
+                    <div className="bg-white border border-gray-200 rounded-xl p-4">
+                      <p className="text-xs font-medium text-gray-500 mb-2">🇻🇳 Tiếng Việt</p>
+                      <p className="text-gray-800">{exhibitor.vie_address}</p>
                     </div>
                   )}
                   {exhibitor.eng_address && (
-                    <div className="bg-gray-50 rounded-xl p-3">
-                      <p className="text-xs font-medium text-gray-500 mb-1">English</p>
-                      <p>{exhibitor.eng_address}</p>
+                    <div className="bg-white border border-gray-200 rounded-xl p-4">
+                      <p className="text-xs font-medium text-gray-500 mb-2">🇺🇸 English</p>
+                      <p className="text-gray-800">{exhibitor.eng_address}</p>
                     </div>
                   )}
                   {exhibitor.zip_code && (
-                    <div className="flex items-center space-x-2 text-sm">
-                      <span className="text-gray-500">Mã bưu điện:</span>
-                      <span className="font-medium">{exhibitor.zip_code}</span>
+                    <div className="flex items-center space-x-3 text-sm bg-gray-100 rounded-lg p-3">
+                      <span className="text-gray-600">📮 Mã bưu điện:</span>
+                      <span className="font-semibold text-gray-800">{exhibitor.zip_code}</span>
                     </div>
                   )}
                 </div>
@@ -355,22 +362,27 @@ export default function ExhibitorDetailModal({ exhibitor, onClose }: ExhibitorDe
           )}
 
           {activeTab === 'contact' && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* Contact Information */}
-              <div className="grid gap-4">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-4 text-gray-900 flex items-center">
+                  📞 <span className="ml-2">Thông tin liên hệ</span>
+                </h3>
+              </div>
+              <div className="grid gap-5">
                 {exhibitor.email && (
                   <a 
                     href={`mailto:${exhibitor.email}`}
-                    className="flex items-center space-x-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors"
+                    className="flex items-center space-x-4 p-5 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-2xl transition-all duration-200 border border-blue-200"
                   >
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center shadow-md">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 7.89a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">Email</p>
-                      <p className="text-sm text-gray-500">{exhibitor.email}</p>
+                      <p className="font-semibold text-gray-900 mb-1">📧 Email</p>
+                      <p className="text-sm text-blue-700 font-medium">{exhibitor.email}</p>
                     </div>
                   </a>
                 )}
@@ -378,16 +390,16 @@ export default function ExhibitorDetailModal({ exhibitor, onClose }: ExhibitorDe
                 {exhibitor.tel && (
                   <a 
                     href={`tel:${exhibitor.tel}`}
-                    className="flex items-center space-x-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors"
+                    className="flex items-center space-x-4 p-5 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-2xl transition-all duration-200 border border-green-200"
                   >
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center shadow-md">
+                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">Điện thoại</p>
-                      <p className="text-sm text-gray-500">{exhibitor.tel}</p>
+                      <p className="font-semibold text-gray-900 mb-1">☎️ Điện thoại</p>
+                      <p className="text-sm text-green-700 font-medium">{exhibitor.tel}</p>
                     </div>
                   </a>
                 )}
@@ -477,30 +489,41 @@ export default function ExhibitorDetailModal({ exhibitor, onClose }: ExhibitorDe
         </div>
 
         {/* Footer Actions */}
-        <div className="border-t border-gray-100 p-4 sm:p-6">
-          <div className="flex space-x-3">
+        <div className="border-t border-gray-100 p-5 sm:p-7 bg-gray-50">
+          <div className="flex space-x-4">
+            {onMatching && (
+              <Button
+                onClick={onMatching}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-200"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                🤝 Matching
+              </Button>
+            )}
             {getWebsiteUrl() && (
               <Button
                 onClick={() => window.open(getWebsiteUrl(), '_blank')}
                 variant="outline"
-                className="flex-1"
+                className="flex-1 py-3 rounded-xl font-semibold border-2 border-gray-300 hover:border-gray-400 transition-all duration-200"
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
-                Website
+                🌐 Website
               </Button>
             )}
             {exhibitor.email && (
               <Button
                 onClick={() => window.open(`mailto:${exhibitor.email}`, '_blank')}
                 variant="primary"
-                className="flex-1"
+                className="flex-1 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-200"
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 7.89a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                Liên hệ
+                📧 Liên hệ
               </Button>
             )}
           </div>
