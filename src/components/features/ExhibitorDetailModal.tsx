@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Button from '@/components/ui/Button';
+
 import Card from '@/components/ui/Card';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import ZohoImage from '@/components/ui/ZohoImage';
@@ -136,28 +136,23 @@ export default function ExhibitorDetailModal({ exhibitor, onClose, onMatching }:
   return (
     <div 
       ref={backdropRef}
-      className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center transition-all duration-300 ${
+      className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 p-4 pb-24 sm:pb-4 ${
         isVisible && !isClosing ? 'bg-black/50 backdrop-blur-sm' : 'bg-transparent'
       }`}
       onClick={handleBackdropClick}
     >
       <div
         ref={modalRef}
-        className={`w-full max-w-lg mx-auto bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl transform transition-all duration-300 max-h-[90vh] flex flex-col ${
+        className={`w-full max-w-lg mx-auto bg-white rounded-2xl shadow-2xl transform transition-all duration-300 max-h-[75vh] flex flex-col ${
           isVisible && !isClosing 
-            ? 'translate-y-0 opacity-100' 
+            ? 'translate-y-0 opacity-100 scale-100' 
             : isClosing 
-              ? 'translate-y-full opacity-0 sm:translate-y-0 sm:scale-95' 
-              : 'translate-y-full opacity-0 sm:translate-y-8 sm:scale-95'
+              ? 'translate-y-8 opacity-0 scale-95' 
+              : 'translate-y-8 opacity-0 scale-95'
         }`}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+
       >
-        {/* Drag Handle */}
-        <div className="flex justify-center py-3 sm:hidden">
-          <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
-        </div>
+
 
         {/* Enhanced Header */}
         <div className="relative p-4 sm:p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50">
@@ -207,7 +202,7 @@ export default function ExhibitorDetailModal({ exhibitor, onClose, onMatching }:
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                     </svg>
-                    <span className="truncate max-w-[120px]">
+                    <span>
                       {Array.isArray((exhibitor as any).category) 
                         ? (exhibitor as any).category[0] 
                         : (exhibitor as any).category}
@@ -221,10 +216,10 @@ export default function ExhibitorDetailModal({ exhibitor, onClose, onMatching }:
                 {exhibitor.email && (
                   <a 
                     href={`mailto:${exhibitor.email}`}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-full transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 hover:text-gray-900 text-sm font-medium rounded-lg border border-gray-200 hover:border-gray-300 transition-all"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 7.89a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                     Email
@@ -233,10 +228,10 @@ export default function ExhibitorDetailModal({ exhibitor, onClose, onMatching }:
                 {exhibitor.tel && (
                   <a 
                     href={`tel:${exhibitor.tel}`}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-xs font-medium rounded-full transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 hover:text-gray-900 text-sm font-medium rounded-lg border border-gray-200 hover:border-gray-300 transition-all"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                     </svg>
                     Call
@@ -247,10 +242,10 @@ export default function ExhibitorDetailModal({ exhibitor, onClose, onMatching }:
                     href={getWebsiteUrl()}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-xs font-medium rounded-full transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 hover:text-gray-900 text-sm font-medium rounded-lg border border-gray-200 hover:border-gray-300 transition-all"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
                     Visit
@@ -489,42 +484,40 @@ export default function ExhibitorDetailModal({ exhibitor, onClose, onMatching }:
         </div>
 
         {/* Footer Actions */}
-        <div className="border-t border-gray-100 p-5 sm:p-7 bg-gray-50">
-          <div className="flex space-x-4">
+        <div className="border-t border-gray-100 p-4 bg-white">
+          <div className="grid grid-cols-3 gap-2">
             {onMatching && (
-              <Button
+              <button
                 onClick={onMatching}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-200"
+                className="flex flex-col items-center justify-center p-3 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-colors group"
               >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 mb-1 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                🤝 Matching
-              </Button>
+                <span className="text-xs font-medium">Matching</span>
+              </button>
             )}
             {getWebsiteUrl() && (
-              <Button
+              <button
                 onClick={() => window.open(getWebsiteUrl(), '_blank')}
-                variant="outline"
-                className="flex-1 py-3 rounded-xl font-semibold border-2 border-gray-300 hover:border-gray-400 transition-all duration-200"
+                className="flex flex-col items-center justify-center p-3 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors group"
               >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 mb-1 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
-                🌐 Website
-              </Button>
+                <span className="text-xs font-medium">Website</span>
+              </button>
             )}
             {exhibitor.email && (
-              <Button
+              <button
                 onClick={() => window.open(`mailto:${exhibitor.email}`, '_blank')}
-                variant="primary"
-                className="flex-1 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-200"
+                className="flex flex-col items-center justify-center p-3 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors group"
               >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 mb-1 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 7.89a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                📧 Liên hệ
-              </Button>
+                <span className="text-xs font-medium">Liên hệ</span>
+              </button>
             )}
           </div>
         </div>

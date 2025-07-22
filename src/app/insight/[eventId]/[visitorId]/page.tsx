@@ -8,7 +8,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import ZohoImage from '@/components/ui/ZohoImage';
 import { useEventMetadata } from '@/hooks/useEventMetadata';
 import { EventData, ExhibitorData, eventApi } from '@/lib/api/events';
-import { VisitorData, visitorApi } from '@/lib/api/visitors';
+import { VisitorData, MatchingEntry, visitorApi } from '@/lib/api/visitors';
 import FileViewer from '@/components/features/FileViewer';
 import ExhibitorDetailModal from '@/components/features/ExhibitorDetailModal';
 import { renderHtmlContent } from '@/lib/utils/htmlUtils';
@@ -65,6 +65,9 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isFavoriteActionsOpen, setIsFavoriteActionsOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<{
     show: boolean;
     message: string;
@@ -77,12 +80,20 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
   const [isMatchingFormOpen, setIsMatchingFormOpen] = useState(false);
   const [selectedMatchingExhibitor, setSelectedMatchingExhibitor] = useState<ExhibitorData | null>(null);
   const [matchingSearchQuery, setMatchingSearchQuery] = useState('');
+  const [isSubmittingMatching, setIsSubmittingMatching] = useState(false);
   const [matchingFormData, setMatchingFormData] = useState({
     exhibitor: null as ExhibitorData | null,
     date: '',
     time: '',
     message: ''
   });
+  
+  // Matching filters
+  const [matchingTimeFilter, setMatchingTimeFilter] = useState<'all' | 'morning' | 'afternoon' | 'evening'>('all');
+  const [matchingStatusFilter, setMatchingStatusFilter] = useState<'all' | 'confirmed' | 'pending'>('all');
+  const [matchingDateFilter, setMatchingDateFilter] = useState<string[]>([]);
+  const [isMatchingFiltersOpen, setIsMatchingFiltersOpen] = useState(false);
+  const [matchingViewMode, setMatchingViewMode] = useState<'list' | 'calendar' | 'timeline'>('calendar');
 
   const { generateShareUrls } = useEventMetadata({ 
     event: eventData, 
@@ -106,7 +117,6 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       try {
         const storageKey = getFavoriteStorageKey();
         const savedFavorites = localStorage.getItem(storageKey);
-        console.log('🔍 Loading favorites from localStorage:', { storageKey, savedFavorites });
         
         if (savedFavorites) {
           const parsed = JSON.parse(savedFavorites);
@@ -116,15 +126,8 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
             ? Array.from(new Set(parsed.filter(item => typeof item === 'string' && item.trim().length > 0)))
             : [];
           
-          console.log('📥 Cleaned favorites loaded:', {
-            original: parsed,
-            cleaned: cleanedFavorites,
-            duplicatesRemoved: parsed.length - cleanedFavorites.length
-          });
-          
           setFavoriteExhibitors(cleanedFavorites);
         } else {
-          console.log('📥 No saved favorites found, starting with empty array');
           setFavoriteExhibitors([]);
         }
       } catch (error) {
@@ -145,7 +148,6 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       try {
         const storageKey = getFavoriteStorageKey();
         localStorage.setItem(storageKey, JSON.stringify(favoriteExhibitors));
-        console.log('💾 Saved favorites to localStorage:', favoriteExhibitors);
       } catch (error) {
         console.error('❌ Error saving favorites to localStorage:', error);
       }
@@ -176,11 +178,36 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
     return uniqueCategories;
   };
 
-  // Advanced search functionality
+  // Multi-select category functions
+  const toggleCategorySelection = (category: string) => {
+    setSelectedCategories(prev => {
+      if (prev.includes(category)) {
+        return prev.filter(c => c !== category);
+      } else {
+        return [...prev, category];
+      }
+    });
+  };
+
+  const clearAllCategories = () => {
+    setSelectedCategories([]);
+    setSelectedCategory('all');
+  };
+
+  const applyCategoryFilters = () => {
+    setIsCategoryModalOpen(false);
+    if (selectedCategories.length === 0) {
+      setSelectedCategory('all');
+    } else {
+      setSelectedCategory('multiple');
+    }
+  };
+
+  // Advanced search functionality with multi-select support
   useEffect(() => {
     let filtered = exhibitors;
 
-    // Filter by category first
+    // Filter by category first (support both single and multi-select)
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(exhibitor => {
         const category = (exhibitor as any).category;
@@ -193,6 +220,12 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           categoryString = category.trim();
         }
         
+        // Multi-select logic
+        if (selectedCategory === 'multiple') {
+          return categoryString && selectedCategories.includes(categoryString);
+        }
+        
+        // Single select logic (backward compatibility)
         return categoryString && categoryString === selectedCategory;
       });
     }
@@ -228,7 +261,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
     }
 
     setFilteredExhibitors(filtered);
-  }, [searchQuery, selectedCategory, exhibitors]);
+  }, [searchQuery, selectedCategory, selectedCategories, exhibitors]);
 
   // Entrance animations and scroll effects
   useEffect(() => {
@@ -494,15 +527,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
         ? prev.filter(id => id !== exhibitorId)
         : [...prev, exhibitorId];
       
-      // Debug logging
-      console.log('🔍 Toggle Favorite Debug:', {
-        exhibitorId,
-        displayName,
-        isCurrentlyFavorite,
-        previousFavorites: prev,
-        newFavorites,
-        newFavoritesLength: newFavorites.length
-      });
+
       
       // Show toast notification
       const action = isCurrentlyFavorite ? 'đã xóa khỏi' : 'đã thêm vào';
@@ -537,22 +562,9 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
     return result;
   };
 
-  // Get favorite exhibitors data with debug logging
+  // Get favorite exhibitors data
   const getFavoriteExhibitorsData = () => {
-    const favoriteData = exhibitors.filter(ex => isFavorite(ex));
-    
-    console.log('🔍 Favorites Debug:', {
-      favoriteExhibitorsArray: favoriteExhibitors,
-      favoriteExhibitorsLength: favoriteExhibitors.length,
-      totalExhibitors: exhibitors.length,
-      favoriteDataFound: favoriteData.length,
-      favoriteDataItems: favoriteData.map(ex => ({
-        id: getExhibitorId(ex),
-        name: getExhibitorDisplayName(ex)
-      }))
-    });
-    
-    return favoriteData;
+    return exhibitors.filter(ex => isFavorite(ex));
   };
 
   // Generate QR Code with Nexpo favicon in center
@@ -1249,6 +1261,19 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
     setMatchingSearchQuery('');
   };
 
+  // Refresh visitor data to get updated matching list
+  const refreshVisitorData = async () => {
+    try {
+      console.log('🔄 Refreshing visitor data after matching submission...');
+      const visitorResponse = await visitorApi.getVisitorInfo(visitorId);
+      setVisitorData(visitorResponse.visitor);
+      console.log('✅ Visitor data refreshed successfully');
+    } catch (error) {
+      console.error('❌ Failed to refresh visitor data:', error);
+      // Don't show error toast as this is background operation
+    }
+  };
+
   // Submit matching request
   const submitMatchingRequest = async () => {
     if (!eventData || !visitorData || !matchingFormData.exhibitor) {
@@ -1260,6 +1285,8 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       showToast('Vui lòng chọn ngày và giờ', 'error');
       return;
     }
+
+    setIsSubmittingMatching(true);
 
     try {
       const exhibitorProfileId = getExhibitorProfileId(matchingFormData.exhibitor);
@@ -1282,20 +1309,73 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
         return;
       }
       
-      // Submit to backend
-      const response = await matchingApi.submitRequest(matchingData);
+      // Optimistic update - add matching entry immediately for better UX
+      const optimisticEntry: MatchingEntry = {
+        date: matchingFormData.date,
+        exhibitor_profile_id: Number(exhibitorProfileId),
+        time: {
+          hour: parseInt(matchingFormData.time.split(':')[0]),
+          minute: parseInt(matchingFormData.time.split(':')[1]),
+          second: 0,
+          millis: 0,
+          SQLTime: `${matchingFormData.time}:00`
+        },
+        message: matchingFormData.message || '',
+        confirmed: false // New submissions are typically unconfirmed
+      };
       
-      showToast(`✅ ${response.message}`, 'success');
+      // Store original data for rollback
+      const originalMatchingList = visitorData.matching_list || [];
+      
+      // Update UI immediately
+      setVisitorData(prev => ({
+        ...prev!,
+        matching_list: [...originalMatchingList, optimisticEntry]
+      }));
+      
+      // Switch to matching tab to show the new entry immediately
+      setActiveTab('matching');
       closeMatchingForm();
       
-      // Add haptic feedback
-      if ('vibrate' in navigator) {
-        navigator.vibrate([100, 50, 100]);
+      // Show processing toast
+      showToast('🔄 Đang gửi yêu cầu matching...', 'info');
+      
+      try {
+        // Submit to backend
+        const response = await matchingApi.submitRequest(matchingData);
+        
+        showToast(`✅ ${response.message}`, 'success');
+        
+        // Add haptic feedback
+        if ('vibrate' in navigator) {
+          navigator.vibrate([100, 50, 100]);
+        }
+        
+        // Refresh visitor data in background to sync with server
+        setTimeout(() => {
+          refreshVisitorData();
+        }, 1000); // Delay to avoid too many API calls
+        
+      } catch (apiError: any) {
+        // Rollback optimistic update on API error
+        console.error('❌ API submission failed, rolling back optimistic update:', apiError);
+        setVisitorData(prev => ({
+          ...prev!,
+          matching_list: originalMatchingList
+        }));
+        
+        const errorMessage = apiError.message || 'Có lỗi khi gửi yêu cầu matching';
+        showToast(errorMessage, 'error');
+        
+        // Reopen form so user can try again
+        setIsMatchingFormOpen(true);
       }
       
     } catch (error: any) {
       const errorMessage = error.message || 'Có lỗi khi gửi yêu cầu matching';
       showToast(errorMessage, 'error');
+    } finally {
+      setIsSubmittingMatching(false);
     }
   };
 
@@ -1316,6 +1396,116 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
         safeStringSearch(exhibitor.country)
       );
     });
+  };
+
+  // Filter matching entries by date, time and status
+  const getFilteredMatchingEntries = () => {
+    if (!visitorData?.matching_list) return [];
+    
+    return visitorData.matching_list.filter((matching: MatchingEntry) => {
+      // Filter by status
+      if (matchingStatusFilter === 'confirmed' && !matching.confirmed) return false;
+      if (matchingStatusFilter === 'pending' && matching.confirmed) return false;
+      
+      // Filter by date
+      if (matchingDateFilter.length > 0) {
+        if (!matchingDateFilter.includes(matching.date)) return false;
+      }
+      
+      // Filter by time
+      if (matchingTimeFilter !== 'all') {
+        const hour = matching.time.hour;
+        if (matchingTimeFilter === 'morning' && (hour < 6 || hour >= 12)) return false;
+        if (matchingTimeFilter === 'afternoon' && (hour < 12 || hour >= 18)) return false;
+        if (matchingTimeFilter === 'evening' && (hour < 18 || hour >= 24)) return false;
+      }
+      
+      return true;
+    });
+  };
+
+  // Get unique dates from matching list
+  const getMatchingDates = () => {
+    if (!visitorData?.matching_list) return [];
+    const dates = visitorData.matching_list.map(m => m.date);
+    return Array.from(new Set(dates)).sort();
+  };
+
+  // Add to calendar functionality
+  const addToCalendar = (matching: MatchingEntry) => {
+    const exhibitor = exhibitors.find(ex => {
+      const exhibitorAny = ex as any;
+      return String(exhibitorAny.exhibitor_profile_id) === String(matching.exhibitor_profile_id);
+    });
+    
+    const getExhibitorName = (exhibitor: any) => {
+      if (exhibitor?.display_name && exhibitor.display_name.trim()) {
+        return exhibitor.display_name;
+      }
+      if (exhibitor?.eng_company_description) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = exhibitor.eng_company_description;
+        const textContent = tempDiv.textContent || tempDiv.innerText || '';
+        const firstLine = textContent.split('\n')[0].trim();
+        if (firstLine) return firstLine;
+      }
+      return exhibitor?.booth_no ? `Booth ${exhibitor.booth_no}` : `Exhibitor ${matching.exhibitor_profile_id}`;
+    };
+    
+    const exhibitorName = exhibitor ? getExhibitorName(exhibitor) : `Exhibitor ${matching.exhibitor_profile_id}`;
+    const booth = exhibitor ? (exhibitor as any).booth_no : '';
+    
+    // Create datetime
+    const startDateTime = new Date(`${matching.date}T${String(matching.time.hour).padStart(2, '0')}:${String(matching.time.minute).padStart(2, '0')}:00`);
+    const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // 1 hour duration
+    
+    const formatDateTime = (date: Date) => {
+      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    };
+    
+    const title = `Business Matching - ${exhibitorName}`;
+    const description = `Meeting with ${exhibitorName}${booth ? ` at Booth ${booth}` : ''}${matching.message ? `\n\nNote: ${matching.message}` : ''}`;
+    const location = booth ? `Booth ${booth}, ${eventData?.name}` : eventData?.name || '';
+    
+    // Create calendar URLs
+    const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${formatDateTime(startDateTime)}/${formatDateTime(endDateTime)}&details=${encodeURIComponent(description)}&location=${encodeURIComponent(location)}`;
+    
+    const outlookUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(title)}&startdt=${formatDateTime(startDateTime)}&enddt=${formatDateTime(endDateTime)}&body=${encodeURIComponent(description)}&location=${encodeURIComponent(location)}`;
+    
+    // Show options
+    const userAgent = navigator.userAgent.toLowerCase();
+    if (userAgent.includes('iphone') || userAgent.includes('ipad')) {
+      // iOS - create ICS file
+      const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Nexpo//Nexpo Event App//EN
+BEGIN:VEVENT
+DTSTART:${formatDateTime(startDateTime)}
+DTEND:${formatDateTime(endDateTime)}
+SUMMARY:${title}
+DESCRIPTION:${description}
+LOCATION:${location}
+END:VEVENT
+END:VCALENDAR`;
+      
+      const blob = new Blob([icsContent], { type: 'text/calendar' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `matching-${exhibitorName.replace(/[^a-zA-Z0-9]/g, '-')}.ics`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } else {
+      // Show options for desktop/Android
+      const options = [
+        { name: 'Google Calendar', url: googleUrl },
+        { name: 'Outlook', url: outlookUrl }
+      ];
+      
+      // Simple selection (could be enhanced with a modal)
+      const choice = confirm('Chọn "OK" để mở Google Calendar, "Cancel" để mở Outlook');
+      window.open(choice ? googleUrl : outlookUrl, '_blank');
+    }
   };
 
 
@@ -1478,34 +1668,96 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
         </div>
       )}
 
-      {/* Header - Soft Gradient */}
-      <div className={`bg-gradient-to-r from-slate-600 to-slate-700 shadow-xl sticky top-0 z-10 transition-all duration-300 ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
-        <div className="max-w-md mx-auto px-4 py-3.5">
-          <div className="flex items-start space-x-3">
+      {/* Enhanced Header with Beautiful Gradient */}
+      <div className={`relative bg-gradient-to-br from-indigo-600 via-blue-600 to-purple-700 shadow-xl sticky top-0 z-10 transition-all duration-300 overflow-hidden ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-0 left-1/4 w-32 h-32 bg-white/10 rounded-full blur-2xl animate-pulse"></div>
+          <div className="absolute -top-4 right-1/3 w-24 h-24 bg-purple-300/20 rounded-full blur-xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute bottom-0 left-2/3 w-20 h-20 bg-blue-300/15 rounded-full blur-lg animate-pulse" style={{ animationDelay: '2s' }}></div>
+          
+          {/* Geometric Pattern */}
+          <div className="absolute top-0 right-0 w-full h-full opacity-10">
+            <div className="absolute top-2 right-4 w-8 h-8 border border-white/30 rounded transform rotate-45"></div>
+            <div className="absolute top-6 right-12 w-4 h-4 bg-white/20 rounded-full"></div>
+            <div className="absolute bottom-3 right-8 w-6 h-6 border border-white/20 rounded-lg transform -rotate-12"></div>
+          </div>
+          
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+        </div>
+
+        <div className="relative max-w-md mx-auto px-4 py-4">
+          <div className="flex items-start space-x-4">
+            {/* Enhanced Logo Container */}
             {eventData.logo && (
-              <div className="w-10 h-10 rounded-xl bg-white flex-shrink-0 shadow-sm mt-0.5 p-1">
-                <img 
-                  src={eventData.logo} 
-                  alt={eventData.name}
-                  className="w-full h-full object-contain"
-                />
+              <div className="relative flex-shrink-0 mt-1">
+                <div className="w-12 h-12 rounded-2xl bg-white/95 backdrop-blur-sm flex-shrink-0 shadow-lg border border-white/20 p-1.5 group hover:scale-105 transition-transform duration-300">
+                  <img 
+                    src={eventData.logo} 
+                    alt={eventData.name}
+                    className="w-full h-full object-contain"
+                  />
+                  {/* Subtle glow effect */}
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                </div>
+                {/* Status indicator */}
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white shadow-sm">
+                  <div className="w-full h-full bg-emerald-400 rounded-full animate-ping"></div>
+                </div>
               </div>
             )}
+            
+            {/* Enhanced Content */}
             <div className="flex-1 min-w-0">
-              <h1 className="text-base font-semibold text-white leading-tight break-words">
-                {eventData.name || 'Event Dashboard'}
-              </h1>
-              <p className="text-xs text-white/80 font-medium mt-1">
-                {new Date(eventData.start_date).toLocaleDateString('vi-VN')} - {new Date(eventData.end_date).toLocaleDateString('vi-VN')}
-              </p>
-              {visitorData.registration_date && (
-                <p className="text-xs text-white/70 mt-0.5">
-                  Đăng ký: {new Date(visitorData.registration_date).toLocaleDateString('vi-VN')}
-                </p>
-              )}
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-lg font-bold text-white leading-tight break-words mb-1 drop-shadow-sm">
+                    {eventData.name || 'Event Dashboard'}
+                  </h1>
+                  
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-1 text-white/90 text-xs font-medium bg-white/10 backdrop-blur-sm px-2 py-1 rounded-full">
+                      <Icon name="CalendarDaysIcon" className="w-3 h-3" />
+                      <span>{new Date(eventData.start_date).toLocaleDateString('vi-VN')} - {new Date(eventData.end_date).toLocaleDateString('vi-VN')}</span>
+                    </div>
+                  </div>
+                  
+                  {visitorData.registration_date && (
+                    <div className="flex items-center gap-1 text-white/80 text-xs">
+                      <Icon name="CheckCircleIcon" className="w-3 h-3 text-emerald-300" />
+                      <span>Đăng ký: {new Date(visitorData.registration_date).toLocaleDateString('vi-VN')}</span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Status Badge */}
+                <div className={`flex-shrink-0 ml-3 mt-1 px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-sm transition-all duration-300 ${
+                  hasCheckedIn
+                    ? 'bg-emerald-500/20 text-emerald-100 border-emerald-400/30'
+                    : 'bg-amber-500/20 text-amber-100 border-amber-400/30'
+                }`}>
+                  <div className="flex items-center gap-1">
+                    {hasCheckedIn ? (
+                      <>
+                        <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                        <span>Active</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
+                        <span>Ready</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+        
+        {/* Bottom gradient border */}
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
       </div>
 
 
@@ -1513,7 +1765,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       {/* Content */}
       <div 
         ref={contentRef}
-        className="max-w-md mx-auto px-4 py-4 mobile-content-spacing space-y-4 relative smooth-scroll"
+        className="max-w-md mx-auto px-4 py-4 pb-24 mobile-content-spacing space-y-4 relative smooth-scroll"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -1546,83 +1798,77 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
               </div>
             </div>
 
-            {/* Soft Category Filter Pills */}
+            {/* Smart Category Filter Button */}
             {getUniqueCategories().length > 0 && (
-              <div className="mb-6">
-                <div className="flex items-center gap-2 px-1 mb-3">
-                  <Icon name="AdjustmentsHorizontalIcon" className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm font-medium text-gray-600">Categories</span>
-                </div>
-                <div className="flex flex-wrap gap-2 px-1">
-                  <button
-                    onClick={() => setSelectedCategory('all')}
-                    className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                      selectedCategory === 'all'
-                        ? 'bg-slate-700 text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    <span>All</span>
-                    <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-xs ${
-                      selectedCategory === 'all' ? 'bg-white/20' : 'bg-white'
-                    }`}>
-                      {exhibitors.length}
-                    </span>
-                  </button>
-                  {getUniqueCategories().map((category) => {
-                    const count = exhibitors.filter(ex => {
-                      const cat = (ex as any).category;
-                      let categoryString = '';
-                      if (Array.isArray(cat) && cat.length > 0) {
-                        categoryString = typeof cat[0] === 'string' ? cat[0].trim() : '';
-                      } else if (typeof cat === 'string') {
-                        categoryString = cat.trim();
-                      }
-                      return categoryString === category;
-                    }).length;
-                    
-                    // Truncate long category names
-                    const displayName = category.length > 20 ? category.substring(0, 20) + '...' : category;
-                    
-                    return (
-                      <button
-                        key={category}
-                        onClick={() => setSelectedCategory(category)}
-                        className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 max-w-[180px] ${
-                          selectedCategory === category
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-gray-100 text-gray-600 hover:bg-indigo-100 hover:text-indigo-600'
-                        }`}
-                        title={category}
-                      >
-                        <span className="truncate">{displayName}</span>
-                        <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-xs flex-shrink-0 ${
-                          selectedCategory === category ? 'bg-white/20' : 'bg-white'
-                        }`}>
-                          {count}
+              <div className="mb-6 px-1">
+                <button
+                  onClick={() => setIsCategoryModalOpen(true)}
+                  className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 rounded-2xl transition-all duration-200 group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white rounded-xl group-hover:bg-gray-50 transition-colors">
+                      <Icon name="AdjustmentsHorizontalIcon" className="w-5 h-5 text-gray-600" />
+                    </div>
+                    <div className="text-left">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-800">Categories</span>
+                        <span className="text-xs text-gray-500 bg-white px-2 py-0.5 rounded-full">
+                          {getUniqueCategories().length}
                         </span>
-                      </button>
-                    );
-                  })}
-                </div>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {selectedCategories.length === 0 
+                          ? 'Tap to filter by categories'
+                          : `${selectedCategories.length} selected`
+                        }
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    {selectedCategories.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        {selectedCategories.slice(0, 2).map((cat, index) => (
+                          <span
+                            key={cat}
+                            className="inline-flex items-center px-2 py-1 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-lg"
+                          >
+                            {cat.length > 12 ? cat.substring(0, 12) + '...' : cat}
+                          </span>
+                        ))}
+                        {selectedCategories.length > 2 && (
+                          <span className="text-xs text-gray-500 font-medium">
+                            +{selectedCategories.length - 2}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <Icon name="ChevronRightIcon" className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                  </div>
+                </button>
               </div>
             )}
 
             {/* Search Results Info - Clean */}
-            {(searchQuery || selectedCategory !== 'all') && (
+            {(searchQuery || selectedCategories.length > 0) && (
               <div className="flex items-center justify-between px-1 mb-6">
                 <div className="flex items-center gap-2">
                   <div className={`w-1.5 h-1.5 rounded-full ${isSearching ? 'bg-indigo-500 animate-pulse' : 'bg-emerald-500'}`}></div>
-                  <p className="text-xs text-gray-500 font-medium">
-                    {isSearching ? 'Searching...' : `${filteredExhibitors.length} results`}
-                  </p>
+                                      <p className="text-xs text-gray-500 font-medium">
+                      {isSearching ? 'Searching...' : `${filteredExhibitors.length} results`}
+                      {selectedCategories.length > 0 && (
+                        <span className="ml-2 text-indigo-600">
+                          • {selectedCategories.length} categor{selectedCategories.length === 1 ? 'y' : 'ies'}
+                        </span>
+                      )}
+                    </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {(searchQuery || selectedCategory !== 'all') && (
+                  {(searchQuery || selectedCategories.length > 0) && (
                     <button
                       onClick={() => {
                         setSearchQuery('');
-                        setSelectedCategory('all');
+                        clearAllCategories();
                       }}
                       className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
                     >
@@ -1911,39 +2157,39 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
 
               {/* App Guide */}
               <div className={`transform transition-all duration-1000 delay-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-                <Card className="p-4 hover:shadow-md transition-shadow duration-300 bg-gradient-to-r from-slate-50 to-gray-50 border border-slate-200 rounded-3xl">
-                  <h3 className="insight-h3 text-slate-800 mb-3 flex items-center">
-                    <Icon name="InformationCircleIcon" className="w-4 h-4 mr-2 text-slate-600" />
+                <Card className="p-4 hover:shadow-md transition-shadow duration-300 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-3xl">
+                  <h3 className="insight-h3 text-blue-800 mb-3 flex items-center">
+                    <Icon name="InformationCircleIcon" className="w-4 h-4 mr-2 text-blue-600" />
                     Hướng dẫn sử dụng
                   </h3>
                   <div className="space-y-2.5">
                     <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0 w-7 h-7 bg-slate-500 rounded-full flex items-center justify-center">
-                        <Icon name="BuildingOfficeIcon" className="w-3.5 h-3.5 text-white" />
+                      <div className="flex-shrink-0 w-7 h-7 bg-blue-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">1</span>
                       </div>
                       <div>
-                        <h4 className="text-xs font-semibold text-slate-800">Exhibitors</h4>
-                        <p className="text-xs text-slate-600">Khám phá danh sách nhà triển lãm, tìm kiếm theo tên hoặc số booth</p>
+                        <h4 className="text-xs font-semibold text-blue-800">Exhibitors</h4>
+                        <p className="text-xs text-blue-600">Khám phá danh sách nhà triển lãm, tìm kiếm theo tên hoặc số booth</p>
                       </div>
                     </div>
                     
                     <div className="flex items-start space-x-3">
                       <div className="flex-shrink-0 w-7 h-7 bg-rose-500 rounded-full flex items-center justify-center">
-                        <Icon name="HeartIcon" className="w-3.5 h-3.5 text-white" fill="currentColor" />
+                        <span className="text-white text-xs font-bold">2</span>
                       </div>
                       <div>
-                        <h4 className="text-xs font-semibold text-slate-800">Yêu thích</h4>
-                        <p className="text-xs text-slate-600">Lưu các exhibitors quan tâm để dễ dàng quay lại xem sau</p>
+                        <h4 className="text-xs font-semibold text-blue-800">Yêu thích</h4>
+                        <p className="text-xs text-blue-600">Lưu các exhibitors quan tâm để dễ dàng quay lại xem sau</p>
                       </div>
                     </div>
                     
                     <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0 w-7 h-7 bg-indigo-500 rounded-full flex items-center justify-center">
-                        <Icon name="Cog6ToothIcon" className="w-3.5 h-3.5 text-white" />
+                      <div className="flex-shrink-0 w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">3</span>
                       </div>
                       <div>
-                        <h4 className="text-xs font-semibold text-slate-800">Thêm</h4>
-                        <p className="text-xs text-slate-600">Truy cập Floor Plan, Directory và các liên kết hữu ích khác</p>
+                        <h4 className="text-xs font-semibold text-blue-800">Thêm</h4>
+                        <p className="text-xs text-blue-600">Truy cập Floor Plan, Directory và các liên kết hữu ích khác</p>
                       </div>
                     </div>
                   </div>
@@ -2026,20 +2272,21 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                                         } else if (typeof category === 'string') {
                                           categoryString = category.trim();
                                         }
-                                        setSelectedCategory(categoryString);
+                                        // Single category quick filter
+                                        setSelectedCategories([categoryString]);
+                                        setSelectedCategory('multiple');
                                         showToast('Filtered by: ' + categoryString, 'info');
                                       }}
-                                      className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-0.5 rounded-full transition-colors duration-200 max-w-full"
+                                      className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-0.5 rounded-full transition-colors duration-200"
                                     >
                                       <Icon name="TagIcon" className="w-2.5 h-2.5 flex-shrink-0" />
-                                      <span className="truncate">
+                                      <span>
                                         {(() => {
                                           const cat = (exhibitor as any).category;
                                           if (Array.isArray(cat) && cat.length > 0) {
-                                            const categoryStr = typeof cat[0] === 'string' ? cat[0] : cat[0];
-                                            return categoryStr.length > 30 ? categoryStr.substring(0, 30) + '...' : categoryStr;
+                                            return typeof cat[0] === 'string' ? cat[0] : cat[0];
                                           }
-                                          return cat.length > 30 ? cat.substring(0, 30) + '...' : cat;
+                                          return cat;
                                         })()}
                                       </span>
                                     </button>
@@ -2111,75 +2358,97 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                     <p className="insight-text-base mb-4">
                       Thả tim các exhibitors bạn quan tâm để lưu vào danh sách yêu thích
                     </p>
-                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 mb-4">
-                      <div className="flex items-start space-x-2">
-                        <svg className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <div>
-                          <p className="text-xs text-amber-800 font-medium">💡 Mẹo hay:</p>
-                          <p className="text-xs text-amber-700 mt-1">
-                            Sử dụng search để tìm theo tên, booth, category, sản phẩm/dịch vụ. Sau khi thêm exhibitors yêu thích, bạn có thể xuất PDF cẩm nang với logo để mang theo khi tham quan!
-                          </p>
+                    <div className="bg-gradient-to-r from-rose-50 to-pink-50 border border-rose-200 rounded-2xl p-4 mb-4">
+                      <h4 className="text-sm font-semibold text-rose-800 mb-3 flex items-center">
+                        <Icon name="InformationCircleIcon" className="w-4 h-4 mr-2 text-rose-600" />
+                        Hướng dẫn Yêu thích
+                      </h4>
+                      <div className="space-y-2.5">
+                        <div className="flex items-start space-x-3">
+                          <div className="flex-shrink-0 w-7 h-7 bg-rose-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">1</span>
+                          </div>
+                          <div>
+                            <h5 className="text-xs font-semibold text-rose-800">Tìm kiếm Exhibitors</h5>
+                            <p className="text-xs text-rose-600">Sử dụng search để tìm theo tên, booth, category, sản phẩm/dịch vụ</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start space-x-3">
+                          <div className="flex-shrink-0 w-7 h-7 bg-pink-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">2</span>
+                          </div>
+                          <div>
+                            <h5 className="text-xs font-semibold text-rose-800">Thêm vào yêu thích</h5>
+                            <p className="text-xs text-rose-600">Tap vào biểu tượng tim để lưu exhibitors quan tâm</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start space-x-3">
+                          <div className="flex-shrink-0 w-7 h-7 bg-orange-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs font-bold">3</span>
+                          </div>
+                          <div>
+                            <h5 className="text-xs font-semibold text-rose-800">Xuất PDF cẩm nang</h5>
+                            <p className="text-xs text-rose-600">Tạo cẩm nang với logo để mang theo khi tham quan</p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <Button
+                    <button
                       onClick={() => setActiveTab('exhibitors')}
-                      className="bg-slate-500 hover:bg-slate-600 text-white px-6 py-2 rounded-2xl transition-colors duration-200"
+                      className="w-full bg-rose-600 hover:bg-rose-700 text-white px-6 py-3 rounded-2xl transition-colors duration-200 flex items-center justify-center space-x-2 font-medium"
                     >
-                      Khám phá Exhibitors
-                    </Button>
+                      <Icon name="BuildingOfficeIcon" className="w-5 h-5" />
+                      <span>Khám phá Exhibitors</span>
+                    </button>
                   </Card>
                 </div>
               ) : (
                 <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
                   <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="insight-h3 flex items-center">
+                    <div className="mb-4">
+                      <h3 className="insight-h3 flex items-center mb-4">
                         <Icon name="HeartIcon" className="w-4 h-4 text-rose-500 mr-2" fill="currentColor" />
                         Exhibitors yêu thích ({favoriteExhibitors.length})
                       </h3>
-                      <div className="flex items-center space-x-2">
-                        {favoriteExhibitors.length > 0 && (
-                          <button
-                            onClick={exportFavoritesToPDF}
-                            className="text-sm text-white bg-green-600 hover:bg-green-700 transition-colors duration-200 px-3 py-2 rounded-lg flex items-center space-x-1"
-                            title="Xuất PDF cẩm nang exhibitors"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <span>Xuất PDF</span>
-                          </button>
-                        )}
-                        <button
-                          onClick={() => setActiveTab('exhibitors')}
-                          className="text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200 px-3 py-1 rounded-lg hover:bg-blue-50"
-                        >
-                          Thêm exhibitors
-                        </button>
-                        <button
-                          onClick={clearAllFavorites}
-                          className="text-sm text-gray-500 hover:text-red-600 transition-colors duration-200 px-3 py-1 rounded-lg hover:bg-red-50"
-                          title="Xóa tất cả favorites"
-                        >
-                          Xóa tất cả
-                        </button>
-                        <button
-                          onClick={() => {
-                            const storageKey = getFavoriteStorageKey();
-                            localStorage.removeItem(storageKey);
-                            setFavoriteExhibitors([]);
-                            showToast('🔧 Đã xóa localStorage và reset favorites', 'info');
-                            console.log('🔧 Debug: Cleared localStorage key:', storageKey);
-                          }}
-                          className="text-sm text-orange-500 hover:text-orange-700 transition-colors duration-200 px-3 py-1 rounded-lg hover:bg-orange-50"
-                          title="Debug: Clear localStorage"
-                        >
-                          🔧 Debug
-                        </button>
-                      </div>
+                      
+                      {/* Smart Actions Button */}
+                      <button
+                        onClick={() => setIsFavoriteActionsOpen(true)}
+                        className="w-full flex items-center justify-between p-4 bg-rose-50 hover:bg-rose-100 border border-rose-200 hover:border-rose-300 rounded-2xl transition-all duration-200 group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-white rounded-xl group-hover:bg-rose-50 transition-colors">
+                            <Icon name="Cog6ToothIcon" className="w-5 h-5 text-rose-600" />
+                          </div>
+                          <div className="text-left">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold text-gray-800">Manage Favorites</span>
+                              <span className="text-xs text-rose-600 bg-white px-2 py-0.5 rounded-full font-medium">
+                                {favoriteExhibitors.length}
+                              </span>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-0.5">
+                              Export, add more, or manage your collection
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
+                            <span className="inline-flex items-center px-2 py-1 bg-rose-100 text-rose-700 text-xs font-medium rounded-lg">
+                              <Icon name="DocumentArrowDownIcon" className="w-3 h-3 mr-1" />
+                              PDF
+                            </span>
+                            <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-lg">
+                              <Icon name="PlusIcon" className="w-3 h-3 mr-1" />
+                              Add
+                            </span>
+                          </div>
+                          <Icon name="ChevronRightIcon" className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                        </div>
+                      </button>
                     </div>
                     <div className="space-y-4">
                       {getFavoriteExhibitorsData()
@@ -2239,21 +2508,22 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                                         } else if (typeof category === 'string') {
                                           categoryString = category.trim();
                                         }
-                                        setSelectedCategory(categoryString);
+                                        // Single category quick filter
+                                        setSelectedCategories([categoryString]);
+                                        setSelectedCategory('multiple');
                                         setActiveTab('exhibitors');
                                         showToast('Filtered by: ' + categoryString, 'info');
                                       }}
-                                      className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-0.5 rounded-full transition-colors duration-200 max-w-full"
+                                      className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-0.5 rounded-full transition-colors duration-200"
                                     >
                                       <Icon name="TagIcon" className="w-2.5 h-2.5 flex-shrink-0" />
-                                      <span className="truncate">
+                                      <span>
                                         {(() => {
                                           const cat = (exhibitor as any).category;
                                           if (Array.isArray(cat) && cat.length > 0) {
-                                            const categoryStr = typeof cat[0] === 'string' ? cat[0] : cat[0];
-                                            return categoryStr.length > 30 ? categoryStr.substring(0, 30) + '...' : categoryStr;
+                                            return typeof cat[0] === 'string' ? cat[0] : cat[0];
                                           }
-                                          return cat.length > 30 ? cat.substring(0, 30) + '...' : cat;
+                                          return cat;
                                         })()}
                                       </span>
                                     </button>
@@ -2307,6 +2577,336 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
 
           {activeTab === 'matching' && (
             <div className="space-y-3">
+              {/* Existing Matching List */}
+              {visitorData.matching_list && Array.isArray(visitorData.matching_list) && visitorData.matching_list.length > 0 && (
+                <div className={`transform transition-all duration-1000 delay-300 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+                  <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="insight-h3 flex items-center">
+                        <Icon name="ClockIcon" className="w-4 h-4 text-emerald-600 mr-2" />
+                        Lịch Matching đã đặt ({getFilteredMatchingEntries().length}/{visitorData.matching_list.length})
+                      </h3>
+                      
+                      {/* View Mode Toggle */}
+                      <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                        <button
+                          onClick={() => setMatchingViewMode('list')}
+                          className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                            matchingViewMode === 'list' 
+                              ? 'bg-white text-emerald-600 shadow-sm' 
+                              : 'text-gray-600 hover:text-emerald-600'
+                          }`}
+                        >
+                          <Icon name="ListBulletIcon" className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => setMatchingViewMode('calendar')}
+                          className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                            matchingViewMode === 'calendar' 
+                              ? 'bg-white text-emerald-600 shadow-sm' 
+                              : 'text-gray-600 hover:text-emerald-600'
+                          }`}
+                        >
+                          <Icon name="CalendarIcon" className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => setMatchingViewMode('timeline')}
+                          className={`px-2 py-1 text-xs font-medium rounded-md transition-colors ${
+                            matchingViewMode === 'timeline' 
+                              ? 'bg-white text-emerald-600 shadow-sm' 
+                              : 'text-gray-600 hover:text-emerald-600'
+                          }`}
+                        >
+                          <Icon name="ClockIcon" className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Filter Button */}
+                    <div className="mb-4">
+                      <button
+                        onClick={() => setIsMatchingFiltersOpen(true)}
+                        className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-2xl transition-colors duration-200"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Icon name="FunnelIcon" className="w-4 h-4 text-gray-600" />
+                          <span className="text-sm font-medium text-gray-700">Filters</span>
+                          {(matchingDateFilter.length > 0 || matchingTimeFilter !== 'all' || matchingStatusFilter !== 'all') && (
+                            <span className="bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full font-medium">
+                              {[
+                                matchingDateFilter.length > 0 ? matchingDateFilter.length : null,
+                                matchingTimeFilter !== 'all' ? 1 : null,
+                                matchingStatusFilter !== 'all' ? 1 : null
+                              ].filter(Boolean).length}
+                            </span>
+                          )}
+                        </div>
+                        <Icon name="ChevronRightIcon" className="w-4 h-4 text-gray-400" />
+                      </button>
+                    </div>
+                    
+                    {/* Content based on view mode */}
+                    {matchingViewMode === 'list' ? (
+                      <div className="space-y-3">
+                        {getFilteredMatchingEntries().length === 0 ? (
+                          <div className="text-center py-8">
+                            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                              <Icon name="FunnelIcon" className="w-8 h-8 text-gray-400" />
+                            </div>
+                            <h4 className="text-gray-700 font-medium mb-2">Không tìm thấy matching nào</h4>
+                            <p className="text-gray-500 text-sm mb-4">
+                              {matchingDateFilter.length > 0 || matchingTimeFilter !== 'all' || matchingStatusFilter !== 'all' 
+                                ? 'Không có matching nào phù hợp với bộ lọc hiện tại'
+                                : 'Chưa có matching nào được tạo'
+                              }
+                            </p>
+                            {(matchingDateFilter.length > 0 || matchingTimeFilter !== 'all' || matchingStatusFilter !== 'all') && (
+                              <button
+                                onClick={() => {
+                                  setMatchingDateFilter([]);
+                                  setMatchingTimeFilter('all');
+                                  setMatchingStatusFilter('all');
+                                }}
+                                className="px-4 py-2 text-sm bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-colors"
+                              >
+                                Xóa bộ lọc
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          getFilteredMatchingEntries().map((matching: MatchingEntry, index: number) => {
+                        // Find exhibitor by exhibitor_profile_id
+                        const exhibitor = exhibitors.find(ex => {
+                          const exhibitorAny = ex as any;
+                          // Match by exhibitor_profile_id (convert both to string for comparison)
+                          return String(exhibitorAny.exhibitor_profile_id) === String(matching.exhibitor_profile_id);
+                        });
+                        
+                        // Get exhibitor name (with fallback for empty display_name)
+                        const getExhibitorName = (exhibitor: any) => {
+                          if (exhibitor?.display_name && exhibitor.display_name.trim()) {
+                            return exhibitor.display_name;
+                          }
+                          // Fallback to company name from description or use booth number
+                          if (exhibitor?.eng_company_description) {
+                            // Try to extract company name from HTML description
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = exhibitor.eng_company_description;
+                            const textContent = tempDiv.textContent || tempDiv.innerText || '';
+                            const firstLine = textContent.split('\n')[0].trim();
+                            if (firstLine) return firstLine;
+                          }
+                          // Last resort: use booth number or exhibitor ID
+                          return exhibitor?.booth_no ? `Booth ${exhibitor.booth_no}` : `Exhibitor ${matching.exhibitor_profile_id}`;
+                        };
+                        
+                        const exhibitorName = exhibitor ? getExhibitorName(exhibitor) : `Exhibitor ID: ${matching.exhibitor_profile_id}`;
+                        const exhibitorBooth = exhibitor ? (exhibitor as any).booth_no : null;
+                        
+                        return (
+                          <div key={index} className="bg-gradient-to-r from-emerald-50 to-cyan-50 border border-emerald-200 rounded-2xl p-4">
+                            {/* Company Info Header */}
+                            <div className="flex items-center gap-3 mb-3">
+                              {exhibitor && (
+                                <div className="w-12 h-12 rounded-xl bg-white border border-emerald-200 overflow-hidden flex-shrink-0 shadow-sm">
+                                  <ZohoImage
+                                    src={exhibitor.company_logo}
+                                    alt={`${exhibitorName} logo`}
+                                    className="w-full h-full object-contain p-2"
+                                    fallbackClassName="w-full h-full bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center text-sm font-medium text-emerald-600"
+                                    fallbackText={exhibitorName.charAt(0)}
+                                    sizes="48px"
+                                  />
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-base font-semibold text-emerald-800 leading-tight mb-1">
+                                  {exhibitorName}
+                                </h4>
+                                {exhibitorBooth && (
+                                  <p className="text-sm text-emerald-600 font-medium">
+                                    Booth {exhibitorBooth}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Date, Time and Status Row */}
+                            <div className="flex items-center justify-between mb-3 bg-white/50 rounded-xl p-3">
+                              <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-1.5 text-emerald-700">
+                                  <Icon name="CalendarDaysIcon" className="w-4 h-4" />
+                                  <span className="text-sm font-medium">
+                                    {new Date(matching.date).toLocaleDateString('vi-VN', {
+                                      weekday: 'short',
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      year: 'numeric'
+                                    })}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-emerald-700">
+                                  <Icon name="ClockIcon" className="w-4 h-4" />
+                                  <span className="text-sm font-medium">
+                                    {String(matching.time.hour).padStart(2, '0')}:{String(matching.time.minute).padStart(2, '0')}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              {/* Status Badge */}
+                              <div className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
+                                matching.confirmed 
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
+                                  : 'bg-amber-100 text-amber-800 border border-amber-300'
+                              }`}>
+                                {matching.confirmed ? 'Đã xác nhận' : 'Chờ xác nhận'}
+                              </div>
+                            </div>
+                            
+                            {/* Message */}
+                            {matching.message && (
+                              <div className="p-3 bg-white/70 rounded-xl border border-emerald-100">
+                                <p className="text-sm text-emerald-800">
+                                  <span className="font-semibold">Ghi chú:</span> {matching.message}
+                                </p>
+                              </div>
+                            )}
+                            
+                            {/* Calendar Action */}
+                            <div className="mt-3 pt-3 border-t border-emerald-100">
+                              <button
+                                onClick={() => addToCalendar(matching)}
+                                disabled={!matching.confirmed}
+                                className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-medium ${
+                                  matching.confirmed
+                                    ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700'
+                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                }`}
+                              >
+                                <Icon name="CalendarPlusIcon" className="w-4 h-4" />
+                                <span>{matching.confirmed ? 'Add to Calendar' : 'Pending Confirmation'}</span>
+                              </button>
+                            </div>
+                                                      </div>
+                          );
+                        })
+                      )}
+                      </div>
+                    ) : matchingViewMode === 'calendar' ? (
+                      <div className="space-y-4">
+                        {getMatchingDates().map(date => {
+                          const dayMatches = getFilteredMatchingEntries().filter(m => m.date === date);
+                          if (dayMatches.length === 0) return null;
+                          
+                          return (
+                            <div key={date} className="bg-white border border-gray-200 rounded-2xl p-4">
+                              <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                                <Icon name="CalendarDaysIcon" className="w-4 h-4 mr-2 text-emerald-600" />
+                                {new Date(date).toLocaleDateString('vi-VN', {
+                                  weekday: 'long',
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                                <span className="ml-2 bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full">
+                                  {dayMatches.length}
+                                </span>
+                              </h4>
+                              <div className="space-y-2">
+                                {dayMatches.sort((a, b) => a.time.hour * 60 + a.time.minute - (b.time.hour * 60 + b.time.minute)).map((matching, index) => {
+                                  const exhibitor = exhibitors.find(ex => String((ex as any).exhibitor_profile_id) === String(matching.exhibitor_profile_id));
+                                  const exhibitorName = exhibitor?.display_name || `Exhibitor ${matching.exhibitor_profile_id}`;
+                                  
+                                  return (
+                                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-2 h-8 bg-emerald-400 rounded-full"></div>
+                                        <div>
+                                          <p className="text-sm font-medium text-gray-800">{exhibitorName}</p>
+                                          <p className="text-xs text-gray-600">
+                                            {String(matching.time.hour).padStart(2, '0')}:{String(matching.time.minute).padStart(2, '0')}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <div className={`px-2 py-1 rounded-lg text-xs font-medium ${
+                                          matching.confirmed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                        }`}>
+                                          {matching.confirmed ? 'Confirmed' : 'Pending'}
+                                        </div>
+                                        <button
+                                          onClick={() => addToCalendar(matching)}
+                                          disabled={!matching.confirmed}
+                                          className={`p-1 rounded-lg transition-colors ${
+                                            matching.confirmed
+                                              ? 'hover:bg-emerald-100 text-emerald-600'
+                                              : 'cursor-not-allowed text-gray-400'
+                                          }`}
+                                          title={matching.confirmed ? 'Add to Calendar' : 'Waiting for confirmation'}
+                                        >
+                                          <Icon name="CalendarPlusIcon" className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      // Timeline view
+                      <div className="space-y-2">
+                        {getFilteredMatchingEntries()
+                          .sort((a, b) => {
+                            const dateA = new Date(`${a.date}T${String(a.time.hour).padStart(2, '0')}:${String(a.time.minute).padStart(2, '0')}`);
+                            const dateB = new Date(`${b.date}T${String(b.time.hour).padStart(2, '0')}:${String(b.time.minute).padStart(2, '0')}`);
+                            return dateA.getTime() - dateB.getTime();
+                          })
+                          .map((matching, index) => {
+                            const exhibitor = exhibitors.find(ex => String((ex as any).exhibitor_profile_id) === String(matching.exhibitor_profile_id));
+                            const exhibitorName = exhibitor?.display_name || `Exhibitor ${matching.exhibitor_profile_id}`;
+                            
+                            return (
+                              <div key={index} className="flex items-center gap-4 p-3 bg-white border border-gray-200 rounded-xl">
+                                <div className="flex flex-col items-center">
+                                  <div className={`w-3 h-3 rounded-full ${matching.confirmed ? 'bg-emerald-400' : 'bg-amber-400'}`}></div>
+                                  {index < getFilteredMatchingEntries().length - 1 && (
+                                    <div className="w-0.5 h-8 bg-gray-200 mt-2"></div>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-800 truncate">{exhibitorName}</p>
+                                      <p className="text-xs text-gray-600">
+                                        {new Date(matching.date).toLocaleDateString('vi-VN', { weekday: 'short', month: 'short', day: 'numeric' })} • {String(matching.time.hour).padStart(2, '0')}:{String(matching.time.minute).padStart(2, '0')}
+                                      </p>
+                                    </div>
+                                    <button
+                                      onClick={() => addToCalendar(matching)}
+                                      disabled={!matching.confirmed}
+                                      className={`p-2 rounded-lg transition-colors ${
+                                        matching.confirmed
+                                          ? 'hover:bg-emerald-100 text-emerald-600'
+                                          : 'cursor-not-allowed text-gray-400'
+                                      }`}
+                                      title={matching.confirmed ? 'Add to Calendar' : 'Waiting for confirmation'}
+                                    >
+                                      <Icon name="CalendarPlusIcon" className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </Card>
+                </div>
+              )}
+              
               {/* Quick Matching Button */}
               <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
                 <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
@@ -2476,6 +3076,248 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
         </div>
       </div>
 
+      {/* Favorite Actions Modal */}
+      {isFavoriteActionsOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl transform transition-all duration-300 max-h-[70vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <Icon name="HeartIcon" className="w-5 h-5 text-rose-500" fill="currentColor" />
+                  Manage Favorites
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {favoriteExhibitors.length} exhibitor{favoriteExhibitors.length !== 1 ? 's' : ''} in your collection
+                </p>
+              </div>
+              <button
+                onClick={() => setIsFavoriteActionsOpen(false)}
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                <Icon name="XMarkIcon" className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            {/* Actions List */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-4">
+                {/* Export PDF Action */}
+                {favoriteExhibitors.length > 0 && (
+                  <button
+                    onClick={() => {
+                      exportFavoritesToPDF();
+                      setIsFavoriteActionsOpen(false);
+                    }}
+                    className="w-full flex items-center gap-4 p-4 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 hover:border-emerald-300 rounded-xl transition-all duration-200 group"
+                  >
+                    <div className="p-3 bg-emerald-100 rounded-xl group-hover:bg-emerald-200 transition-colors">
+                      <Icon name="DocumentArrowDownIcon" className="w-6 h-6 text-emerald-600" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <h4 className="text-sm font-semibold text-gray-800 mb-1">Export PDF Guide</h4>
+                      <p className="text-xs text-gray-600">
+                        Create a personalized handbook with exhibitor details and logos
+                      </p>
+                    </div>
+                    <Icon name="ChevronRightIcon" className="w-5 h-5 text-emerald-400 group-hover:text-emerald-600 transition-colors" />
+                  </button>
+                )}
+
+                {/* Add More Action */}
+                <button
+                  onClick={() => {
+                    setActiveTab('exhibitors');
+                    setIsFavoriteActionsOpen(false);
+                  }}
+                  className="w-full flex items-center gap-4 p-4 bg-blue-50 hover:bg-blue-100 border border-blue-200 hover:border-blue-300 rounded-xl transition-all duration-200 group"
+                >
+                  <div className="p-3 bg-blue-100 rounded-xl group-hover:bg-blue-200 transition-colors">
+                    <Icon name="PlusIcon" className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-1">Add More Exhibitors</h4>
+                    <p className="text-xs text-gray-600">
+                      Browse and discover more exhibitors to add to your favorites
+                    </p>
+                  </div>
+                  <Icon name="ChevronRightIcon" className="w-5 h-5 text-blue-400 group-hover:text-blue-600 transition-colors" />
+                </button>
+
+                {/* Clear All Action */}
+                {favoriteExhibitors.length > 0 && (
+                  <button
+                    onClick={() => {
+                      clearAllFavorites();
+                      setIsFavoriteActionsOpen(false);
+                    }}
+                    className="w-full flex items-center gap-4 p-4 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300 rounded-xl transition-all duration-200 group"
+                  >
+                    <div className="p-3 bg-red-100 rounded-xl group-hover:bg-red-200 transition-colors">
+                      <Icon name="TrashIcon" className="w-6 h-6 text-red-600" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <h4 className="text-sm font-semibold text-gray-800 mb-1">Clear All Favorites</h4>
+                      <p className="text-xs text-gray-600">
+                        Remove all {favoriteExhibitors.length} exhibitors from your collection
+                      </p>
+                    </div>
+                    <Icon name="ChevronRightIcon" className="w-5 h-5 text-red-400 group-hover:text-red-600 transition-colors" />
+                  </button>
+                )}
+              </div>
+
+              {/* Tips Section */}
+              <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <Icon name="LightBulbIcon" className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="text-sm font-medium text-amber-800 mb-1">💡 Pro Tips</h4>
+                    <ul className="text-xs text-amber-700 space-y-1">
+                      <li>• Export PDF to create an offline reference guide</li>
+                      <li>• Use search and filters to discover new exhibitors</li>
+                      <li>• Tap heart icons to quickly add/remove favorites</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-gray-100 p-6">
+              <button
+                onClick={() => setIsFavoriteActionsOpen(false)}
+                className="w-full px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category Selection Modal */}
+      {isCategoryModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl transform transition-all duration-300 max-h-[80vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">Select Categories</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Choose categories to filter exhibitors
+                </p>
+              </div>
+              <button
+                onClick={() => setIsCategoryModalOpen(false)}
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                <Icon name="XMarkIcon" className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            {/* Categories List */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-3">
+                {getUniqueCategories().map((category) => {
+                  const count = exhibitors.filter(ex => {
+                    const cat = (ex as any).category;
+                    let categoryString = '';
+                    if (Array.isArray(cat) && cat.length > 0) {
+                      categoryString = typeof cat[0] === 'string' ? cat[0].trim() : '';
+                    } else if (typeof cat === 'string') {
+                      categoryString = cat.trim();
+                    }
+                    return categoryString === category;
+                  }).length;
+
+                  const isSelected = selectedCategories.includes(category);
+
+                  return (
+                    <label
+                      key={category}
+                      className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                        isSelected
+                          ? 'border-indigo-200 bg-indigo-50'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="relative">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleCategorySelection(category)}
+                          className="sr-only"
+                        />
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+                          isSelected
+                            ? 'bg-indigo-600 border-indigo-600'
+                            : 'border-gray-300 hover:border-gray-400'
+                        }`}>
+                          {isSelected && (
+                            <Icon name="CheckIcon" className="w-3 h-3 text-white" />
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Icon name="TagIcon" className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <span className="text-sm font-medium text-gray-800 truncate">
+                            {category}
+                          </span>
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {count} exhibitor{count !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+
+                      <div className={`px-2 py-1 rounded-lg text-xs font-bold ${
+                        isSelected
+                          ? 'bg-indigo-100 text-indigo-700'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {count}
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-gray-100 p-6 bg-gray-50">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm text-gray-600">
+                  {selectedCategories.length} of {getUniqueCategories().length} selected
+                </span>
+                <button
+                  onClick={() => setSelectedCategories([])}
+                  className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                >
+                  Clear All
+                </button>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIsCategoryModalOpen(false)}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={applyCategoryFilters}
+                  className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
+                >
+                  Apply Filters
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* File Viewer Modal */}
       {fileViewer.isOpen && (
         <FileViewer
@@ -2516,7 +3358,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
             </div>
 
             {/* Content */}
-            <div className="p-4 max-h-[70vh] overflow-y-auto">
+            <div className="p-4 pb-6 max-h-[70vh] overflow-y-auto">
               {/* Exhibitor Selection */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -2727,11 +3569,167 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                 </Button>
                 <Button
                   onClick={submitMatchingRequest}
-                  disabled={!matchingFormData.exhibitor || !matchingFormData.date || !matchingFormData.time}
+                  disabled={!matchingFormData.exhibitor || !matchingFormData.date || !matchingFormData.time || isSubmittingMatching}
                   className="flex-1 py-2.5 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
-                  Gửi yêu cầu
+                  {isSubmittingMatching ? (
+                    <div className="flex items-center gap-2">
+                      <LoadingSpinner size="sm" />
+                      <span>Đang gửi...</span>
+                    </div>
+                  ) : (
+                    'Gửi yêu cầu'
+                  )}
                 </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Matching Filters Modal */}
+      {isMatchingFiltersOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl transform transition-all duration-300 max-h-[80vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <Icon name="FunnelIcon" className="w-5 h-5 text-emerald-500" />
+                  Matching Filters
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Filter your matching appointments
+                </p>
+              </div>
+              <button
+                onClick={() => setIsMatchingFiltersOpen(false)}
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+              >
+                <Icon name="XMarkIcon" className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            {/* Filters Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Date Filter */}
+              <div className="mb-6">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Date</h4>
+                <div className="space-y-2">
+                  {getMatchingDates().map(date => (
+                    <label key={date} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={matchingDateFilter.includes(date)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setMatchingDateFilter([...matchingDateFilter, date]);
+                          } else {
+                            setMatchingDateFilter(matchingDateFilter.filter(d => d !== date));
+                          }
+                        }}
+                        className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                      />
+                      <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                        {new Date(date).toLocaleDateString('vi-VN', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Time Filter */}
+              <div className="mb-6">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Time of Day</h4>
+                <div className="space-y-2">
+                  {[
+                    { value: 'all', label: 'All Times', icon: '🕐' },
+                    { value: 'morning', label: 'Morning (6:00 - 12:00)', icon: '🌅' },
+                    { value: 'afternoon', label: 'Afternoon (12:00 - 18:00)', icon: '☀️' },
+                    { value: 'evening', label: 'Evening (18:00 - 24:00)', icon: '🌙' }
+                  ].map(option => (
+                    <label key={option.value} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl cursor-pointer group">
+                      <input
+                        type="radio"
+                        name="timeFilter"
+                        value={option.value}
+                        checked={matchingTimeFilter === option.value}
+                        onChange={(e) => setMatchingTimeFilter(e.target.value as any)}
+                        className="w-4 h-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
+                      />
+                      <span className="text-lg">{option.icon}</span>
+                      <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                        {option.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Status Filter */}
+              <div className="mb-6">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Status</h4>
+                <div className="space-y-2">
+                  {[
+                    { value: 'all', label: 'All Status', icon: '📋' },
+                    { value: 'confirmed', label: 'Confirmed', icon: '✅' },
+                    { value: 'pending', label: 'Pending', icon: '⏳' }
+                  ].map(option => (
+                    <label key={option.value} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl cursor-pointer group">
+                      <input
+                        type="radio"
+                        name="statusFilter"
+                        value={option.value}
+                        checked={matchingStatusFilter === option.value}
+                        onChange={(e) => setMatchingStatusFilter(e.target.value as any)}
+                        className="w-4 h-4 text-emerald-600 border-gray-300 focus:ring-emerald-500"
+                      />
+                      <span className="text-lg">{option.icon}</span>
+                      <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                        {option.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-gray-100 p-6 bg-gray-50">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm text-gray-600">
+                  {getFilteredMatchingEntries().length} of {visitorData?.matching_list?.length || 0} matching(s)
+                </span>
+                <button
+                  onClick={() => {
+                    setMatchingDateFilter([]);
+                    setMatchingTimeFilter('all');
+                    setMatchingStatusFilter('all');
+                  }}
+                  className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+                >
+                  Clear All
+                </button>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIsMatchingFiltersOpen(false)}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => setIsMatchingFiltersOpen(false)}
+                  className="flex-1 px-4 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors"
+                >
+                  Apply Filters
+                </button>
               </div>
             </div>
           </div>
@@ -2785,7 +3783,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       )}
 
       {/* Bottom Navigation - Native App Style */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 bottom-nav-shadow z-50">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 bottom-nav-shadow z-[60]">
         {/* Swipe indicator */}
         {isSwipeInProgress && (
           <div className="absolute top-0 left-0 right-0 h-1 bg-blue-200 overflow-hidden">

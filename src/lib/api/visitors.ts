@@ -1,5 +1,21 @@
 import { apiClient } from './client';
 
+export interface MatchingTimeInfo {
+  hour: number;
+  millis: number;
+  minute: number;
+  second: number;
+  SQLTime: string;
+}
+
+export interface MatchingEntry {
+  date: string;
+  exhibitor_profile_id: number;
+  time: MatchingTimeInfo;
+  message: string;
+  confirmed: boolean;
+}
+
 export interface VisitorData {
   id: string;
   name: string;
@@ -19,6 +35,7 @@ export interface VisitorData {
   encrypt_key: string;
   head_mark: boolean;
   check_in_history: any[];
+  matching_list?: MatchingEntry[];
   custom_fields: Record<string, any>;
   formFields: any[];
 }

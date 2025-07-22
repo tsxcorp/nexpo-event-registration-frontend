@@ -449,7 +449,7 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 sm:space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 sm:space-y-6 pb-20 sm:pb-6">
         {/* Multi-Step Indicator */}
         <div className="flex items-center justify-center mb-4 sm:mb-8 px-2 sm:px-4">
           <div className="flex items-center space-x-1 sm:space-x-2 overflow-x-auto max-w-full">
