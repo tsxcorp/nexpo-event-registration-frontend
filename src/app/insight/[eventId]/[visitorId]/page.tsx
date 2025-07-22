@@ -1721,7 +1721,7 @@ END:VCALENDAR`;
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
         </div>
 
-        <div className="relative max-w-md mx-auto px-4 py-4">
+        <div className="relative max-w-md mx-auto px-4 py-2">
           <div className="flex items-start space-x-4">
             {/* Enhanced Logo Container */}
             {eventData.logo && (
@@ -1924,52 +1924,48 @@ END:VCALENDAR`;
           )}
           
           {activeTab === 'overview' && (
-            <div className="space-y-3">
-              {/* Visitor Info Card */}
+            <div className="space-y-2">
+              {/* Visitor Info Card - Compact */}
               <div className={`transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-                <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
-                  <div className="insight-card-header">
-                    <h3 className="insight-h3">Thông tin của bạn</h3>
-                    <div className={`insight-badge ${
+                <Card className="p-3 hover:shadow-md transition-shadow duration-300 rounded-2xl border-gray-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-gray-800">Thông tin của bạn</h3>
+                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${
                       hasCheckedIn
-                        ? 'insight-status-success'
+                        ? 'bg-emerald-100 text-emerald-700' 
                         : visitorData.status?.toLowerCase() === 'confirmed' 
-                          ? 'insight-status-success' 
-                          : 'insight-status-info'
+                          ? 'bg-emerald-100 text-emerald-700' 
+                          : 'bg-blue-100 text-blue-700'
                     }`}>
                       {hasCheckedIn ? 'Đã check-in' : (visitorData.status || 'Đã đăng ký')}
                     </div>
                   </div>
                   
-                  <div className="insight-info-grid">
-                    <div className="insight-info-row">
-                      <span className="insight-label">Tên:</span>
-                      <span className="insight-value">{visitorData.name}</span>
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between py-1">
+                      <span className="text-sm font-medium text-gray-600 min-w-[70px]">Tên:</span>
+                      <span className="text-sm font-semibold text-gray-900 text-right flex-1 ml-3">{visitorData.name}</span>
                     </div>
-                    <div className="insight-info-row">
-                      <span className="insight-label">Email:</span>
-                      <span className="insight-value-sm">{visitorData.email}</span>
+                    <div className="flex items-center justify-between py-1">
+                      <span className="text-sm font-medium text-gray-600 min-w-[70px]">Email:</span>
+                      <span className="text-sm text-gray-700 text-right flex-1 ml-3 truncate">{visitorData.email}</span>
                     </div>
-                    <div className="insight-info-row">
-                      <span className="insight-label">SĐT:</span>
-                      <span className="insight-value">{visitorData.phone || 'Không có'}</span>
-                    </div>
-                    {visitorData.company && (
-                      <div className="insight-info-row">
-                        <span className="insight-label">Công ty:</span>
-                        <span className="insight-value-sm">{visitorData.company}</span>
+                    {visitorData.phone && (
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-sm font-medium text-gray-600 min-w-[70px]">SĐT:</span>
+                        <span className="text-sm text-gray-700 text-right flex-1 ml-3">{visitorData.phone}</span>
                       </div>
                     )}
-                    {visitorData.job_title && (
-                      <div className="insight-info-row">
-                        <span className="insight-label">Chức vụ:</span>
-                        <span className="insight-value-sm">{visitorData.job_title}</span>
+                    {visitorData.company && (
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-sm font-medium text-gray-600 min-w-[70px]">Công ty:</span>
+                        <span className="text-sm text-gray-700 text-right flex-1 ml-3 truncate">{visitorData.company}</span>
                       </div>
                     )}
                     {visitorData.group_id && (
-                      <div className="insight-info-row">
-                        <span className="insight-label">Group ID:</span>
-                        <span className="insight-value-sm">{visitorData.group_id}</span>
+                      <div className="flex items-center justify-between py-1">
+                        <span className="text-sm font-medium text-gray-600 min-w-[70px]">Group ID:</span>
+                        <span className="text-sm text-gray-700 text-right flex-1 ml-3">{visitorData.group_id}</span>
                       </div>
                     )}
                   </div>
@@ -2033,9 +2029,9 @@ END:VCALENDAR`;
                         )}
                       </div>
 
-                      {/* QR Code Display */}
-                      <div className="mb-2">
-                        <p className="insight-text-secondary mb-1">
+                      {/* QR Code Display - Compact */}
+                      <div className="mb-1">
+                        <p className="text-xs text-gray-600 mb-1 text-center">
                           {hasCheckedIn ? (
                             qrMode === 'badge' ? 'Badge QR Code' : 'Redeem QR Code (để in lại thẻ)'
                           ) : (
@@ -2122,32 +2118,26 @@ END:VCALENDAR`;
                         </div>
                       </div>
 
-                      {/* Additional Info for Group Mode */}
+                      {/* Additional Info for Group Mode - Compact */}
                       {!hasCheckedIn && qrMode === 'group' && visitorData.group_id && (
-                        <div className="mb-2 p-2 bg-blue-50 rounded-lg">
-                          <p className="insight-text-caption text-blue-700">
-                            <strong>Group ID:</strong> {visitorData.group_id}
-                          </p>
-                          <p className="insight-text-caption text-blue-600 mt-1">
-                            QR này sẽ check-in toàn bộ nhóm cùng lúc
+                        <div className="mb-1 p-2 bg-blue-50 rounded-lg text-center">
+                          <p className="text-xs text-blue-700">
+                            <strong>Group ID:</strong> {visitorData.group_id} • Check-in toàn nhóm
                           </p>
                         </div>
                       )}
 
-                      {/* Warning for missing Group ID */}
+                      {/* Warning for missing Group ID - Compact */}
                       {!hasCheckedIn && qrMode === 'group' && !visitorData.group_id && (
-                        <div className="mb-2 p-2 bg-yellow-50 rounded-lg">
-                          <p className="insight-text-caption text-yellow-700">
-                            ⚠️ Bạn chưa được phân vào nhóm nào
-                          </p>
-                          <p className="insight-text-caption text-yellow-600 mt-1">
-                            Vui lòng liên hệ ban tổ chức để được hỗ trợ
+                        <div className="mb-1 p-2 bg-yellow-50 rounded-lg text-center">
+                          <p className="text-xs text-yellow-700">
+                            ⚠️ Chưa có Group ID • Liên hệ ban tổ chức
                           </p>
                         </div>
                       )}
 
-                      {/* QR Code Description */}
-                      <div className="text-center bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-3 border border-blue-100">
+                      {/* QR Code Description - Compact */}
+                      <div className="text-center bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-2 border border-blue-100">
                         <div className="flex items-center justify-center mb-1">
                           <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
                           <span className="text-blue-700 font-semibold text-xs uppercase tracking-wider">
@@ -2189,41 +2179,47 @@ END:VCALENDAR`;
                 </div>
               )}
 
-              {/* App Guide */}
+              {/* App Guide - Compact */}
               <div className={`transform transition-all duration-1000 delay-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-                <Card className="p-4 hover:shadow-md transition-shadow duration-300 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-3xl">
-                  <h3 className="insight-h3 text-blue-800 mb-3 flex items-center">
+                <Card className="p-3 hover:shadow-md transition-shadow duration-300 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-2xl">
+                  <h3 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
                     <Icon name="InformationCircleIcon" className="w-4 h-4 mr-2 text-blue-600" />
                     Hướng dẫn sử dụng
                   </h3>
-                  <div className="space-y-2.5">
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0 w-7 h-7 bg-blue-500 rounded-full flex items-center justify-center">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center space-x-2">
+                      <div className="flex-shrink-0 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                         <span className="text-white text-xs font-bold">1</span>
                       </div>
                       <div>
-                        <h4 className="text-xs font-semibold text-blue-800">Exhibitors</h4>
-                        <p className="text-xs text-blue-600">Khám phá danh sách nhà triển lãm, tìm kiếm theo tên hoặc số booth</p>
+                        <p className="text-xs text-blue-700 font-medium">Exhibitors</p>
                       </div>
                     </div>
                     
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0 w-7 h-7 bg-rose-500 rounded-full flex items-center justify-center">
+                    <div className="flex items-center space-x-2">
+                      <div className="flex-shrink-0 w-5 h-5 bg-rose-500 rounded-full flex items-center justify-center">
                         <span className="text-white text-xs font-bold">2</span>
                       </div>
                       <div>
-                        <h4 className="text-xs font-semibold text-blue-800">Yêu thích</h4>
-                        <p className="text-xs text-blue-600">Lưu các exhibitors quan tâm để dễ dàng quay lại xem sau</p>
+                        <p className="text-xs text-blue-700 font-medium">Yêu thích</p>
                       </div>
                     </div>
                     
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0 w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center">
+                    <div className="flex items-center space-x-2">
+                      <div className="flex-shrink-0 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center">
                         <span className="text-white text-xs font-bold">3</span>
                       </div>
                       <div>
-                        <h4 className="text-xs font-semibold text-blue-800">Thêm</h4>
-                        <p className="text-xs text-blue-600">Truy cập Floor Plan, Directory và các liên kết hữu ích khác</p>
+                        <p className="text-xs text-blue-700 font-medium">Matching</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <div className="flex-shrink-0 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">4</span>
+                      </div>
+                      <div>
+                        <p className="text-xs text-blue-700 font-medium">Thêm</p>
                       </div>
                     </div>
                   </div>
