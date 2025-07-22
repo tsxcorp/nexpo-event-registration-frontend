@@ -354,6 +354,40 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           return;
         }
         
+        // CRITICAL: Validate that visitor belongs to current event
+        const visitorEventId = String(visitor.event_id);
+        const currentEventId = String(eventId);
+        
+        console.log('🔒 Event validation:', {
+          visitorEventId,
+          currentEventId,
+          match: visitorEventId === currentEventId,
+          visitorName: visitor.name,
+          visitorEventName: visitor.event_name,
+          currentEvent: eventResponse.event.name
+        });
+        
+        if (visitorEventId !== currentEventId) {
+          console.error('🚫 Event ID mismatch - Security violation detected:', {
+            visitor: visitor.name,
+            visitorEventId,
+            visitorEventName: visitor.event_name,
+            currentEventId,
+            currentEventName: eventResponse.event.name,
+            securityAction: 'ACCESS_DENIED'
+          });
+          
+          // Use setTimeout to avoid state update during render
+          setTimeout(() => {
+            setIsInvalidVisitorId(true);
+            setError(`Mã truy cập không thuộc sự kiện này. Visitor thuộc sự kiện: "${visitor.event_name}"`);
+            setLoading(false);
+            setIsLoadingData(false);
+          }, 0);
+          return;
+        }
+        
+        console.log('✅ Event validation passed - visitor belongs to current event');
         setVisitorData(visitor);
       } catch (visitorError: any) {
         console.error('❌ Visitor data loading failed:', visitorError);

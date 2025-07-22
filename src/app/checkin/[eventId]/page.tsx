@@ -307,34 +307,40 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       if (response.visitor) {
         console.log('✅ Visitor found:', response.visitor);
         
-        // IMPORTANT: Validate event_id match
+        // CRITICAL: Validate that visitor belongs to current event
         const visitorEventId = String(response.visitor.event_id);
         const currentEventId = String(eventId);
         
-        console.log('🔍 Event validation:', {
+        console.log('🔒 Event validation in check-in:', {
           visitorEventId,
           currentEventId,
-          match: visitorEventId === currentEventId
+          match: visitorEventId === currentEventId,
+          visitorName: response.visitor.name,
+          visitorEventName: response.visitor.event_name
         });
         
         if (visitorEventId !== currentEventId) {
-          console.error('❌ Event ID mismatch:', {
+          console.error('🚫 Event ID mismatch - Security violation in check-in:', {
             visitor: response.visitor.name,
             visitorEventId,
+            visitorEventName: response.visitor.event_name,
             currentEventId,
-            eventName: response.visitor.event_name
+            currentEventName: eventData?.name,
+            securityAction: 'CHECKIN_DENIED'
           });
           
-          setError('❌ Không tìm thấy visitor với ID này. Vui lòng kiểm tra lại mã QR hoặc ID.');
+          setError(`❌ Visitor không thuộc sự kiện này.\n\n• Visitor: ${response.visitor.name}\n• Thuộc sự kiện: ${response.visitor.event_name}\n• Hiện tại: ${eventData?.name}\n\n💡 Vui lòng kiểm tra lại QR code hoặc visitor ID.`);
           setIsProcessing(false);
           
-          // Strong haptic feedback for error
+          // Strong haptic feedback for security violation
           if ('vibrate' in navigator) {
             navigator.vibrate([200, 100, 200, 100, 200]);
           }
           
           return;
         }
+        
+        console.log('✅ Event validation passed in check-in - visitor belongs to current event');
         
         // Submit check-in to Zoho Creator
         try {
