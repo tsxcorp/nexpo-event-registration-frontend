@@ -39,6 +39,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [favoriteExhibitors, setFavoriteExhibitors] = useState<string[]>([]);
+  const [exhibitorViewMode, setExhibitorViewMode] = useState<'all' | 'favorites'>('all');
   const [selectedExhibitor, setSelectedExhibitor] = useState<ExhibitorData | null>(null);
   const [fileViewer, setFileViewer] = useState<{
     isOpen: boolean;
@@ -102,9 +103,9 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
 
   const tabs = [
     { id: 'overview', label: 'Check-in', icon: 'ChartBarIcon' },
-    { id: 'exhibitors', label: 'Exhibitors', icon: 'BuildingOfficeIcon' },
-    { id: 'favorites', label: 'Yêu thích', icon: 'HeartIcon', count: favoriteExhibitors.length },
+    { id: 'exhibitors', label: 'Exhibitors', icon: 'BuildingOfficeIcon', count: favoriteExhibitors.length },
     { id: 'matching', label: 'Matching', icon: 'UserGroupIcon' },
+    { id: 'agenda', label: 'Agenda', icon: 'CalendarDaysIcon' },
     { id: 'more', label: 'Thêm', icon: 'Cog6ToothIcon' }
   ];
 
@@ -242,6 +243,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
         return (
           // Company name
           safeStringSearch(exhibitor.display_name) ||
+          safeStringSearch(exhibitor.en_company_name) ||
           // Booth number
           safeStringSearch(exhibitorAny.booth_no) ||
           // Category
@@ -538,10 +540,13 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
   const getExhibitorDisplayName = (exhibitor: ExhibitorData) => {
     const exhibitorAny = exhibitor as any;
     const name = exhibitor.display_name?.trim();
+    const enCompanyName = exhibitor.en_company_name?.trim();
     const booth = exhibitorAny.booth_no?.trim();
     
     if (name && name.length > 0) {
       return name;
+    } else if (enCompanyName && enCompanyName.length > 0) {
+      return enCompanyName;
     } else if (booth && booth.length > 0) {
       return `Booth ${booth}`;
     } else {
@@ -1105,15 +1110,15 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
               <div class="exhibitor-header">
                 ${exhibitor.company_logo ? `
                   <div class="exhibitor-logo">
-                    <img src="${exhibitor.company_logo}" alt="${exhibitor.display_name} logo" onerror="this.parentElement.outerHTML='<div class=&quot;exhibitor-logo-placeholder&quot;>${exhibitor.display_name.charAt(0)}</div>'">
+                    <img src="${exhibitor.company_logo}" alt="${getExhibitorDisplayName(exhibitor)} logo" onerror="this.parentElement.outerHTML='<div class=&quot;exhibitor-logo-placeholder&quot;>${getExhibitorDisplayName(exhibitor).charAt(0)}</div>'">
                   </div>
                 ` : `
                   <div class="exhibitor-logo-placeholder">
-                    ${exhibitor.display_name.charAt(0)}
+                    ${getExhibitorDisplayName(exhibitor).charAt(0)}
                   </div>
                 `}
                 <div class="exhibitor-info">
-                  <div class="exhibitor-name">${exhibitor.display_name}</div>
+                  <div class="exhibitor-name">${getExhibitorDisplayName(exhibitor)}</div>
                   <div style="margin-bottom: 10px;">
                     ${exhibitorAny.booth_no ? `<span class="booth-number">Booth ${exhibitorAny.booth_no}</span>` : ''}
                     <span class="country">${exhibitor.country}</span>
@@ -1375,14 +1380,14 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       showToast('🔄 Đang gửi yêu cầu matching...', 'info');
       
       try {
-        // Submit to backend
-        const response = await matchingApi.submitRequest(matchingData);
-        
-        showToast(`✅ ${response.message}`, 'success');
-        
-        // Add haptic feedback
-        if ('vibrate' in navigator) {
-          navigator.vibrate([100, 50, 100]);
+      // Submit to backend
+      const response = await matchingApi.submitRequest(matchingData);
+      
+      showToast(`✅ ${response.message}`, 'success');
+      
+      // Add haptic feedback
+      if ('vibrate' in navigator) {
+        navigator.vibrate([100, 50, 100]);
         }
         
         // Refresh visitor data in background to sync with server
@@ -1425,6 +1430,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       
       return (
         safeStringSearch(exhibitor.display_name) ||
+        safeStringSearch(exhibitor.en_company_name) ||
         safeStringSearch(exhibitorAny.booth_no) ||
         safeStringSearch(exhibitorAny.category) ||
         safeStringSearch(exhibitor.country)
@@ -1475,6 +1481,9 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
     const getExhibitorName = (exhibitor: any) => {
       if (exhibitor?.display_name && exhibitor.display_name.trim()) {
         return exhibitor.display_name;
+      }
+      if (exhibitor?.en_company_name && exhibitor.en_company_name.trim()) {
+        return exhibitor.en_company_name;
       }
       if (exhibitor?.eng_company_description) {
         const tempDiv = document.createElement('div');
@@ -1954,7 +1963,7 @@ END:VCALENDAR`;
                       <div className="flex items-center justify-between py-1">
                         <span className="text-sm font-medium text-gray-600 min-w-[70px]">SĐT:</span>
                         <span className="text-sm text-gray-700 text-right flex-1 ml-3">{visitorData.phone}</span>
-                      </div>
+                    </div>
                     )}
                     {visitorData.company && (
                       <div className="flex items-center justify-between py-1">
@@ -2230,24 +2239,55 @@ END:VCALENDAR`;
 
           {activeTab === 'exhibitors' && (
             <div className="space-y-3">
-              {filteredExhibitors.length === 0 ? (
-                <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-                  <Card className="p-6 text-center rounded-3xl border-gray-100">
-                    <div className="text-gray-300 mb-4">
-                      <Icon name="BuildingOfficeIcon" className="w-16 h-16 mx-auto" />
-                    </div>
-                    <p className="insight-text-base">
-                      {searchQuery ? 'Không tìm thấy exhibitor phù hợp' : 'Chưa có thông tin exhibitors'}
-                    </p>
-                  </Card>
-                </div>
-              ) : (
-                <>
-                  {/* All Exhibitors */}
+              {/* View Mode Toggle */}
+              <div className={`transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+                <Card className="p-3 hover:shadow-md transition-shadow duration-300 rounded-2xl border-gray-100">
+                  <div className="flex bg-gray-100 rounded-lg p-1">
+                    <button
+                      onClick={() => setExhibitorViewMode('all')}
+                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2 ${
+                        exhibitorViewMode === 'all'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-800'
+                      }`}
+                    >
+                      <Icon name="BuildingOfficeIcon" className="w-4 h-4" />
+                      <span>All ({eventData?.exhibitors?.length || 0})</span>
+                    </button>
+                    <button
+                      onClick={() => setExhibitorViewMode('favorites')}
+                      className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2 ${
+                        exhibitorViewMode === 'favorites'
+                          ? 'bg-white text-rose-600 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-800'
+                      }`}
+                    >
+                      <Icon name="HeartIcon" className="w-4 h-4" fill={exhibitorViewMode === 'favorites' ? 'currentColor' : 'none'} />
+                      <span>Favorites ({favoriteExhibitors.length})</span>
+                    </button>
+                  </div>
+                </Card>
+              </div>
+
+              {/* Content based on view mode */}
+              {exhibitorViewMode === 'all' ? (
+                // All Exhibitors View
+                filteredExhibitors.length === 0 ? (
+                  <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+                    <Card className="p-6 text-center rounded-3xl border-gray-100">
+                      <div className="text-gray-300 mb-4">
+                        <Icon name="BuildingOfficeIcon" className="w-16 h-16 mx-auto" />
+                      </div>
+                      <p className="insight-text-base">
+                        {searchQuery ? 'Không tìm thấy exhibitor phù hợp' : 'Chưa có thông tin exhibitors'}
+                      </p>
+                    </Card>
+                  </div>
+                ) : (
                   <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
                     <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
                       <h3 className="insight-h3 mb-3">
-                        {searchQuery ? `Kết quả tìm kiếm (${filteredExhibitors.length})` : `Exhibitors (${filteredExhibitors.length})`}
+                        {searchQuery ? `Kết quả tìm kiếm (${filteredExhibitors.length})` : `All Exhibitors (${filteredExhibitors.length})`}
                       </h3>
                       <div className="space-y-4">
                         {filteredExhibitors.map((exhibitor, index) => (
@@ -2367,14 +2407,180 @@ END:VCALENDAR`;
                       </div>
                     </Card>
                   </div>
-
-
-                </>
+                )
+              ) : (
+                // Favorites View
+                favoriteExhibitors.length === 0 ? (
+                  <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+                    <Card className="p-6 text-center rounded-3xl border-gray-100">
+                      <div className="text-gray-300 mb-4">
+                        <Icon name="HeartIcon" className="w-16 h-16 mx-auto" />
+                      </div>
+                      <h3 className="insight-h3 mb-2">
+                        Chưa có exhibitors yêu thích
+                      </h3>
+                      <p className="insight-text-base mb-4">
+                        Thả tim các exhibitors bạn quan tâm để lưu vào danh sách yêu thích
+                      </p>
+                      <button
+                        onClick={() => setExhibitorViewMode('all')}
+                        className="w-full bg-rose-600 hover:bg-rose-700 text-white px-6 py-3 rounded-2xl transition-colors duration-200 flex items-center justify-center space-x-2 font-medium"
+                      >
+                        <Icon name="BuildingOfficeIcon" className="w-5 h-5" />
+                        <span>Khám phá Exhibitors</span>
+                      </button>
+                    </Card>
+                  </div>
+                ) : (
+                  <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+                    <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
+                      <div className="mb-4">
+                        <h3 className="insight-h3 flex items-center mb-4">
+                          <Icon name="HeartIcon" className="w-4 h-4 text-rose-500 mr-2" fill="currentColor" />
+                          Exhibitors yêu thích ({favoriteExhibitors.length})
+                        </h3>
+                        
+                        {/* Smart Actions Button */}
+                        <button
+                          onClick={() => setIsFavoriteActionsOpen(true)}
+                          className="w-full flex items-center justify-between p-4 bg-rose-50 hover:bg-rose-100 border border-rose-200 hover:border-rose-300 rounded-2xl transition-all duration-200 group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-white rounded-xl group-hover:bg-rose-50 transition-colors">
+                              <Icon name="Cog6ToothIcon" className="w-5 h-5 text-rose-600" />
+                            </div>
+                            <div className="text-left">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold text-gray-800">Manage Favorites</span>
+                                <span className="text-xs text-rose-600 bg-white px-2 py-0.5 rounded-full font-medium">
+                                  {favoriteExhibitors.length}
+                                </span>
+                              </div>
+                              <div className="text-xs text-gray-500 mt-0.5">
+                                Export, add more, or manage your collection
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
+                              <span className="inline-flex items-center px-2 py-1 bg-rose-100 text-rose-700 text-xs font-medium rounded-lg">
+                                <Icon name="DocumentArrowDownIcon" className="w-3 h-3 mr-1" />
+                                PDF
+                              </span>
+                              <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-lg">
+                                <Icon name="PlusIcon" className="w-3 h-3 mr-1" />
+                                Add
+                              </span>
+                            </div>
+                            <Icon name="ChevronRightIcon" className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                          </div>
+                        </button>
+                      </div>
+                      <div className="space-y-4">
+                        {getFavoriteExhibitorsData()
+                          .map((exhibitor, index) => (
+                            <div
+                              key={`fav-${exhibitor.display_name}-${index}`}
+                              onClick={() => setSelectedExhibitor(exhibitor)}
+                              className="group bg-gradient-to-r from-rose-50 to-pink-50 hover:from-rose-100 hover:to-pink-100 rounded-3xl p-4 cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 border border-rose-200 hover:border-rose-300 overflow-hidden"
+                              style={{ animationDelay: `${index * 100}ms` }}
+                            >
+                              <div className="flex items-start gap-3">
+                                {/* Logo Section - Clean Rectangle with Favorite Indicator */}
+                                <div className="flex-shrink-0 relative">
+                                  <div className="w-20 h-16 rounded-2xl bg-rose-50 border border-rose-200 group-hover:border-rose-300 transition-all duration-300 overflow-hidden">
+                                    <ZohoImage
+                                      src={exhibitor.company_logo}
+                                      alt={`${getExhibitorDisplayName(exhibitor)} logo`}
+                                      className="w-full h-full object-contain p-2"
+                                      fallbackClassName="w-full h-full bg-gradient-to-br from-rose-100 to-pink-200 flex items-center justify-center text-lg font-medium text-rose-600"
+                                      fallbackText={getExhibitorDisplayName(exhibitor).charAt(0)}
+                                      sizes="80px"
+                                    />
+                                  </div>
+                                  {/* Favorite Heart Indicator */}
+                                  <div className="absolute -top-1 -right-1 w-6 h-6 bg-rose-500 rounded-full flex items-center justify-center border-2 border-white">
+                                    <Icon name="HeartIcon" className="w-3 h-3 text-white" fill="currentColor" />
+                                  </div>
+                                </div>
+                                
+                                {/* Content Area */}
+                                <div className="flex-1 min-w-0">
+                                  {/* Company Name (max 2 lines) */}
+                                  <h3 className="text-sm font-semibold text-gray-800 leading-snug mb-1.5 line-clamp-2 group-hover:text-rose-800 transition-colors duration-300">
+                                    {getExhibitorDisplayName(exhibitor)}
+                                  </h3>
+                                  
+                                  {/* Category or Products */}
+                                  {(() => {
+                                    const exhibitorAny = exhibitor as any;
+                                    const category = exhibitorAny.category;
+                                    const products = exhibitor.vie_display_products || exhibitor.eng_display_products;
+                                    
+                                    if (category && typeof category === 'string' && category.trim()) {
+                                      return (
+                                        <div className="flex items-center mb-2">
+                                          <span className="inline-flex items-center px-2 py-1 bg-rose-100 text-rose-700 text-xs font-medium rounded-lg">
+                                            <Icon name="TagIcon" className="w-3 h-3 mr-1" />
+                                            {category}
+                                          </span>
+                                        </div>
+                                      );
+                                    } else if (products && products.trim()) {
+                                      const tempDiv = document.createElement('div');
+                                      tempDiv.innerHTML = products;
+                                      const plainText = tempDiv.textContent || tempDiv.innerText || '';
+                                      const firstLine = plainText.split('\n')[0].trim();
+                                      
+                                      if (firstLine && firstLine.length > 0) {
+                                        return (
+                                          <p className="text-xs text-gray-600 mb-2 line-clamp-1">
+                                            {firstLine.length > 50 ? firstLine.substring(0, 50) + '...' : firstLine}
+                                          </p>
+                                        );
+                                      }
+                                    }
+                                    return null;
+                                  })()}
+                                  
+                                  {/* Booth Number & Action Container */}
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      {(() => {
+                                        const exhibitorAny = exhibitor as any;
+                                        const boothNo = exhibitorAny.booth_no;
+                                        
+                                        if (boothNo && boothNo.trim()) {
+                                          return (
+                                            <span className="inline-flex items-center px-2 py-1 bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 text-xs font-medium rounded-lg">
+                                              <Icon name="MapPinIcon" className="w-3 h-3 mr-1" />
+                                              Booth {boothNo}
+                                            </span>
+                                          );
+                                        }
+                                        return null;
+                                      })()}
+                                    </div>
+                                    
+                                    {/* Action Arrow */}
+                                    <div className="p-1.5 rounded-full bg-white group-hover:bg-rose-50 transition-all duration-300 border border-rose-200">
+                                      <Icon name="ChevronRightIcon" className="w-3.5 h-3.5 text-rose-400 group-hover:text-rose-600" />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </Card>
+                  </div>
+                )
               )}
             </div>
           )}
 
-          {activeTab === 'favorites' && (
+          {false && (
             <div className="space-y-3">
               {favoriteExhibitors.length === 0 ? (
                 <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
@@ -2845,7 +3051,7 @@ END:VCALENDAR`;
                               <div className="space-y-2">
                                 {dayMatches.sort((a, b) => a.time.hour * 60 + a.time.minute - (b.time.hour * 60 + b.time.minute)).map((matching, index) => {
                                   const exhibitor = exhibitors.find(ex => String((ex as any).exhibitor_profile_id) === String(matching.exhibitor_profile_id));
-                                  const exhibitorName = exhibitor?.display_name || `Exhibitor ${matching.exhibitor_profile_id}`;
+                                  const exhibitorName = exhibitor ? getExhibitorDisplayName(exhibitor) : `Exhibitor ${matching.exhibitor_profile_id}`;
                                   
                                   return (
                                     <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
@@ -2896,7 +3102,7 @@ END:VCALENDAR`;
                           })
                           .map((matching, index) => {
                             const exhibitor = exhibitors.find(ex => String((ex as any).exhibitor_profile_id) === String(matching.exhibitor_profile_id));
-                            const exhibitorName = exhibitor?.display_name || `Exhibitor ${matching.exhibitor_profile_id}`;
+                            const exhibitorName = exhibitor ? getExhibitorDisplayName(exhibitor) : `Exhibitor ${matching.exhibitor_profile_id}`;
                             
                             return (
                               <div key={index} className="flex items-center gap-4 p-3 bg-white border border-gray-200 rounded-xl">
@@ -2998,6 +3204,150 @@ END:VCALENDAR`;
                   </div>
                 </Card>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'agenda' && (
+            <div className="space-y-3">
+              {/* Agenda Header */}
+              <div className={`transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+                <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100 bg-gradient-to-r from-purple-50 to-indigo-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-bold text-purple-800 flex items-center">
+                      <Icon name="CalendarDaysIcon" className="w-5 h-5 mr-2 text-purple-600" />
+                      Chương trình sự kiện
+                    </h3>
+                  </div>
+                  <p className="text-sm text-purple-600">
+                    Khám phá các hội thảo, tọa đàm và hoạt động trong sự kiện
+                  </p>
+                </Card>
+              </div>
+
+              {/* Agenda Content */}
+              {eventData?.sessions && eventData.sessions.length > 0 ? (
+                (() => {
+                  // Group sessions by date
+                  const sessionsByDate = eventData.sessions.reduce((acc: Record<string, any[]>, session) => {
+                    if (!acc[session.date]) {
+                      acc[session.date] = [];
+                    }
+                    acc[session.date].push(session);
+                    return acc;
+                  }, {});
+
+                  // Sort dates
+                  const sortedDates = Object.keys(sessionsByDate).sort();
+
+                  return sortedDates.map((date, dateIndex) => {
+                    // Sort sessions by start time
+                    const sortedSessions = sessionsByDate[date].sort((a, b) => {
+                      return a.start_time.hour * 60 + a.start_time.minute - (b.start_time.hour * 60 + b.start_time.minute);
+                    });
+
+                    // Format date
+                    const dateObj = new Date(date + 'T00:00:00');
+                    const formattedDate = dateObj.toLocaleDateString('vi-VN', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    });
+
+                    return (
+                      <div key={date} className={`transform transition-all duration-1000 delay-${(dateIndex + 1) * 200} ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+                        <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
+                          {/* Date Header */}
+                          <div className="flex items-center mb-4 pb-3 border-b border-gray-100">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
+                            <h4 className="text-md font-bold text-gray-800 capitalize">{formattedDate}</h4>
+                            <span className="ml-auto text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                              {sortedSessions.length} session{sortedSessions.length > 1 ? 's' : ''}
+                            </span>
+                          </div>
+
+                          {/* Sessions */}
+                          <div className="space-y-3">
+                            {sortedSessions.map((session, sessionIndex) => {
+                              const startTime = `${session.start_time.hour.toString().padStart(2, '0')}:${session.start_time.minute.toString().padStart(2, '0')}`;
+                              const endTime = `${session.end_time.hour.toString().padStart(2, '0')}:${session.end_time.minute.toString().padStart(2, '0')}`;
+                              
+                              // Extract description text (remove HTML)
+                              const tempDiv = document.createElement('div');
+                              tempDiv.innerHTML = session.description;
+                              const descriptionText = tempDiv.textContent || tempDiv.innerText || '';
+
+                              return (
+                                <div key={session.id} className="group bg-white rounded-2xl p-4 border border-gray-100 hover:border-purple-200 hover:shadow-md transition-all duration-300">
+                                  {/* Time & Location */}
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center space-x-3">
+                                      <div className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-semibold">
+                                        {startTime} - {endTime}
+                                      </div>
+                                      <div className="flex items-center text-xs text-gray-500">
+                                        <Icon name="MapPinIcon" className="w-3 h-3 mr-1" />
+                                        {session.area_name}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Title */}
+                                  <h5 className="text-sm font-semibold text-gray-800 mb-2 line-clamp-2 group-hover:text-purple-700 transition-colors">
+                                    {session.title}
+                                  </h5>
+
+                                  {/* Speaker */}
+                                  <div className="flex items-center text-xs text-gray-600 mb-2">
+                                    <Icon name="UserIcon" className="w-3 h-3 mr-1" />
+                                    <span className="truncate">{session.speaker_name}</span>
+                                  </div>
+
+                                  {/* Description */}
+                                  {descriptionText && descriptionText.trim() && (
+                                    <p className="text-xs text-gray-500 line-clamp-2 mb-2">
+                                      {descriptionText}
+                                    </p>
+                                  )}
+
+                                  {/* Footer */}
+                                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-50">
+                                    <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                                      {session.session_accessibility}
+                                    </span>
+                                    <div className="flex items-center space-x-2">
+                                      <button className="text-xs text-purple-600 hover:text-purple-700 transition-colors">
+                                        <Icon name="CalendarPlusIcon" className="w-4 h-4" />
+                                      </button>
+                                      <button className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+                                        <Icon name="ShareIcon" className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </Card>
+                      </div>
+                    );
+                  });
+                })()
+              ) : (
+                <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+                  <Card className="p-6 text-center rounded-3xl border-gray-100">
+                    <div className="text-gray-300 mb-4">
+                      <Icon name="CalendarDaysIcon" className="w-16 h-16 mx-auto" />
+                    </div>
+                    <p className="text-gray-600 text-sm font-medium">
+                      Chương trình sự kiện đang được cập nhật
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Vui lòng quay lại sau để xem thông tin chi tiết
+                    </p>
+                  </Card>
+                </div>
+              )}
             </div>
           )}
 

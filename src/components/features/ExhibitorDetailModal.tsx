@@ -7,6 +7,24 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import ZohoImage from '@/components/ui/ZohoImage';
 import { ExhibitorData } from '@/lib/api/events';
 
+// Helper function to get display name with fallback
+const getExhibitorDisplayName = (exhibitor: ExhibitorData) => {
+  const exhibitorAny = exhibitor as any;
+  const name = exhibitor.display_name?.trim();
+  const enCompanyName = exhibitor.en_company_name?.trim();
+  const booth = exhibitorAny.booth_no?.trim();
+  
+  if (name && name.length > 0) {
+    return name;
+  } else if (enCompanyName && enCompanyName.length > 0) {
+    return enCompanyName;
+  } else if (booth && booth.length > 0) {
+    return `Booth ${booth}`;
+  } else {
+    return `${exhibitor.country || 'Unknown Company'}`;
+  }
+};
+
 interface ExhibitorDetailModalProps {
   exhibitor: ExhibitorData;
   onClose: () => void;
@@ -162,9 +180,9 @@ export default function ExhibitorDetailModal({ exhibitor, onClose, onMatching }:
               <div className="w-16 h-16 rounded-2xl bg-white p-2 shadow-sm border border-gray-200">
                 <ZohoImage
                   src={exhibitor.company_logo}
-                  alt={`${exhibitor.display_name} logo`}
+                  alt={`${getExhibitorDisplayName(exhibitor)} logo`}
                   className="w-full h-full object-contain rounded-xl"
-                  fallbackText={exhibitor.display_name.charAt(0)}
+                  fallbackText={getExhibitorDisplayName(exhibitor).charAt(0)}
                   fallbackClassName="w-full h-full bg-gradient-to-br from-slate-100 to-gray-100 rounded-xl flex items-center justify-center text-xl font-bold text-slate-600"
                   sizes="64px"
                 />
@@ -174,7 +192,7 @@ export default function ExhibitorDetailModal({ exhibitor, onClose, onMatching }:
             {/* Company Info */}
             <div className="flex-1 min-w-0">
               <h2 className="text-lg sm:text-xl font-bold text-slate-900 break-words mb-2">
-                {exhibitor.display_name}
+                {getExhibitorDisplayName(exhibitor)}
               </h2>
               <div className="flex items-center gap-2 mb-3 flex-wrap">
                 {/* Booth Number - Primary Position */}
@@ -297,7 +315,7 @@ export default function ExhibitorDetailModal({ exhibitor, onClose, onMatching }:
                 <div className="relative rounded-2xl overflow-hidden bg-gray-100 aspect-video mb-6">
                   <ZohoImage
                     src={exhibitor.cover_image}
-                    alt={`${exhibitor.display_name} cover`}
+                    alt={`${getExhibitorDisplayName(exhibitor)} cover`}
                     className="w-full h-full"
                     fallbackText=""
                     fallbackClassName="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center"
@@ -461,7 +479,7 @@ export default function ExhibitorDetailModal({ exhibitor, onClose, onMatching }:
                   <div className="aspect-video rounded-2xl overflow-hidden bg-gray-100">
                     <iframe
                       src={`https://www.youtube.com/embed/${videoId}`}
-                      title={`${exhibitor.display_name} introduction video`}
+                      title={`${getExhibitorDisplayName(exhibitor)} introduction video`}
                       className="w-full h-full"
                       allowFullScreen
                       onError={() => setVideoError(true)}

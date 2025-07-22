@@ -36,8 +36,31 @@ export interface FormField {
   id?: string;
 }
 
+export interface SessionTimeInfo {
+  hour: number;
+  millis: number;
+  minute: number;
+  second: number;
+  SQLTime: string;
+}
+
+export interface SessionData {
+  id: string;
+  title: string;
+  date: string;
+  start_time: SessionTimeInfo;
+  end_time: SessionTimeInfo;
+  description: string;
+  speaker_name: string;
+  speaker_id: string;
+  area_name: string;
+  area_id: string;
+  session_accessibility: string;
+}
+
 export interface ExhibitorData {
   display_name: string;
+  en_company_name?: string;
   country: string;
   email: string;
   tel: string;
@@ -71,6 +94,7 @@ export interface EventData {
   footer?: string;
   formFields: FormField[];
   exhibitors?: ExhibitorData[];
+  sessions?: SessionData[];
   registration_form: any[];
   status: string;
   created_date: string;
