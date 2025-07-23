@@ -8,6 +8,9 @@ import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { EventData, eventApi } from '@/lib/api/events';
 import { useEventMetadata } from '@/hooks/useEventMetadata';
+import { useInsightTranslation } from '@/hooks/useInsightTranslation';
+import { i18n } from '@/lib/translation/i18n';
+import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 
 interface InsightAccessPageProps {
   params: Promise<{
@@ -18,7 +21,7 @@ interface InsightAccessPageProps {
 export default function InsightAccessPage({ params }: InsightAccessPageProps) {
   const { eventId } = use(params);
   const router = useRouter();
-  const [eventData, setEventData] = useState<EventData | null>(null);
+  const [originalEventData, setOriginalEventData] = useState<EventData | null>(null);
   const [visitorId, setVisitorId] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -26,10 +29,31 @@ export default function InsightAccessPage({ params }: InsightAccessPageProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [scrollY, setScrollY] = useState(0);
 
+  // Use insight translation hook with originalEventData and default English
+  const {
+    eventData,
+    currentLanguage,
+    isTranslating,
+    translateEventData,
+    t,
+  } = useInsightTranslation(originalEventData);
+  
+
+
   const { generateShareUrls } = useEventMetadata({ 
     event: eventData, 
-    currentLanguage: 'vi' 
+    currentLanguage 
   });
+
+  // Language change handler
+  const handleLanguageChange = async (newLanguage: string) => {
+    if (originalEventData && (newLanguage === 'en' || newLanguage === 'vi')) {
+      console.log('🔄 Language change requested:', { from: currentLanguage, to: newLanguage });
+      await translateEventData(newLanguage as 'en' | 'vi');
+    }
+  };
+
+  // Language initialization is handled by useInsightTranslation hook
 
   // Animated background with parallax effect
   useEffect(() => {
@@ -46,7 +70,7 @@ export default function InsightAccessPage({ params }: InsightAccessPageProps) {
         setError('');
         
         const response = await eventApi.getEventInfo(eventId);
-        setEventData(response.event);
+        setOriginalEventData(response.event);
         
         // Trigger entrance animation
         setTimeout(() => setIsVisible(true), 100);
@@ -65,7 +89,7 @@ export default function InsightAccessPage({ params }: InsightAccessPageProps) {
     e.preventDefault();
     
     if (!visitorId.trim()) {
-      setError('Vui lòng nhập mã truy cập');
+      setError(t('visitor_code_required'));
       return;
     }
 
@@ -111,24 +135,31 @@ export default function InsightAccessPage({ params }: InsightAccessPageProps) {
     return icons[name as keyof typeof icons] || icons.KeyIcon;
   };
 
-  if (loading) {
+  // Show loading while loading event data OR while translation is in progress
+  if (loading || (originalEventData && !eventData)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner 
             size="lg" 
             showLogo={true} 
-            text="Đang tải thông tin sự kiện..."
+            text={isTranslating 
+              ? (i18n[currentLanguage]?.translating || 'Translating content...')
+              : (i18n[currentLanguage]?.loading || 'Loading event information...')
+            }
           />
           <div className="mt-4 text-gray-600">
-            <p className="text-sm">Vui lòng chờ trong giây lát...</p>
+            <p className="text-sm">{isTranslating ? 'Please wait while we translate...' : 'Please wait a moment...'}</p>
           </div>
         </div>
       </div>
     );
   }
 
-  if (!eventData) {
+  // Use display data with fallback during translation
+  const displayEventData = eventData || originalEventData;
+
+  if (!displayEventData) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
         <Card className="max-w-md w-full mx-4 p-6 text-center shadow-xl">
@@ -200,23 +231,23 @@ export default function InsightAccessPage({ params }: InsightAccessPageProps) {
         <div className="w-full max-w-md">
           {/* Event header with enhanced animation */}
           <div className={`text-center mb-8 transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-            {eventData.logo && (
+            {displayEventData.logo && (
               <div className="mb-6">
                 <img 
-                  src={eventData.logo} 
-                  alt={eventData.name}
+                  src={displayEventData.logo} 
+                  alt={displayEventData.name}
                   className="w-20 h-20 mx-auto rounded-2xl shadow-lg hover:shadow-xl transition-shadow duration-300 object-cover"
                 />
               </div>
             )}
             <h1 className="insight-h1 font-extrabold text-gray-900 mb-2 leading-tight">
-              {eventData.name}
+              {displayEventData.name}
             </h1>
             <p className="insight-text-secondary text-gray-600 mb-1">
-              {new Date(eventData.start_date).toLocaleDateString('vi-VN')} - {new Date(eventData.end_date).toLocaleDateString('vi-VN')}
+              {new Date(displayEventData.start_date).toLocaleDateString('vi-VN')} - {new Date(displayEventData.end_date).toLocaleDateString('vi-VN')}
             </p>
             <p className="insight-text-muted text-gray-500">
-              {eventData.location}
+              {displayEventData.location}
             </p>
           </div>
 
@@ -224,21 +255,30 @@ export default function InsightAccessPage({ params }: InsightAccessPageProps) {
           <div className={`transform transition-all duration-1000 delay-300 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
             <Card className="insight-card p-8 shadow-2xl backdrop-blur-sm bg-white/90 border-0 hover:shadow-2xl transition-all duration-300">
               <div className="text-center mb-6">
+                {/* Language Switcher */}
+                <div className="flex justify-end mb-4">
+                  <LanguageSwitcher
+                    currentLanguage={currentLanguage}
+                    onLanguageChange={handleLanguageChange}
+                    isTranslating={isTranslating}
+                  />
+                </div>
+
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4 shadow-lg">
                   <Icon name="KeyIcon" className="w-8 h-8 text-white" />
                 </div>
                 <h2 className="insight-h2 font-bold text-gray-900 mb-2">
-                  Truy cập Dashboard
+                  {t('access_dashboard')}
                 </h2>
                 <p className="insight-text-secondary text-gray-600">
-                  Nhập mã truy cập được cung cấp bởi ban tổ chức
+                  {t('access_description')}
                 </p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label htmlFor="visitorId" className="insight-label block text-sm font-semibold text-gray-700 mb-2">
-                    Mã truy cập
+                    {t('visitor_code_label')}
                   </label>
                   <div className="relative">
                     <input
@@ -246,7 +286,7 @@ export default function InsightAccessPage({ params }: InsightAccessPageProps) {
                       type="text"
                       value={visitorId}
                       onChange={(e) => setVisitorId(e.target.value)}
-                      placeholder="Nhập mã truy cập của bạn"
+                      placeholder={t('visitor_code_placeholder')}
                       className="insight-input w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-lg"
                       disabled={submitting}
                       autoComplete="off"
@@ -279,7 +319,7 @@ export default function InsightAccessPage({ params }: InsightAccessPageProps) {
                     </div>
                   ) : (
                     <div className="flex items-center justify-center gap-2">
-                      <span>Truy cập Dashboard</span>
+                      <span>{t('access_button')}</span>
                       <Icon name="ArrowRightIcon" className="w-5 h-5" />
                     </div>
                   )}
@@ -289,7 +329,7 @@ export default function InsightAccessPage({ params }: InsightAccessPageProps) {
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <div className="text-center space-y-2">
                   <p className="insight-text-muted text-gray-500 text-sm">
-                    Chưa có mã truy cập?
+                    {t('no_visitor_code')}
                   </p>
                   <p className="insight-text-caption text-gray-400 text-xs">
                     Liên hệ ban tổ chức để được hỗ trợ
@@ -309,27 +349,27 @@ export default function InsightAccessPage({ params }: InsightAccessPageProps) {
                 <div>
                   <h4 className="insight-h6 font-semibold text-gray-700 mb-1">Mô tả</h4>
                   <p className="insight-text-secondary text-gray-600 text-sm leading-relaxed">
-                    {eventData.description || 'Không có mô tả'}
+                    {displayEventData.description || 'Không có mô tả'}
                   </p>
                 </div>
                 <div className="grid grid-cols-1 gap-3">
                   <div>
                     <h4 className="insight-h6 font-semibold text-gray-700 mb-1">Thời gian</h4>
                     <p className="insight-text-secondary text-gray-600 text-sm">
-                      {new Date(eventData.start_date).toLocaleDateString('vi-VN')} - {new Date(eventData.end_date).toLocaleDateString('vi-VN')}
+                      {new Date(displayEventData.start_date).toLocaleDateString('vi-VN')} - {new Date(displayEventData.end_date).toLocaleDateString('vi-VN')}
                     </p>
                   </div>
                   <div>
                     <h4 className="insight-h6 font-semibold text-gray-700 mb-1">Địa điểm</h4>
                     <p className="insight-text-secondary text-gray-600 text-sm">
-                      {eventData.location}
+                      {displayEventData.location}
                     </p>
                   </div>
-                  {eventData.exhibitors && eventData.exhibitors.length > 0 && (
+                  {displayEventData.exhibitors && displayEventData.exhibitors.length > 0 && (
                     <div>
                       <h4 className="insight-h6 font-semibold text-gray-700 mb-1">Exhibitors</h4>
                       <div className="insight-badge insight-status-info inline-flex">
-                        {eventData.exhibitors.length} exhibitors tham gia
+                        {displayEventData.exhibitors.length} exhibitors tham gia
                       </div>
                     </div>
                   )}
@@ -347,7 +387,7 @@ export default function InsightAccessPage({ params }: InsightAccessPageProps) {
                   Bảo mật thông tin
                 </h4>
                 <p className="insight-text-caption text-blue-700 text-sm">
-                  Mã truy cập của bạn được bảo vệ và chỉ có thể sử dụng cho sự kiện này. 
+                                      {t('security_note')} 
                   Không chia sẻ mã này với người khác.
                 </p>
               </div>

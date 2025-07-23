@@ -28,6 +28,8 @@ export default function RegisterPage() {
     translateEventData,
     registerFormValuesMigration,
   } = useTranslation(originalEventData);
+  
+
 
   // Use metadata hook for dynamic favicon, title, and social sharing
   const { generateShareUrls } = useEventMetadata({ 

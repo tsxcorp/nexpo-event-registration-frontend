@@ -6,12 +6,15 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import ZohoImage from '@/components/ui/ZohoImage';
+import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import { useEventMetadata } from '@/hooks/useEventMetadata';
+import { useInsightTranslation } from '@/hooks/useInsightTranslation';
 import { EventData, ExhibitorData, eventApi } from '@/lib/api/events';
 import { VisitorData, MatchingEntry, CheckinHistoryEntry, visitorApi } from '@/lib/api/visitors';
 import FileViewer from '@/components/features/FileViewer';
 import ExhibitorDetailModal from '@/components/features/ExhibitorDetailModal';
 import { renderHtmlContent } from '@/lib/utils/htmlUtils';
+import { i18n } from '@/lib/translation/i18n';
 
 interface DashboardPageProps {
   params: Promise<{
@@ -28,7 +31,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
   const router = useRouter();
   
   // State management
-  const [eventData, setEventData] = useState<EventData | null>(null);
+  const [originalEventData, setOriginalEventData] = useState<EventData | null>(null);
   const [visitorData, setVisitorData] = useState<VisitorData | null>(null);
   const [exhibitors, setExhibitors] = useState<ExhibitorData[]>([]);
   const [filteredExhibitors, setFilteredExhibitors] = useState<ExhibitorData[]>([]);
@@ -96,17 +99,38 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
   const [isMatchingFiltersOpen, setIsMatchingFiltersOpen] = useState(false);
   const [matchingViewMode, setMatchingViewMode] = useState<'list' | 'calendar' | 'timeline'>('calendar');
 
+  // Use insight translation hook with originalEventData and default English
+  const {
+    eventData,
+    currentLanguage,
+    isTranslating,
+    translateEventData,
+    t,
+  } = useInsightTranslation(originalEventData);
+  
+
+
   const { generateShareUrls } = useEventMetadata({ 
     event: eventData, 
-    currentLanguage: 'vi' 
+    currentLanguage 
   });
 
+  // Language change handler
+  const handleLanguageChange = async (newLanguage: string) => {
+    if (originalEventData && (newLanguage === 'en' || newLanguage === 'vi')) {
+      console.log('🔄 Language change requested:', { from: currentLanguage, to: newLanguage });
+      await translateEventData(newLanguage as 'en' | 'vi');
+    }
+  };
+
+  // Language initialization is handled by useInsightTranslation hook
+
   const tabs = [
-    { id: 'overview', label: 'Check-in', icon: 'ChartBarIcon' },
-    { id: 'exhibitors', label: 'Exhibitors', icon: 'BuildingOfficeIcon', count: favoriteExhibitors.length },
-    { id: 'matching', label: 'Matching', icon: 'UserGroupIcon' },
-    { id: 'agenda', label: 'Agenda', icon: 'CalendarDaysIcon' },
-    { id: 'more', label: 'Thêm', icon: 'Cog6ToothIcon' }
+    { id: 'overview', label: t('tab_checkin'), icon: 'ChartBarIcon' },
+    { id: 'exhibitors', label: t('tab_exhibitors'), icon: 'BuildingOfficeIcon', count: favoriteExhibitors.length },
+    { id: 'matching', label: t('tab_matching'), icon: 'UserGroupIcon' },
+    { id: 'agenda', label: t('tab_agenda'), icon: 'CalendarDaysIcon' },
+    { id: 'more', label: t('tab_more'), icon: 'Cog6ToothIcon' }
   ];
 
   // Favorite exhibitors localStorage key
@@ -321,7 +345,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       console.log('🔄 Loading event data for ID:', eventId);
       const eventResponse = await eventApi.getEventInfo(eventId);
       console.log('📥 Event data loaded:', eventResponse.event);
-      setEventData(eventResponse.event);
+      setOriginalEventData(eventResponse.event);
 
       // Load visitor data - critical validation step
       console.log('🔄 Loading visitor data for ID:', visitorId);
@@ -336,7 +360,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           // Use setTimeout to avoid state update during render
           setTimeout(() => {
             setIsInvalidVisitorId(true);
-            setError('Mã truy cập không hợp lệ hoặc không tồn tại');
+            setError(t('visitor_code_not_exist'));
             setLoading(false);
             setIsLoadingData(false);
           }, 0);
@@ -349,7 +373,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           // Use setTimeout to avoid state update during render
           setTimeout(() => {
             setIsInvalidVisitorId(true);
-            setError('Mã truy cập không hợp lệ hoặc không tồn tại');
+            setError(t('visitor_code_not_exist'));
             setLoading(false);
             setIsLoadingData(false);
           }, 0);
@@ -382,7 +406,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           // Use setTimeout to avoid state update during render
           setTimeout(() => {
             setIsInvalidVisitorId(true);
-            setError(`Mã truy cập không thuộc sự kiện này. Visitor thuộc sự kiện: "${visitor.event_name}"`);
+            setError(`${t('visitor_code_wrong_event')} "${visitor.event_name}"`);
             setLoading(false);
             setIsLoadingData(false);
           }, 0);
@@ -404,7 +428,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           // Use setTimeout to avoid state update during render
           setTimeout(() => {
             setIsInvalidVisitorId(true);
-            setError('Mã truy cập không hợp lệ hoặc không tồn tại');
+            setError(t('visitor_code_not_exist'));
             setLoading(false);
             setIsLoadingData(false);
           }, 0);
@@ -1586,24 +1610,28 @@ END:VCALENDAR`;
     }
   }, [qrMode, visitorData, generateQRCodeWithLoading]);
 
-  if (loading) {
+  // Show loading while loading event data OR while translation is in progress
+  if (loading || (originalEventData && !eventData)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
           <LoadingSpinner 
             size="lg" 
             showLogo={true} 
-            text="Đang tải thông tin..."
+            text={isTranslating 
+              ? (i18n[currentLanguage]?.translating || 'Translating content...')
+              : (i18n[currentLanguage]?.loading || 'Loading information...')
+            }
           />
           <div className="mt-4 text-gray-600">
-            <p className="text-sm">Vui lòng chờ trong giây lát...</p>
+            <p className="text-sm">{isTranslating ? 'Please wait while we translate...' : 'Please wait a moment...'}</p>
           </div>
         </div>
       </div>
     );
   }
 
-  if (error || !eventData || !visitorData) {
+  if (error || (!eventData && !originalEventData) || !visitorData) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
         <Card className="max-w-md w-full mx-4 p-6 text-center shadow-xl">
@@ -1662,6 +1690,23 @@ END:VCALENDAR`;
             )}
           </div>
         </Card>
+      </div>
+    );
+  }
+
+  // Use display data with fallback during translation
+  const displayEventData = eventData || originalEventData;
+
+  if (!displayEventData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="text-center">
+          <LoadingSpinner 
+            size="lg" 
+            showLogo={true} 
+            text={i18n[currentLanguage]?.loading || 'Loading event information...'}
+          />
+        </div>
       </div>
     );
   }
@@ -1733,12 +1778,12 @@ END:VCALENDAR`;
         <div className="relative max-w-md mx-auto px-4 py-2">
           <div className="flex items-start space-x-4">
             {/* Enhanced Logo Container */}
-            {eventData.logo && (
+            {displayEventData.logo && (
               <div className="relative flex-shrink-0 mt-1">
                 <div className="w-12 h-12 rounded-2xl bg-white/95 backdrop-blur-sm flex-shrink-0 shadow-lg border border-white/20 p-1.5 group hover:scale-105 transition-transform duration-300">
                   <img 
-                    src={eventData.logo} 
-                    alt={eventData.name}
+                    src={displayEventData.logo} 
+                    alt={displayEventData.name}
                     className="w-full h-full object-contain"
                   />
                   {/* Subtle glow effect */}
@@ -1756,42 +1801,52 @@ END:VCALENDAR`;
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <h1 className="text-lg font-bold text-white leading-tight break-words mb-1 drop-shadow-sm">
-                    {eventData.name || 'Event Dashboard'}
+                    {displayEventData.name || 'Event Dashboard'}
                   </h1>
                   
                   <div className="flex items-center gap-2 mb-1">
                     <div className="flex items-center gap-1 text-white/90 text-xs font-medium bg-white/10 backdrop-blur-sm px-2 py-1 rounded-full">
                       <Icon name="CalendarDaysIcon" className="w-3 h-3" />
-                      <span>{new Date(eventData.start_date).toLocaleDateString('vi-VN')} - {new Date(eventData.end_date).toLocaleDateString('vi-VN')}</span>
+                      <span>{new Date(displayEventData.start_date).toLocaleDateString('vi-VN')} - {new Date(displayEventData.end_date).toLocaleDateString('vi-VN')}</span>
                     </div>
                   </div>
                   
                   {visitorData.registration_date && (
                     <div className="flex items-center gap-1 text-white/80 text-xs">
                       <Icon name="CheckCircleIcon" className="w-3 h-3 text-emerald-300" />
-                      <span>Đăng ký: {new Date(visitorData.registration_date).toLocaleDateString('vi-VN')}</span>
+                      <span>{t('registered_date')} {new Date(visitorData.registration_date).toLocaleDateString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US')}</span>
                     </div>
                   )}
                 </div>
                 
-                {/* Status Badge */}
-                <div className={`flex-shrink-0 ml-3 mt-1 px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-sm transition-all duration-300 ${
-                  hasCheckedIn
-                    ? 'bg-emerald-500/20 text-emerald-100 border-emerald-400/30'
-                    : 'bg-amber-500/20 text-amber-100 border-amber-400/30'
-                }`}>
-                  <div className="flex items-center gap-1">
-                    {hasCheckedIn ? (
-                      <>
-                        <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                        <span>Active</span>
+                {/* Right side controls */}
+                <div className="flex-shrink-0 ml-3 flex items-center gap-2">
+                  {/* Language Switcher */}
+                  <LanguageSwitcher
+                    currentLanguage={currentLanguage}
+                    onLanguageChange={handleLanguageChange}
+                    isTranslating={isTranslating}
+                  />
+                  
+                  {/* Status Badge */}
+                  <div className={`px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-sm transition-all duration-300 ${
+                    hasCheckedIn
+                      ? 'bg-emerald-500/20 text-emerald-100 border-emerald-400/30'
+                      : 'bg-amber-500/20 text-amber-100 border-amber-400/30'
+                  }`}>
+                    <div className="flex items-center gap-1">
+                      {hasCheckedIn ? (
+                        <>
+                          <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                                                  <span>{t('status_active')}</span>
                       </>
                     ) : (
                       <>
                         <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
-                        <span>Ready</span>
-                      </>
-                    )}
+                        <span>{t('status_ready')}</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1995,7 +2050,7 @@ END:VCALENDAR`;
                                   : 'text-gray-600 hover:text-gray-800'
                               }`}
                             >
-                              Badge QR
+                              {t('qr_mode_badge')}
                             </button>
                             <button
                               onClick={() => handleQrModeChange('redeem')}
@@ -2005,7 +2060,7 @@ END:VCALENDAR`;
                                   : 'text-gray-600 hover:text-gray-800'
                               }`}
                             >
-                              Redeem QR
+                              {t('qr_mode_redeem')}
                             </button>
                           </div>
                         ) : (
@@ -2019,7 +2074,7 @@ END:VCALENDAR`;
                                   : 'text-gray-600 hover:text-gray-800'
                               }`}
                             >
-                              Cá nhân
+                              {t('qr_mode_personal')}
                             </button>
                             <button
                               onClick={() => handleQrModeChange('group')}
@@ -2032,7 +2087,7 @@ END:VCALENDAR`;
                                     : 'text-gray-600 hover:text-gray-800'
                               }`}
                             >
-                              Nhóm {!visitorData.group_id && '(N/A)'}
+                              {t('qr_mode_group')} {!visitorData.group_id && '(N/A)'}
                             </button>
                           </div>
                         )}
@@ -2122,7 +2177,7 @@ END:VCALENDAR`;
                             onClick={copyQrDataToClipboard}
                             className="text-xs text-slate-600 hover:text-slate-800 transition-colors duration-200 bg-slate-50 hover:bg-slate-100 px-3 py-1 rounded-full"
                           >
-                            📋 Copy QR Data
+                            📋 {t('copy_qr_data')}
                           </button>
                         </div>
                       </div>
@@ -2150,19 +2205,19 @@ END:VCALENDAR`;
                         <div className="flex items-center justify-center mb-1">
                           <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
                           <span className="text-blue-700 font-semibold text-xs uppercase tracking-wider">
-                            {hasCheckedIn ? 'Active Badge' : 'Check-in Ready'}
+                            {hasCheckedIn ? t('qr_status_active') : t('qr_status_ready')}
                           </span>
                           <div className="w-2 h-2 bg-blue-500 rounded-full ml-2"></div>
                         </div>
                         <p className="text-sm text-gray-700 leading-relaxed font-medium">
                           {hasCheckedIn ? (
                             qrMode === 'badge' 
-                              ? '✨ Sử dụng QR này để truy cập các dịch vụ tại sự kiện'
-                              : '🎫 Scan QR này để in lại thẻ đeo nếu bạn làm mất thẻ'
+                              ? `✨ ${t('qr_desc_badge')}`
+                              : `🎫 ${t('qr_desc_redeem')}`
                           ) : (
                             qrMode === 'personal'
-                              ? '👤 Scan QR này để check-in cá nhân và nhận thẻ đeo'
-                              : '👥 Scan QR này để check-in theo nhóm và nhận thẻ đeo'
+                              ? `👤 ${t('qr_desc_personal')}`
+                              : `👥 ${t('qr_desc_group')}`
                           )}
                         </p>
                       </div>

@@ -59,6 +59,7 @@ function detectContentLanguage(eventData: EventData): string {
 
 export function useTranslation(initialEventData: EventData | null) {
   const [eventData, setEventData] = useState<EventData | null>(null);
+  // Always start with Vietnamese - no localStorage persistence
   const [currentLanguage, setCurrentLanguage] = useState('vi');
   const [isTranslating, setIsTranslating] = useState(false);
   const [formValuesMigrationCallback, setFormValuesMigrationCallback] = useState<((oldFields: any[], newFields: any[]) => void) | null>(null);
@@ -67,40 +68,13 @@ export function useTranslation(initialEventData: EventData | null) {
   // Initialize language and event data when initial data becomes available
   useEffect(() => {
     if (initialEventData && !languageInitialized) {
-      console.log('🌐 Initializing language and event data...');
+      console.log('🌐 Initializing with Vietnamese as default language');
       
-      const detectedLanguage = detectContentLanguage(initialEventData);
-      const savedLanguage = localStorage.getItem('preferredLanguage');
-      
-      // Priority: savedLanguage > detectedLanguage > default 'vi'
-      const finalLanguage = savedLanguage || detectedLanguage;
-      
-      console.log('🌐 Language initialization:', {
-        detected: detectedLanguage,
-        saved: savedLanguage,
-        final: finalLanguage,
-        eventName: initialEventData.name
-      });
-      
-      // Set language first
-      setCurrentLanguage(finalLanguage);
-      
-      // Then set event data immediately (no translation needed if same as saved language)
-      if (savedLanguage === finalLanguage) {
-        setEventData(initialEventData);
-        console.log('✅ Using original event data (no translation needed)');
-      } else {
-        // If we need to use detected language, set original data first then translate
-        setEventData(initialEventData);
-        console.log('🔄 Will use detected language, setting original data first');
-      }
+      // Always start with original data in Vietnamese
+      setEventData(initialEventData);
+      console.log('✅ Using original event data');
       
       setLanguageInitialized(true);
-      
-      // Save to localStorage if not already saved
-      if (!savedLanguage) {
-        localStorage.setItem('preferredLanguage', finalLanguage);
-      }
     }
   }, [initialEventData, languageInitialized]);
 
@@ -158,9 +132,6 @@ export function useTranslation(initialEventData: EventData | null) {
       console.log('🔄 Updating eventData state with translated data...');
       setEventData(translatedData);
       setCurrentLanguage(targetLanguage);
-      
-      // Save language preference
-      localStorage.setItem('preferredLanguage', targetLanguage);
       
       console.log('✅ Translation process completed successfully');
 

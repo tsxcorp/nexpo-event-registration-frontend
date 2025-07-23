@@ -48,6 +48,60 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     register_title: "Đăng ký tham dự",
     company_info: "Thông tin công ty",
     thank_you: "Cảm ơn bạn đã đăng ký!",
+    
+    // Insight Page Translations
+    // Tabs
+    tab_checkin: "Check-in",
+    tab_exhibitors: "Exhibitors", 
+    tab_matching: "Matching",
+    tab_agenda: "Agenda",
+    tab_more: "Thêm",
+    
+    // Access Page
+    access_dashboard: "Truy cập Dashboard",
+    access_description: "Nhập mã truy cập được cung cấp bởi ban tổ chức",
+    visitor_code_label: "Mã truy cập",
+    visitor_code_placeholder: "Nhập mã truy cập của bạn",
+    visitor_code_required: "Vui lòng nhập mã truy cập",
+    access_button: "Truy cập Dashboard",
+    no_visitor_code: "Chưa có mã truy cập?",
+    security_note: "Mã truy cập của bạn được bảo vệ và chỉ có thể sử dụng cho sự kiện này.",
+    
+    // Error Messages
+    invalid_visitor_code: "Mã truy cập không hợp lệ",
+    visitor_code_not_exist: "Mã truy cập không hợp lệ hoặc không tồn tại",
+    visitor_code_wrong_event: "Mã truy cập không thuộc sự kiện này. Visitor thuộc sự kiện:",
+    check_visitor_code: "Vui lòng kiểm tra lại mã truy cập từ ban tổ chức.",
+    reenter_visitor_code: "Nhập lại mã truy cập",
+    try_again: "Thử lại",
+    auto_redirect: "Tự động chuyển về trang nhập mã truy cập sau",
+    seconds: "giây",
+    
+    // Dashboard Header
+    registered_date: "Đăng ký:",
+    status_active: "Active",
+    status_ready: "Ready",
+    
+    // QR Section
+    qr_mode_personal: "Cá nhân",
+    qr_mode_group: "Nhóm", 
+    qr_mode_badge: "Badge QR",
+    qr_mode_redeem: "Redeem QR",
+    qr_desc_badge: "Sử dụng QR này để truy cập các dịch vụ tại sự kiện",
+    qr_desc_redeem: "Scan QR này để in lại thẻ đeo nếu bạn làm mất thẻ",
+    qr_desc_personal: "Scan QR này để check-in cá nhân và nhận thẻ đeo",
+    qr_desc_group: "Scan QR này để check-in theo nhóm và nhận thẻ đeo",
+    qr_status_active: "Active Badge",
+    qr_status_ready: "Check-in Ready",
+    copy_qr_data: "Copy QR Data",
+    qr_copy_success: "Đã copy QR data vào clipboard",
+    qr_copy_error: "Không thể copy QR data",
+    
+    // Check-in History
+    checkin_history: "Lịch sử check-in",
+    checkin_entry: "Check-in",
+    created_at: "Tạo lúc:",
+    no_checkin_time: "Chưa có thời gian",
     submit: "Gửi đăng ký",
     required: "(bắt buộc)",
     optional: "(tùy chọn)",
@@ -144,6 +198,60 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     // Other
     register_title: "Register",
     company_info: "Company Information",
+    
+    // Insight Page Translations
+    // Tabs
+    tab_checkin: "Check-in",
+    tab_exhibitors: "Exhibitors",
+    tab_matching: "Matching", 
+    tab_agenda: "Agenda",
+    tab_more: "More",
+    
+    // Access Page
+    access_dashboard: "Access Dashboard",
+    access_description: "Enter the access code provided by the organizers",
+    visitor_code_label: "Access Code",
+    visitor_code_placeholder: "Enter your access code",
+    visitor_code_required: "Please enter access code",
+    access_button: "Access Dashboard",
+    no_visitor_code: "Don't have an access code?",
+    security_note: "Your access code is protected and can only be used for this event.",
+    
+    // Error Messages
+    invalid_visitor_code: "Invalid access code",
+    visitor_code_not_exist: "Access code is invalid or does not exist",
+    visitor_code_wrong_event: "Access code does not belong to this event. Visitor belongs to event:",
+    check_visitor_code: "Please check your access code from the organizers.",
+    reenter_visitor_code: "Re-enter access code", 
+    try_again: "Try again",
+    auto_redirect: "Automatically redirecting to access code page in",
+    seconds: "seconds",
+    
+    // Dashboard Header
+    registered_date: "Registered:",
+    status_active: "Active",
+    status_ready: "Ready",
+    
+    // QR Section
+    qr_mode_personal: "Personal",
+    qr_mode_group: "Group",
+    qr_mode_badge: "Badge QR", 
+    qr_mode_redeem: "Redeem QR",
+    qr_desc_badge: "Use this QR to access services at the event",
+    qr_desc_redeem: "Scan this QR to reprint your badge if you lose it",
+    qr_desc_personal: "Scan this QR for personal check-in and receive badge",
+    qr_desc_group: "Scan this QR for group check-in and receive badge",
+    qr_status_active: "Active Badge",
+    qr_status_ready: "Check-in Ready",
+    copy_qr_data: "Copy QR Data",
+    qr_copy_success: "QR data copied to clipboard",
+    qr_copy_error: "Unable to copy QR data",
+    
+    // Check-in History
+    checkin_history: "Check-in History",
+    checkin_entry: "Check-in",
+    created_at: "Created at:",
+    no_checkin_time: "No check-in time",
     thank_you: "Thank you for registering!",
     submit: "Submit",
     required: "(required)",
