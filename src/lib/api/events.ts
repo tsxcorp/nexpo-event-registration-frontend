@@ -100,6 +100,8 @@ export interface EventData {
   created_date: string;
   badge_size: string;
   badge_printing: boolean;
+  floor_plan_pdf?: string;
+  directory_url?: string;
 }
 
 export const eventApi = {

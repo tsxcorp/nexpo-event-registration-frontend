@@ -8,7 +8,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import ZohoImage from '@/components/ui/ZohoImage';
 import { useEventMetadata } from '@/hooks/useEventMetadata';
 import { EventData, ExhibitorData, eventApi } from '@/lib/api/events';
-import { VisitorData, MatchingEntry, visitorApi } from '@/lib/api/visitors';
+import { VisitorData, MatchingEntry, CheckinHistoryEntry, visitorApi } from '@/lib/api/visitors';
 import FileViewer from '@/components/features/FileViewer';
 import ExhibitorDetailModal from '@/components/features/ExhibitorDetailModal';
 import { renderHtmlContent } from '@/lib/utils/htmlUtils';
@@ -2175,20 +2175,65 @@ END:VCALENDAR`;
               {visitorData.check_in_history && visitorData.check_in_history.length > 0 && (
                 <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
                   <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
-                    <h3 className="insight-h3 mb-3">Lịch sử check-in</h3>
+                    <div className="flex items-center mb-3">
+                      <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                        <svg className="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <h3 className="insight-h3 text-green-800">Lịch sử check-in</h3>
+                      <span className="ml-2 bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">
+                        {visitorData.check_in_history.length}
+                      </span>
+                    </div>
                     <div className="insight-content-spacing-sm">
-                      {visitorData.check_in_history.map((checkin, index) => (
-                        <div key={index} className="insight-info-row p-2 bg-gray-50 rounded-xl">
-                          <span className="insight-label">Check-in {index + 1}:</span>
-                          <span className="insight-value-sm">{String(checkin)}</span>
-                        </div>
-                      ))}
+                      {visitorData.check_in_history.map((checkin, index) => {
+                        // Parse checkintime if it's a string
+                        const formatCheckinTime = (timeStr: string) => {
+                          try {
+                            const date = new Date(timeStr);
+                            if (isNaN(date.getTime())) {
+                              return timeStr; // Return original if not valid date
+                            }
+                            return date.toLocaleDateString('vi-VN', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit'
+                            });
+                          } catch (error) {
+                            return timeStr;
+                          }
+                        };
+
+                                                 return (
+                           <div key={index} className="insight-info-row p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                             <div className="flex items-center justify-between">
+                               <div className="flex items-center">
+                                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                 <span className="insight-label text-green-700 font-medium">Check-in {index + 1}:</span>
+                               </div>
+                               <span className="insight-value-sm font-semibold text-green-800">
+                                 {checkin.checkintime ? formatCheckinTime(checkin.checkintime) : 'Chưa có thời gian'}
+                               </span>
+                             </div>
+                             {checkin.created_at && checkin.created_at !== checkin.checkintime && (
+                               <div className="flex items-center justify-between mt-2 text-xs">
+                                 <span className="text-green-600">Tạo lúc:</span>
+                                 <span className="text-green-700">{formatCheckinTime(checkin.created_at)}</span>
+                               </div>
+                             )}
+                           </div>
+                         );
+                      })}
                     </div>
                   </Card>
                 </div>
               )}
 
-              {/* App Guide - Compact */}
+              {/* App Guide - Compact
               <div className={`transform transition-all duration-1000 delay-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
                 <Card className="p-3 hover:shadow-md transition-shadow duration-300 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-2xl">
                   <h3 className="text-sm font-semibold text-blue-800 mb-2 flex items-center">
@@ -2233,7 +2278,7 @@ END:VCALENDAR`;
                     </div>
                   </div>
                 </Card>
-              </div>
+              </div> */}
             </div>
           )}
 
@@ -2273,17 +2318,17 @@ END:VCALENDAR`;
               {exhibitorViewMode === 'all' ? (
                 // All Exhibitors View
                 filteredExhibitors.length === 0 ? (
-                  <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-                    <Card className="p-6 text-center rounded-3xl border-gray-100">
-                      <div className="text-gray-300 mb-4">
-                        <Icon name="BuildingOfficeIcon" className="w-16 h-16 mx-auto" />
-                      </div>
-                      <p className="insight-text-base">
-                        {searchQuery ? 'Không tìm thấy exhibitor phù hợp' : 'Chưa có thông tin exhibitors'}
-                      </p>
-                    </Card>
-                  </div>
-                ) : (
+                <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+                  <Card className="p-6 text-center rounded-3xl border-gray-100">
+                    <div className="text-gray-300 mb-4">
+                      <Icon name="BuildingOfficeIcon" className="w-16 h-16 mx-auto" />
+                    </div>
+                    <p className="insight-text-base">
+                      {searchQuery ? 'Không tìm thấy exhibitor phù hợp' : 'Chưa có thông tin exhibitors'}
+                    </p>
+                  </Card>
+                </div>
+              ) : (
                   <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
                     <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
                       <h3 className="insight-h3 mb-3">
@@ -3224,7 +3269,7 @@ END:VCALENDAR`;
                 </Card>
               </div>
 
-              {/* Agenda Content */}
+              {/* Agenda Content - Timeline Design */}
               {eventData?.sessions && eventData.sessions.length > 0 ? (
                 (() => {
                   // Group sessions by date
@@ -3239,99 +3284,141 @@ END:VCALENDAR`;
                   // Sort dates
                   const sortedDates = Object.keys(sessionsByDate).sort();
 
-                  return sortedDates.map((date, dateIndex) => {
-                    // Sort sessions by start time
-                    const sortedSessions = sessionsByDate[date].sort((a, b) => {
-                      return a.start_time.hour * 60 + a.start_time.minute - (b.start_time.hour * 60 + b.start_time.minute);
-                    });
+                  return (
+                    <div className="relative">
+                      {/* Timeline vertical line */}
+                      <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-purple-200 via-purple-300 to-purple-200"></div>
+                      
+                      {sortedDates.map((date, dateIndex) => {
+                        // Sort sessions by start time
+                        const sortedSessions = sessionsByDate[date].sort((a, b) => {
+                          return a.start_time.hour * 60 + a.start_time.minute - (b.start_time.hour * 60 + b.start_time.minute);
+                        });
 
-                    // Format date
-                    const dateObj = new Date(date + 'T00:00:00');
-                    const formattedDate = dateObj.toLocaleDateString('vi-VN', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    });
+                        // Format date
+                        const dateObj = new Date(date + 'T00:00:00');
+                        const formattedDate = dateObj.toLocaleDateString('vi-VN', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        });
 
-                    return (
-                      <div key={date} className={`transform transition-all duration-1000 delay-${(dateIndex + 1) * 200} ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-                        <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
-                          {/* Date Header */}
-                          <div className="flex items-center mb-4 pb-3 border-b border-gray-100">
-                            <div className="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
-                            <h4 className="text-md font-bold text-gray-800 capitalize">{formattedDate}</h4>
-                            <span className="ml-auto text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                              {sortedSessions.length} session{sortedSessions.length > 1 ? 's' : ''}
-                            </span>
-                          </div>
+                        // Get short date for timeline
+                        const shortDate = dateObj.toLocaleDateString('vi-VN', {
+                          month: '2-digit',
+                          day: '2-digit'
+                        });
 
-                          {/* Sessions */}
-                          <div className="space-y-3">
-                            {sortedSessions.map((session, sessionIndex) => {
-                              const startTime = `${session.start_time.hour.toString().padStart(2, '0')}:${session.start_time.minute.toString().padStart(2, '0')}`;
-                              const endTime = `${session.end_time.hour.toString().padStart(2, '0')}:${session.end_time.minute.toString().padStart(2, '0')}`;
-                              
-                              // Extract description text (remove HTML)
-                              const tempDiv = document.createElement('div');
-                              tempDiv.innerHTML = session.description;
-                              const descriptionText = tempDiv.textContent || tempDiv.innerText || '';
+                        return (
+                          <div key={date} className={`relative pl-16 pb-8 transform transition-all duration-1000 delay-${(dateIndex + 1) * 200} ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+                            {/* Timeline date indicator */}
+                            <div className="absolute left-0 top-0 flex items-center">
+                              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg">
+                                <span className="text-white text-xs font-bold text-center leading-tight">
+                                  {shortDate}
+                                </span>
+                              </div>
+                            </div>
 
-                              return (
-                                <div key={session.id} className="group bg-white rounded-2xl p-4 border border-gray-100 hover:border-purple-200 hover:shadow-md transition-all duration-300">
-                                  {/* Time & Location */}
-                                  <div className="flex items-center justify-between mb-3">
-                                    <div className="flex items-center space-x-3">
-                                      <div className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-semibold">
-                                        {startTime} - {endTime}
-                                      </div>
-                                      <div className="flex items-center text-xs text-gray-500">
-                                        <Icon name="MapPinIcon" className="w-3 h-3 mr-1" />
-                                        {session.area_name}
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Title */}
-                                  <h5 className="text-sm font-semibold text-gray-800 mb-2 line-clamp-2 group-hover:text-purple-700 transition-colors">
-                                    {session.title}
-                                  </h5>
-
-                                  {/* Speaker */}
-                                  <div className="flex items-center text-xs text-gray-600 mb-2">
-                                    <Icon name="UserIcon" className="w-3 h-3 mr-1" />
-                                    <span className="truncate">{session.speaker_name}</span>
-                                  </div>
-
-                                  {/* Description */}
-                                  {descriptionText && descriptionText.trim() && (
-                                    <p className="text-xs text-gray-500 line-clamp-2 mb-2">
-                                      {descriptionText}
-                                    </p>
-                                  )}
-
-                                  {/* Footer */}
-                                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-50">
-                                    <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                                      {session.session_accessibility}
-                                    </span>
-                                    <div className="flex items-center space-x-2">
-                                      <button className="text-xs text-purple-600 hover:text-purple-700 transition-colors">
-                                        <Icon name="CalendarPlusIcon" className="w-4 h-4" />
-                                      </button>
-                                      <button className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
-                                        <Icon name="ShareIcon" className="w-4 h-4" />
-                                      </button>
-                                    </div>
-                                  </div>
+                            {/* Date header card with highlighted background */}
+                            <div className="mb-4">
+                              <div className="bg-gradient-to-r from-purple-100 via-purple-50 to-indigo-50 rounded-2xl p-4 border border-purple-200 shadow-sm">
+                                <div className="text-center">
+                                  <h4 className="text-base font-semibold text-purple-800 capitalize flex items-center justify-center mb-2">
+                                    <Icon name="CalendarDaysIcon" className="w-4 h-4 mr-2" />
+                                    {formattedDate}
+                                  </h4>
+                                  <span className="text-xs text-purple-600 bg-purple-200 px-2.5 py-1 rounded-full font-medium">
+                                    {sortedSessions.length} chương trình
+                                  </span>
                                 </div>
-                              );
-                            })}
+                              </div>
+                            </div>
+
+                            {/* Sessions timeline */}
+                            <div className="space-y-4">
+                              {sortedSessions.map((session, sessionIndex) => {
+                                const startTime = `${session.start_time.hour.toString().padStart(2, '0')}:${session.start_time.minute.toString().padStart(2, '0')}`;
+                                const endTime = `${session.end_time.hour.toString().padStart(2, '0')}:${session.end_time.minute.toString().padStart(2, '0')}`;
+                                
+                                // Extract description text (remove HTML)
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = session.description;
+                                const descriptionText = tempDiv.textContent || tempDiv.innerText || '';
+
+                                return (
+                                  <div key={session.id} className="relative">
+                                    {/* Timeline connector */}
+                                    <div className="absolute -left-[4.25rem] top-6 w-4 h-0.5 bg-purple-300"></div>
+                                    <div className="absolute -left-[4.5rem] top-5 w-3 h-3 bg-white border-2 border-purple-400 rounded-full"></div>
+                                    
+                                    {/* Session card */}
+                                    <Card className="group bg-white rounded-2xl p-4 border border-gray-100 hover:border-purple-200 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                                      {/* Time */}
+                                      <div className="mb-3">
+                                        <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm inline-block">
+                                          {startTime} - {endTime}
+                                        </div>
+                                      </div>
+
+                                      {/* Location */}
+                                      <div className="mb-3">
+                                        <div className="flex items-center text-xs text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg inline-flex">
+                                          <Icon name="MapPinIcon" className="w-3.5 h-3.5 mr-1.5" />
+                                          <span className="font-medium">{session.area_name}</span>
+                                        </div>
+                                      </div>
+
+                                      {/* Title */}
+                                      <h5 className="text-sm font-semibold text-gray-800 mb-3 group-hover:text-purple-700 transition-colors leading-relaxed">
+                                        {session.title}
+                                      </h5>
+
+                                      {/* Speaker */}
+                                      <div className="flex items-start text-xs text-gray-600 mb-3 bg-gray-50 p-2.5 rounded-lg">
+                                        <Icon name="UserIcon" className="w-3.5 h-3.5 mr-2 text-purple-500 mt-0.5 flex-shrink-0" />
+                                        <span className="font-medium leading-relaxed">{session.speaker_name}</span>
+                                      </div>
+
+                                      {/* Description */}
+                                      {descriptionText && descriptionText.trim() && (
+                                        <p className="text-xs text-gray-600 mb-3 bg-blue-50 p-2.5 rounded-lg leading-relaxed">
+                                          {descriptionText}
+                                        </p>
+                                      )}
+
+                                      {/* Accessibility & Actions */}
+                                      <div className="pt-3 border-t border-gray-100">
+                                        {/* Accessibility badge */}
+                                        <div className="mb-2.5">
+                                          <span className="text-xs text-emerald-700 bg-emerald-100 px-3 py-1.5 rounded-full font-medium inline-block">
+                                            {session.session_accessibility}
+                                          </span>
+                                        </div>
+                                        
+                                        {/* Action buttons */}
+                                        <div className="flex items-center gap-2">
+                                          <button className="flex items-center text-xs text-purple-600 hover:text-purple-700 transition-colors bg-purple-50 px-2 py-1 rounded-lg hover:bg-purple-100">
+                                            <Icon name="CalendarPlusIcon" className="w-3 h-3 mr-1" />
+                                            <span>Lịch</span>
+                                          </button>
+                                          <button className="flex items-center text-xs text-gray-500 hover:text-gray-700 transition-colors bg-gray-50 px-2 py-1 rounded-lg hover:bg-gray-100">
+                                            <Icon name="ShareIcon" className="w-3 h-3 mr-1" />
+                                            <span>Chia sẻ</span>
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </Card>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </Card>
-                      </div>
-                    );
-                  });
+                        );
+                      })}
+                    </div>
+                  );
                 })()
               ) : (
                 <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
@@ -3372,33 +3459,37 @@ END:VCALENDAR`;
                       </svg>
                     </Button>
                     
-                    <Button 
-                      variant="outline" 
-                      className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[48px] rounded-2xl border-gray-200 hover:border-gray-300"
-                      onClick={() => openFileViewer('Floor Plan', (eventData as any)?.floor_plan_url, 'pdf')}
-                    >
-                      <div className="flex items-center">
-                        <Icon name="MapIcon" className="w-4 h-4 mr-3 text-emerald-600" />
-                        <span className="text-sm font-medium text-slate-700">Floor Plan</span>
-                      </div>
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </Button>
+                    {(eventData?.floor_plan_pdf || (eventData as any)?.floor_plan_url) && (
+                      <Button 
+                        variant="outline" 
+                        className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[48px] rounded-2xl border-gray-200 hover:border-gray-300"
+                        onClick={() => openFileViewer('Floor Plan', eventData?.floor_plan_pdf || (eventData as any)?.floor_plan_url, 'pdf')}
+                      >
+                        <div className="flex items-center">
+                          <Icon name="MapIcon" className="w-4 h-4 mr-3 text-emerald-600" />
+                          <span className="text-sm font-medium text-slate-700">Floor Plan</span>
+                        </div>
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </Button>
+                    )}
                     
-                    <Button 
-                      variant="outline" 
-                      className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[48px] rounded-2xl border-gray-200 hover:border-gray-300"
-                      onClick={() => openFileViewer('Directory', (eventData as any)?.directory_url, 'pdf')}
-                    >
-                      <div className="flex items-center">
-                        <Icon name="BookOpenIcon" className="w-4 h-4 mr-3 text-indigo-600" />
-                        <span className="text-sm font-medium text-slate-700">Directory</span>
-                      </div>
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </Button>
+                    {eventData?.directory_url && (
+                      <Button 
+                        variant="outline" 
+                        className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[48px] rounded-2xl border-gray-200 hover:border-gray-300"
+                        onClick={() => openFileViewer('Directory', eventData.directory_url, 'pdf')}
+                      >
+                        <div className="flex items-center">
+                          <Icon name="BookOpenIcon" className="w-4 h-4 mr-3 text-indigo-600" />
+                          <span className="text-sm font-medium text-slate-700">Directory</span>
+                        </div>
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </Button>
+                    )}
                   </div>
                 </Card>
               </div>

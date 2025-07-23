@@ -16,6 +16,14 @@ export interface MatchingEntry {
   confirmed: boolean;
 }
 
+export interface CheckinHistoryEntry {
+  checkintime: string;
+  event_id?: string;
+  visitor_id?: string;
+  created_at?: string;
+  [key: string]: any;
+}
+
 export interface VisitorData {
   id: string;
   name: string;
@@ -34,7 +42,7 @@ export interface VisitorData {
   redeem_id: string;
   encrypt_key: string;
   head_mark: boolean;
-  check_in_history: any[];
+  check_in_history: CheckinHistoryEntry[];
   matching_list?: MatchingEntry[];
   custom_fields: Record<string, any>;
   formFields: any[];
