@@ -1821,13 +1821,6 @@ END:VCALENDAR`;
                 
                 {/* Right side controls */}
                 <div className="flex-shrink-0 ml-3 flex items-center gap-2">
-                  {/* Language Switcher */}
-                  <LanguageSwitcher
-                    currentLanguage={currentLanguage}
-                    onLanguageChange={handleLanguageChange}
-                    isTranslating={isTranslating}
-                  />
-                  
                   {/* Status Badge */}
                   <div className={`px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-sm transition-all duration-300 ${
                     hasCheckedIn
@@ -3554,6 +3547,21 @@ END:VCALENDAR`;
                 <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
                   <h3 className="insight-h3 mb-3">Cài đặt</h3>
                   <div className="space-y-3">
+                    {/* Language Setting */}
+                    <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <Icon name="GlobeAltIcon" className="w-5 h-5 mr-3 text-blue-600" />
+                          <span className="font-medium text-gray-800">Ngôn ngữ / Language</span>
+                        </div>
+                        <LanguageSwitcher
+                          currentLanguage={currentLanguage}
+                          onLanguageChange={handleLanguageChange}
+                          isTranslating={isTranslating}
+                        />
+                      </div>
+                    </div>
+                    
                     <Button 
                       variant="outline" 
                       className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[52px]"

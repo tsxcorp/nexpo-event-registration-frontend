@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { EventData } from '@/lib/api/events';
 import { processEventLanguage, clearTranslationCache, getCacheStats } from '@/lib/utils/languageUtils';
+import translationService from '@/lib/translation/translationService';
 import { i18n } from '@/lib/translation/i18n';
 
 export function useInsightTranslation(originalEventData: EventData | null) {
@@ -46,24 +47,17 @@ export function useInsightTranslation(originalEventData: EventData | null) {
     setIsTranslating(true);
 
     try {
-      // For English: prioritize English fields, translate Vietnamese fallbacks
-      // For Vietnamese: prioritize Vietnamese fields, translate English fallbacks
-      const shouldTranslate = true; // Always enable translation for missing content
-      
-      const processedData = await processEventLanguage(
-        originalEventData,
-        language,
-        shouldTranslate
-      );
+      // Use the same translation service as register page
+      const translatedData = await translationService.translateEventData(originalEventData, language);
 
       console.log(`✅ Processed data for ${language}:`, {
         originalName: originalEventData.name,
-        processedName: processedData.name,
-        exhibitorsCount: processedData.exhibitors?.length || 0,
-        sessionsCount: processedData.sessions?.length || 0
+        translatedName: translatedData.name,
+        exhibitorsCount: translatedData.exhibitors?.length || 0,
+        sessionsCount: translatedData.sessions?.length || 0
       });
 
-      setEventData(processedData);
+      setEventData(translatedData);
       setCurrentLanguage(language);
     } catch (error) {
       console.error('❌ Error processing initial data:', error);
@@ -84,20 +78,17 @@ export function useInsightTranslation(originalEventData: EventData | null) {
     setIsTranslating(true);
 
     try {
-      const shouldTranslate = true;
-      const processedData = await processEventLanguage(
-        originalEventData,
-        newLanguage,
-        shouldTranslate
-      );
-
+      // Use the same translation service as register page
+      const translatedData = await translationService.translateEventData(originalEventData, newLanguage);
+      
       console.log(`✅ Translation completed for ${newLanguage}:`, {
         originalName: originalEventData.name,
-        translatedName: processedData.name,
-        cacheStats: getCacheStats()
+        translatedName: translatedData.name,
+        exhibitorsCount: translatedData.exhibitors?.length || 0,
+        sessionsCount: translatedData.sessions?.length || 0
       });
 
-      setEventData(processedData);
+      setEventData(translatedData);
       setCurrentLanguage(newLanguage);
     } catch (error) {
       console.error('❌ Translation failed:', error);
