@@ -4379,7 +4379,23 @@ END:VCALENDAR`;
               <button
                 key={tab.id}
                 onClick={() => {
+                  // Close all modals and overlays before switching tabs
+                  setSelectedExhibitor(null);
+                  setFileViewer({
+                    isOpen: false,
+                    title: '',
+                    fileUrl: '',
+                    fileType: 'unknown'
+                  });
+                  setIsCategoryModalOpen(false);
+                  setIsFavoriteActionsOpen(false);
+                  setIsMatchingFormOpen(false);
+                  setSelectedMatchingExhibitor(null);
+                  setIsMatchingFiltersOpen(false);
+                  
+                  // Switch to new tab
                   setActiveTab(tab.id);
+                  
                   // Add haptic feedback
                   if ('vibrate' in navigator) {
                     navigator.vibrate(30);
