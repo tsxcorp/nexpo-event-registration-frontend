@@ -154,14 +154,14 @@ export default function ExhibitorDetailModal({ exhibitor, onClose, onMatching }:
   return (
     <div 
       ref={backdropRef}
-      className={`fixed inset-0 z-50 flex items-center justify-center transition-all duration-300 p-4 pb-24 sm:pb-4 ${
+      className={`fixed inset-0 z-50 flex items-start justify-center transition-all duration-300 p-4 pt-12 pb-6 ${
         isVisible && !isClosing ? 'bg-black/50 backdrop-blur-sm' : 'bg-transparent'
       }`}
       onClick={handleBackdropClick}
     >
       <div
         ref={modalRef}
-        className={`w-full max-w-lg mx-auto bg-white rounded-2xl shadow-2xl transform transition-all duration-300 max-h-[85vh] flex flex-col ${
+        className={`w-full max-w-lg mx-auto bg-white rounded-2xl shadow-2xl transform transition-all duration-300 max-h-[80vh] flex flex-col ${
           isVisible && !isClosing 
             ? 'translate-y-0 opacity-100 scale-100' 
             : isClosing 
@@ -173,7 +173,7 @@ export default function ExhibitorDetailModal({ exhibitor, onClose, onMatching }:
 
 
         {/* Compact Header */}
-        <div className="relative p-3 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50">
+        <div className="relative p-3 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50 flex-shrink-0">
           <div className="flex items-center gap-3">
             {/* Logo - Smaller */}
             <div className="flex-shrink-0">
@@ -265,7 +265,7 @@ export default function ExhibitorDetailModal({ exhibitor, onClose, onMatching }:
         </div>
 
         {/* Expanded Content Area */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 min-h-0">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 min-h-0 max-h-full">
           {activeTab === 'info' && (
             <div className="space-y-8">
               {/* Cover Image */}
