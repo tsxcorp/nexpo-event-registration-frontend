@@ -1711,6 +1711,70 @@ END:VCALENDAR`;
     );
   }
 
+  // Add agenda session to calendar
+  const addSessionToCalendar = (session: any) => {
+    if (!session || !displayEventData) return;
+    
+    // Create datetime objects
+    const sessionDate = new Date(session.date);
+    const startDateTime = new Date(sessionDate);
+    startDateTime.setHours(session.start_time.hour, session.start_time.minute);
+    
+    const endDateTime = new Date(sessionDate);
+    endDateTime.setHours(session.end_time.hour, session.end_time.minute);
+    
+    // Format for calendar URLs
+    const formatDateTime = (date: Date) => {
+      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    };
+    
+    const title = `${session.title}`;
+    const description = `${session.description ? `${session.description}\n\n` : ''}Speaker: ${session.speaker_name}\nLocation: ${session.area_name}`;
+    const location = session.area_name || displayEventData.name;
+    
+    // Create calendar URLs
+    const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${formatDateTime(startDateTime)}/${formatDateTime(endDateTime)}&details=${encodeURIComponent(description)}&location=${encodeURIComponent(location)}`;
+    
+    const outlookUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(title)}&startdt=${formatDateTime(startDateTime)}&enddt=${formatDateTime(endDateTime)}&body=${encodeURIComponent(description)}&location=${encodeURIComponent(location)}`;
+    
+    // Show options or handle differently based on device
+    const userAgent = navigator.userAgent.toLowerCase();
+    if (userAgent.includes('iphone') || userAgent.includes('ipad')) {
+      // iOS - create ICS file
+      const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Nexpo//Nexpo Event App//EN
+BEGIN:VEVENT
+DTSTART:${formatDateTime(startDateTime)}
+DTEND:${formatDateTime(endDateTime)}
+SUMMARY:${title}
+DESCRIPTION:${description}
+LOCATION:${location}
+END:VEVENT
+END:VCALENDAR`;
+      
+      const blob = new Blob([icsContent], { type: 'text/calendar' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `session-${session.id || 'agenda'}.ics`;
+      link.click();
+      URL.revokeObjectURL(url);
+      
+      showToast('File lịch đã được tải xuống', 'success');
+    } else {
+      // Desktop/Android - show options
+      const choice = confirm('Chọn "OK" để mở Google Calendar, "Cancel" để mở Outlook');
+      window.open(choice ? googleUrl : outlookUrl, '_blank');
+      showToast('Đã mở ứng dụng lịch', 'success');
+    }
+    
+    // Add haptic feedback
+    if ('vibrate' in navigator) {
+      navigator.vibrate(50);
+    }
+  };
+
   return (
           <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-gray-50 relative overflow-hidden smooth-scroll">
       {/* Animated background elements */}
@@ -2277,6 +2341,33 @@ END:VCALENDAR`;
                          );
                       })}
                     </div>
+                  </Card>
+                </div>
+              )}
+
+              {/* Floor Plan - Moved from More tab */}
+              {(displayEventData?.floor_plan_pdf || (displayEventData as any)?.floor_plan_url) && (
+                <div className={`transform transition-all duration-1000 delay-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+                  <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
+                    <div className="flex items-center mb-3">
+                      <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center mr-3">
+                        <Icon name="MapIcon" className="w-3.5 h-3.5 text-emerald-600" />
+                      </div>
+                      <h3 className="insight-h3 text-emerald-800">Sơ đồ triển lãm</h3>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[48px] rounded-2xl border-emerald-200 hover:border-emerald-300 bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100"
+                      onClick={() => openFileViewer('Floor Plan', displayEventData?.floor_plan_pdf || (displayEventData as any)?.floor_plan_url, 'pdf')}
+                    >
+                      <div className="flex items-center">
+                        <Icon name="MapIcon" className="w-4 h-4 mr-3 text-emerald-600" />
+                        <span className="text-sm font-medium text-slate-700">Xem sơ đồ triển lãm</span>
+                      </div>
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Button>
                   </Card>
                 </div>
               )}
@@ -3425,7 +3516,7 @@ END:VCALENDAR`;
 
                                       {/* Speaker */}
                                       <div className="flex items-start text-xs text-gray-600 mb-3 bg-gray-50 p-2.5 rounded-lg">
-                                        <Icon name="UserIcon" className="w-3.5 h-3.5 mr-2 text-purple-500 mt-0.5 flex-shrink-0" />
+                                        <Icon name="TagIcon" className="w-3.5 h-3.5 mr-2 text-purple-500 mt-0.5 flex-shrink-0" />
                                         <span className="font-medium leading-relaxed">{session.speaker_name}</span>
                                       </div>
 
@@ -3436,24 +3527,16 @@ END:VCALENDAR`;
                                         </p>
                                       )}
 
-                                      {/* Accessibility & Actions */}
+                                      {/* Actions */}
                                       <div className="pt-3 border-t border-gray-100">
-                                        {/* Accessibility badge */}
-                                        <div className="mb-2.5">
-                                          <span className="text-xs text-emerald-700 bg-emerald-100 px-3 py-1.5 rounded-full font-medium inline-block">
-                                            {session.session_accessibility}
-                                          </span>
-                                        </div>
-                                        
                                         {/* Action buttons */}
                                         <div className="flex items-center gap-2">
-                                          <button className="flex items-center text-xs text-purple-600 hover:text-purple-700 transition-colors bg-purple-50 px-2 py-1 rounded-lg hover:bg-purple-100">
-                                            <Icon name="CalendarPlusIcon" className="w-3 h-3 mr-1" />
-                                            <span>Lịch</span>
-                                          </button>
-                                          <button className="flex items-center text-xs text-gray-500 hover:text-gray-700 transition-colors bg-gray-50 px-2 py-1 rounded-lg hover:bg-gray-100">
-                                            <Icon name="ShareIcon" className="w-3 h-3 mr-1" />
-                                            <span>Chia sẻ</span>
+                                          <button 
+                                            onClick={() => addSessionToCalendar(session)}
+                                            className="flex items-center text-xs text-purple-600 hover:text-purple-700 transition-colors bg-purple-50 px-3 py-1.5 rounded-lg hover:bg-purple-100 font-medium"
+                                          >
+                                            <Icon name="CalendarPlusIcon" className="w-3.5 h-3.5 mr-1.5" />
+                                            <span>Thêm vào lịch</span>
                                           </button>
                                         </div>
                                       </div>
@@ -3488,117 +3571,77 @@ END:VCALENDAR`;
 
           {activeTab === 'more' && (
             <div className="space-y-3">
-              {/* Social & External Links */}
+              {/* Language Section */}
               <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
                 <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
-                  <h3 className="insight-h3 mb-3">Liên kết ngoài</h3>
+                  <h3 className="insight-h3 mb-3">Ngôn ngữ</h3>
+                  <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <Icon name="GlobeAltIcon" className="w-5 h-5 mr-3 text-blue-600" />
+                        <span className="font-medium text-gray-800">Ngôn ngữ / Language</span>
+                      </div>
+                      <LanguageSwitcher
+                        currentLanguage={currentLanguage}
+                        onLanguageChange={handleLanguageChange}
+                        isTranslating={isTranslating}
+                      />
+                    </div>
+                  </div>
+                </Card>
+              </div>
+
+              {/* Other Links Section */}
+              <div className={`transform transition-all duration-1000 delay-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+                <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
+                  <h3 className="insight-h3 mb-3">Liên kết khác</h3>
                   <div className="space-y-2.5">
+                    {/* Facebook */}
                     <Button 
                       variant="outline" 
                       className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[48px] rounded-2xl border-gray-200 hover:border-gray-300"
                       onClick={openFacebookEvent}
                     >
                       <div className="flex items-center">
-                        <Icon name="ShareIcon" className="w-4 h-4 mr-3 text-slate-600" />
-                        <span className="text-sm font-medium text-slate-700">Facebook Event</span>
+                        <svg className="w-4 h-4 mr-3 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                        </svg>
+                        <span className="text-sm font-medium text-slate-700">Facebook</span>
                       </div>
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </Button>
-                    
-                    {(eventData?.floor_plan_pdf || (eventData as any)?.floor_plan_url) && (
-                      <Button 
-                        variant="outline" 
-                        className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[48px] rounded-2xl border-gray-200 hover:border-gray-300"
-                        onClick={() => openFileViewer('Floor Plan', eventData?.floor_plan_pdf || (eventData as any)?.floor_plan_url, 'pdf')}
-                      >
-                        <div className="flex items-center">
-                          <Icon name="MapIcon" className="w-4 h-4 mr-3 text-emerald-600" />
-                          <span className="text-sm font-medium text-slate-700">Floor Plan</span>
-                        </div>
-                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </Button>
-                    )}
-                    
-                    {eventData?.directory_url && (
-                      <Button 
-                        variant="outline" 
-                        className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[48px] rounded-2xl border-gray-200 hover:border-gray-300"
-                        onClick={() => openFileViewer('Directory', eventData.directory_url, 'pdf')}
-                      >
-                        <div className="flex items-center">
-                          <Icon name="BookOpenIcon" className="w-4 h-4 mr-3 text-indigo-600" />
-                          <span className="text-sm font-medium text-slate-700">Directory</span>
-                        </div>
-                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </Button>
-                    )}
-                  </div>
-                </Card>
-              </div>
 
-              {/* Settings */}
-              <div className={`transform transition-all duration-1000 delay-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
-                <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
-                  <h3 className="insight-h3 mb-3">Cài đặt</h3>
-                  <div className="space-y-3">
-                    {/* Language Setting */}
-                    <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
-                      <div className="flex items-center justify-between">
+                    {/* Website */}
+                    {(displayEventData as any)?.website && (
+                      <Button 
+                        variant="outline" 
+                        className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[48px] rounded-2xl border-gray-200 hover:border-gray-300"
+                        onClick={() => window.open((displayEventData as any)?.website, '_blank')}
+                      >
                         <div className="flex items-center">
-                          <Icon name="GlobeAltIcon" className="w-5 h-5 mr-3 text-blue-600" />
-                          <span className="font-medium text-gray-800">Ngôn ngữ / Language</span>
+                          <svg className="w-4 h-4 mr-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+                          </svg>
+                          <span className="text-sm font-medium text-slate-700">Website</span>
                         </div>
-                        <LanguageSwitcher
-                          currentLanguage={currentLanguage}
-                          onLanguageChange={handleLanguageChange}
-                          isTranslating={isTranslating}
-                        />
-                      </div>
-                    </div>
-                    
-                    <Button 
-                      variant="outline" 
-                      className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[52px]"
-                    >
-                      <div className="flex items-center">
-                        <Icon name="ShareIcon" className="w-5 h-5 mr-3 text-blue-600" />
-                        <span className="font-medium">Chia sẻ QR Code</span>
-                      </div>
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </Button>
-                    
-                    <Button 
-                      variant="outline" 
-                      className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[52px]"
-                    >
-                      <div className="flex items-center">
-                        <svg className="w-5 h-5 mr-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4 17h5l-5 5v-5z" />
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
-                        <span className="font-medium">Thông báo</span>
-                      </div>
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </Button>
-                    
+                      </Button>
+                    )}
+
+                    {/* Support Contact */}
                     <Button 
                       variant="outline" 
-                      className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[52px]"
+                      className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[48px] rounded-2xl border-gray-200 hover:border-gray-300"
                     >
                       <div className="flex items-center">
-                        <Icon name="InformationCircleIcon" className="w-5 h-5 mr-3 text-emerald-600" />
-                        <span className="font-medium">Liên hệ hỗ trợ</span>
+                        <Icon name="InformationCircleIcon" className="w-4 h-4 mr-3 text-orange-600" />
+                        <span className="text-sm font-medium text-slate-700">Liên hệ hỗ trợ</span>
                       </div>
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </Button>
