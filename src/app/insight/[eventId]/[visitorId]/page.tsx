@@ -6,7 +6,6 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import ZohoImage from '@/components/ui/ZohoImage';
-import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import { useEventMetadata } from '@/hooks/useEventMetadata';
 import { useInsightTranslation } from '@/hooks/useInsightTranslation';
 import { EventData, ExhibitorData, eventApi } from '@/lib/api/events';
@@ -80,6 +79,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
   }>({ show: false, message: '', type: 'info' });
   const [qrMode, setQrMode] = useState<'personal' | 'group' | 'badge' | 'redeem'>('personal');
   const [isSupportContactExpanded, setIsSupportContactExpanded] = useState(false);
+  const [isAboutNexpoOpen, setIsAboutNexpoOpen] = useState(false);
   const [sessionBannerModal, setSessionBannerModal] = useState<{ isOpen: boolean; imageUrl: string; title: string }>({ 
     isOpen: false, 
     imageUrl: '', 
@@ -1900,7 +1900,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       {/* Content */}
       <div 
         ref={contentRef}
-        className="max-w-md mx-auto px-4 py-4 pb-14 mobile-content-spacing space-y-4 relative smooth-scroll"
+        className="max-w-md mx-auto px-4 py-4 pb-16 mobile-content-spacing space-y-4 relative smooth-scroll"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -3608,18 +3608,64 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
               <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
                 <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
                   <h3 className="insight-h3 mb-3">Ngôn ngữ</h3>
-                  <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200">
-                    <div className="flex items-center justify-between">
+                  <div className="space-y-2.5">
+                    {/* Vietnamese Option */}
+                    <button
+                      onClick={() => handleLanguageChange('vi')}
+                      disabled={isTranslating}
+                      className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all duration-200 ${
+                        currentLanguage === 'vi'
+                          ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 text-blue-700'
+                          : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                      } ${isTranslating ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 transform'}`}
+                    >
                       <div className="flex items-center">
-                        <Icon name="GlobeAltIcon" className="w-5 h-5 mr-3 text-blue-600" />
-                        <span className="font-medium text-gray-800">Ngôn ngữ / Language</span>
+                        <div className="w-6 h-6 mr-3 rounded-full overflow-hidden border border-gray-200 flex-shrink-0">
+                          <img
+                            src="https://flagcdn.com/w40/vn.png"
+                            alt="Vietnamese"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <span className="text-sm font-medium">{t('language_vietnamese')}</span>
                       </div>
-                      <LanguageSwitcher
-                        currentLanguage={currentLanguage}
-                        onLanguageChange={handleLanguageChange}
-                        isTranslating={isTranslating}
-                      />
-                    </div>
+                      {currentLanguage === 'vi' && (
+                        <Icon name="CheckIcon" className="w-4 h-4 text-blue-600" />
+                      )}
+                    </button>
+
+                    {/* English Option */}
+                    <button
+                      onClick={() => handleLanguageChange('en')}
+                      disabled={isTranslating}
+                      className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all duration-200 ${
+                        currentLanguage === 'en'
+                          ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 text-blue-700'
+                          : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                      } ${isTranslating ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 transform'}`}
+                    >
+                      <div className="flex items-center">
+                        <div className="w-6 h-6 mr-3 rounded-full overflow-hidden border border-gray-200 flex-shrink-0">
+                          <img
+                            src="https://flagcdn.com/w40/us.png"
+                            alt="English"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <span className="text-sm font-medium">{t('language_english')}</span>
+                      </div>
+                      {currentLanguage === 'en' && (
+                        <Icon name="CheckIcon" className="w-4 h-4 text-blue-600" />
+                      )}
+                    </button>
+
+                    {/* Loading State */}
+                    {isTranslating && (
+                      <div className="flex items-center justify-center p-2 text-blue-600">
+                        <Icon name="ArrowPathIcon" className="w-4 h-4 mr-2 animate-spin" />
+                        <span className="text-sm">{t('translating_content')}</span>
+                      </div>
+                    )}
                   </div>
                 </Card>
               </div>
@@ -3707,6 +3753,27 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                         </div>
                       </div>
                     </div>
+                  </div>
+                </Card>
+              </div>
+
+              {/* About Nexpo Section */}
+              <div className={`transform transition-all duration-1000 delay-550 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+                <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
+                  <div className="space-y-2.5">
+                    <Button 
+                      variant="outline" 
+                      className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[48px] rounded-2xl border-gray-200 hover:border-gray-300 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100"
+                      onClick={() => setIsAboutNexpoOpen(true)}
+                    >
+                      <div className="flex items-center">
+                        <Icon name="InformationCircleIcon" className="w-4 h-4 mr-3 text-indigo-600" />
+                        <span className="text-sm font-medium text-indigo-700">{t('about_nexpo')}</span>
+                      </div>
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Button>
                   </div>
                 </Card>
               </div>
@@ -4480,6 +4547,106 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
         </div>
       )}
 
+      {/* About Nexpo Modal */}
+      {isAboutNexpoOpen && (
+        <div 
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsAboutNexpoOpen(false);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setIsAboutNexpoOpen(false);
+            }
+          }}
+        >
+          <div className="relative w-full max-w-lg max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-purple-50">
+              <h3 className="text-lg font-semibold text-gray-800">
+                {t('about_nexpo_title')}
+              </h3>
+              <button
+                onClick={() => setIsAboutNexpoOpen(false)}
+                className="p-2 hover:bg-white/50 rounded-xl transition-colors flex-shrink-0"
+              >
+                <Icon name="XMarkIcon" className="w-6 h-6 text-gray-600" />
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 140px)' }}>
+              <div className="space-y-4">
+                                 {/* Logo */}
+                 <div className="flex justify-center mb-6">
+                   <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center p-3">
+                     <img
+                       src="/nexpo-logo.png"
+                       alt="Nexpo Logo"
+                       className="w-full h-full object-contain"
+                     />
+                   </div>
+                 </div>
+
+                {/* Description */}
+                <div className="text-center mb-6">
+                  <p className="text-gray-700 leading-relaxed">
+                    {t('about_nexpo_description')}
+                  </p>
+                </div>
+
+                {/* Contact Information */}
+                <div className="space-y-3">
+                  {/* Support */}
+                  <div className="flex items-center p-3 bg-gray-50 rounded-xl">
+                    <Icon name="EnvelopeIcon" className="w-5 h-5 text-blue-600 mr-3 flex-shrink-0" />
+                    <span className="text-sm text-gray-700">{t('about_nexpo_support')}</span>
+                  </div>
+
+                  {/* Website */}
+                  <div className="flex items-center p-3 bg-gray-50 rounded-xl">
+                    <Icon name="GlobeAltIcon" className="w-5 h-5 text-emerald-600 mr-3 flex-shrink-0" />
+                    <span className="text-sm text-gray-700">{t('about_nexpo_website')}</span>
+                  </div>
+
+                  {/* Address */}
+                  <div className="flex items-start p-3 bg-gray-50 rounded-xl">
+                    <Icon name="MapPinIcon" className="w-5 h-5 text-purple-600 mr-3 flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-gray-700 leading-relaxed">{t('about_nexpo_address')}</span>
+                  </div>
+
+                  {/* Hotline */}
+                  <div className="flex items-center p-3 bg-gray-50 rounded-xl">
+                    <Icon name="PhoneIcon" className="w-5 h-5 text-orange-600 mr-3 flex-shrink-0" />
+                    <span className="text-sm text-gray-700">{t('about_nexpo_hotline')}</span>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="pt-4 border-t border-gray-100">
+                  <div className="flex gap-3">
+                                         <button
+                       onClick={() => window.open('https://nexpo.vn', '_blank')}
+                       className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-xl transition-colors font-medium text-sm"
+                     >
+                       {t('visit_website')}
+                     </button>
+                     <button
+                       onClick={() => window.open('mailto:contact@nexpo.vn', '_blank')}
+                       className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-3 rounded-xl transition-colors font-medium text-sm"
+                     >
+                       {t('contact_us')}
+                     </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bottom Navigation - Native App Style */}
       <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 bottom-nav-shadow z-[60]">
         {/* Swipe indicator */}
@@ -4494,7 +4661,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           </div>
         )}
         
-        <div className="max-w-md mx-auto px-4 pt-0.5 pb-0.5">
+        <div className="max-w-md mx-auto px-4 pt-2 pb-0.5">
                       <div className="grid grid-cols-5 gap-0.5">
             {tabs.map((tab, index) => (
               <button
@@ -4514,6 +4681,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                   setSelectedMatchingExhibitor(null);
                   setIsMatchingFiltersOpen(false);
                   setIsSupportContactExpanded(false);
+                  setIsAboutNexpoOpen(false);
                   setSessionBannerModal({ isOpen: false, imageUrl: '', title: '' });
                   
                   // Switch to new tab

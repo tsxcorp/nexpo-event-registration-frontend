@@ -148,7 +148,21 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     "xuất khẩu nhập khẩu": "Xuất khẩu nhập khẩu",
     "sản xuất": "Sản xuất",
     "phân phối": "Phân phối",
-    "dịch vụ": "Dịch vụ"
+    "dịch vụ": "Dịch vụ",
+    
+    // About Nexpo
+    about_nexpo: "Về Nexpo",
+    about_nexpo_title: "Nexpo – Giải pháp toàn diện cho Sự kiện & Triển lãm",
+    about_nexpo_description: "Nexpo là nền tảng toàn diện cho việc quản lý sự kiện và triển lãm – giúp ban tổ chức và người tham dự kết nối dễ dàng, sử dụng công cụ thông minh và tận hưởng trải nghiệm sự kiện hiệu quả, liền mạch.",
+    about_nexpo_support: "Hỗ trợ: contact@nexpo.vn",
+    about_nexpo_website: "Website chính thức: https://nexpo.vn",
+    about_nexpo_address: "Địa chỉ: Tầng 5 – Tòa nhà Ngọc Linh Nhi, 97 Trần Quang Diệu, Phường 14, Quận 3, TP.HCM",
+    about_nexpo_hotline: "Hotline: 028.6682.7794",
+    visit_website: "Truy cập Website",
+    contact_us: "Liên hệ",
+    translating_content: "Đang dịch...",
+    language_vietnamese: "Tiếng Việt",
+    language_english: "English"
   },
   en: {
     // Core field labels
@@ -299,6 +313,20 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     "xuất khẩu nhập khẩu": "Export/Import",
     "sản xuất": "Manufacturing",
     "phân phối": "Distribution",
-    "dịch vụ": "Service"
+    "dịch vụ": "Service",
+    
+    // About Nexpo
+    about_nexpo: "About Nexpo",
+    about_nexpo_title: "Nexpo – Comprehensive Event & Exhibition Solution",
+    about_nexpo_description: "Nexpo is a comprehensive platform for event and exhibition management – empowering organizers and participants with seamless interaction, smart tools, and a connected event experience.",
+    about_nexpo_support: "Support: contact@nexpo.vn",
+    about_nexpo_website: "Official Website: https://nexpo.vn",
+    about_nexpo_address: "Address: 5th Floor - Ngọc Linh Nhi Building, 97 Tran Quang Dieu, Ward 14, District 3, HCMC",
+    about_nexpo_hotline: "Hotline: 028.6682.7794",
+    visit_website: "Visit Website",
+    contact_us: "Contact Us",
+    translating_content: "Translating...",
+    language_vietnamese: "Vietnamese",
+    language_english: "English"
   },
 }; 
