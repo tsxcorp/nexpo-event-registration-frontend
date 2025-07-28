@@ -78,6 +78,12 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
     type: 'success' | 'error' | 'info';
   }>({ show: false, message: '', type: 'info' });
   const [qrMode, setQrMode] = useState<'personal' | 'group' | 'badge' | 'redeem'>('personal');
+  const [isSupportContactExpanded, setIsSupportContactExpanded] = useState(false);
+  const [sessionBannerModal, setSessionBannerModal] = useState<{ isOpen: boolean; imageUrl: string; title: string }>({ 
+    isOpen: false, 
+    imageUrl: '', 
+    title: ''
+  });
   const contentRef = useRef<HTMLDivElement>(null);
   
   // Matching state
@@ -1539,39 +1545,24 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
     
     const outlookUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(title)}&startdt=${formatDateTime(startDateTime)}&enddt=${formatDateTime(endDateTime)}&body=${encodeURIComponent(description)}&location=${encodeURIComponent(location)}`;
     
-    // Show options
+    // Handle different platforms
     const userAgent = navigator.userAgent.toLowerCase();
-    if (userAgent.includes('iphone') || userAgent.includes('ipad')) {
-      // iOS - create ICS file
-      const icsContent = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Nexpo//Nexpo Event App//EN
-BEGIN:VEVENT
-DTSTART:${formatDateTime(startDateTime)}
-DTEND:${formatDateTime(endDateTime)}
-SUMMARY:${title}
-DESCRIPTION:${description}
-LOCATION:${location}
-END:VEVENT
-END:VCALENDAR`;
-      
-      const blob = new Blob([icsContent], { type: 'text/calendar' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `matching-${exhibitorName.replace(/[^a-zA-Z0-9]/g, '-')}.ics`;
-      link.click();
-      URL.revokeObjectURL(url);
+    const isIOS = userAgent.includes('iphone') || userAgent.includes('ipad');
+    const isAndroid = userAgent.includes('android');
+    
+    if (isIOS) {
+      // iOS - Open Google Calendar in browser (works better than URL schemes)
+      window.open(googleUrl, '_blank');
+      showToast('Đã mở Google Calendar', 'success');
+    } else if (isAndroid) {
+      // Android - Open Google Calendar directly
+      window.open(googleUrl, '_blank');
+      showToast('Đã mở Google Calendar', 'success');
     } else {
-      // Show options for desktop/Android
-      const options = [
-        { name: 'Google Calendar', url: googleUrl },
-        { name: 'Outlook', url: outlookUrl }
-      ];
-      
-      // Simple selection (could be enhanced with a modal)
+      // Desktop - Show options
       const choice = confirm('Chọn "OK" để mở Google Calendar, "Cancel" để mở Outlook');
       window.open(choice ? googleUrl : outlookUrl, '_blank');
+      showToast('Đã mở ứng dụng lịch', 'success');
     }
   };
 
@@ -1737,33 +1728,21 @@ END:VCALENDAR`;
     
     const outlookUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${encodeURIComponent(title)}&startdt=${formatDateTime(startDateTime)}&enddt=${formatDateTime(endDateTime)}&body=${encodeURIComponent(description)}&location=${encodeURIComponent(location)}`;
     
-    // Show options or handle differently based on device
+    // Handle different platforms
     const userAgent = navigator.userAgent.toLowerCase();
-    if (userAgent.includes('iphone') || userAgent.includes('ipad')) {
-      // iOS - create ICS file
-      const icsContent = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Nexpo//Nexpo Event App//EN
-BEGIN:VEVENT
-DTSTART:${formatDateTime(startDateTime)}
-DTEND:${formatDateTime(endDateTime)}
-SUMMARY:${title}
-DESCRIPTION:${description}
-LOCATION:${location}
-END:VEVENT
-END:VCALENDAR`;
-      
-      const blob = new Blob([icsContent], { type: 'text/calendar' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `session-${session.id || 'agenda'}.ics`;
-      link.click();
-      URL.revokeObjectURL(url);
-      
-      showToast('File lịch đã được tải xuống', 'success');
+    const isIOS = userAgent.includes('iphone') || userAgent.includes('ipad');
+    const isAndroid = userAgent.includes('android');
+    
+    if (isIOS) {
+      // iOS - Open Google Calendar in browser (works better than URL schemes)
+      window.open(googleUrl, '_blank');
+      showToast('Đã mở Google Calendar', 'success');
+    } else if (isAndroid) {
+      // Android - Open Google Calendar directly
+      window.open(googleUrl, '_blank');
+      showToast('Đã mở Google Calendar', 'success');
     } else {
-      // Desktop/Android - show options
+      // Desktop - Show options
       const choice = confirm('Chọn "OK" để mở Google Calendar, "Cancel" để mở Outlook');
       window.open(choice ? googleUrl : outlookUrl, '_blank');
       showToast('Đã mở ứng dụng lịch', 'success');
@@ -2887,12 +2866,12 @@ END:VCALENDAR`;
                                     src={exhibitor.company_logo}
                                     alt={`${getExhibitorDisplayName(exhibitor)} logo`}
                                     className="w-full h-full object-contain p-2"
-                                    fallbackClassName="w-full h-full bg-gradient-to-br from-rose-100 to-rose-200 flex items-center justify-center text-lg font-medium text-rose-600"
+                                    fallbackClassName="w-full h-full bg-gradient-to-br from-rose-100 to-pink-200 flex items-center justify-center text-lg font-medium text-rose-600"
                                     fallbackText={getExhibitorDisplayName(exhibitor).charAt(0)}
                                     sizes="80px"
                                   />
                                 </div>
-                                {/* Favorite Heart Badge */}
+                                {/* Favorite Heart Indicator */}
                                 <div className="absolute -bottom-0.5 -left-0.5 bg-rose-500 text-white p-1 rounded-full shadow-sm">
                                   <Icon name="HeartIcon" className="w-2.5 h-2.5" fill="currentColor" />
                                 </div>
@@ -3501,6 +3480,59 @@ END:VCALENDAR`;
                                         </div>
                                       </div>
 
+                                                                                                                  {/* Session Banner - Only show if valid URL exists and can be loaded */}
+                                      {session.session_banner && 
+                                       session.session_banner.trim() && 
+                                       !session.session_banner.includes('undefined') && 
+                                       session.session_banner.startsWith('http') && (
+                                        <div className="mb-3">
+                                          <button
+                                            onClick={() => {
+                                              setSessionBannerModal({
+                                                isOpen: true,
+                                                imageUrl: session.session_banner,
+                                                title: session.title
+                                              });
+                                              // Debug: Check what we're setting
+                                              console.log('🔍 Opening banner modal for:', session.title);
+                                              console.log('🔍 Banner URL:', session.session_banner);
+                                            }}
+                                            className="w-full group relative rounded-xl overflow-hidden bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-100 hover:border-purple-200 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                                          >
+                                            {/* Optimized height container for A4 banner readability */}
+                                            <div className="w-full h-44 sm:h-52 relative">
+                                              <img
+                                                src={session.session_banner}
+                                                alt={`${session.title} banner`}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                  // Hide the entire banner container if image fails to load
+                                                  const bannerContainer = e.currentTarget.closest('.mb-3');
+                                                  if (bannerContainer) {
+                                                    (bannerContainer as HTMLElement).style.display = 'none';
+                                                  }
+                                                }}
+                                              />
+                                              
+                                              {/* Gradient overlay for better text readability */}
+                                              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-black/10 group-hover:from-black/30 transition-all duration-200"></div>
+                                              
+                                              {/* Hover overlay with zoom icon */}
+                                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                                <div className="bg-white bg-opacity-90 backdrop-blur-sm rounded-full p-3 shadow-lg">
+                                                  <Icon name="MagnifyingGlassPlusIcon" className="w-6 h-6 text-purple-600" />
+                                                </div>
+                                              </div>
+                                              
+                                              {/* Click hint tooltip */}
+                                              <div className="absolute top-2 right-2 bg-purple-600 bg-opacity-80 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                                Tap to view
+                                              </div>
+                                            </div>
+                                          </button>
+                                        </div>
+                                      )}
+
                                       {/* Location */}
                                       <div className="mb-3">
                                         <div className="flex items-center text-xs text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg inline-flex">
@@ -3633,18 +3665,47 @@ END:VCALENDAR`;
                     )}
 
                     {/* Support Contact */}
-                    <Button 
-                      variant="outline" 
-                      className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[48px] rounded-2xl border-gray-200 hover:border-gray-300"
-                    >
-                      <div className="flex items-center">
-                        <Icon name="InformationCircleIcon" className="w-4 h-4 mr-3 text-orange-600" />
-                        <span className="text-sm font-medium text-slate-700">Liên hệ hỗ trợ</span>
+                    <div className="space-y-0">
+                      <Button 
+                        variant="outline" 
+                        className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[48px] rounded-2xl border-gray-200 hover:border-gray-300"
+                        onClick={() => setIsSupportContactExpanded(!isSupportContactExpanded)}
+                      >
+                        <div className="flex items-center">
+                          <Icon name="InformationCircleIcon" className="w-4 h-4 mr-3 text-orange-600" />
+                          <span className="text-sm font-medium text-slate-700">Liên hệ hỗ trợ</span>
+                        </div>
+                        <svg 
+                          className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                            isSupportContactExpanded ? 'rotate-90' : 'rotate-0'
+                          }`} 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </Button>
+                      
+                      {/* Expanded Content */}
+                      <div 
+                        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                          isSupportContactExpanded ? 'max-h-32 opacity-100' : 'max-h-0 opacity-0'
+                        }`}
+                      >
+                        <div className="mt-2 p-4 bg-orange-50 border border-orange-200 rounded-2xl">
+                          <div className="flex items-start gap-3">
+                            <Icon name="ExclamationTriangleIcon" className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
+                            <div>
+                              {/* <h4 className="text-sm font-medium text-orange-800 mb-1">Hỗ trợ khách hàng</h4> */}
+                              <p className="text-sm text-orange-700">
+                                Vui lòng liên hệ bộ phận lễ tân của ban tổ chức.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </Button>
+                    </div>
                   </div>
                 </Card>
               </div>
@@ -4359,6 +4420,65 @@ END:VCALENDAR`;
         </div>
       )}
 
+      {/* Session Banner Modal - Mobile Optimized */}
+      {sessionBannerModal.isOpen && (
+        <div 
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setSessionBannerModal({ isOpen: false, imageUrl: '', title: '' });
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setSessionBannerModal({ isOpen: false, imageUrl: '', title: '' });
+            }
+          }}
+        >
+          <div className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-indigo-50">
+              <h3 className="text-lg font-semibold text-gray-800 truncate pr-4">
+                {sessionBannerModal.title}
+              </h3>
+              <button
+                onClick={() => setSessionBannerModal({ isOpen: false, imageUrl: '', title: '' })}
+                className="p-2 hover:bg-white/50 rounded-xl transition-colors flex-shrink-0"
+              >
+                <Icon name="XMarkIcon" className="w-6 h-6 text-gray-600" />
+              </button>
+            </div>
+            
+            {/* Image Container */}
+            <div className="relative bg-gray-50 flex items-center justify-center min-h-[300px]" style={{ maxHeight: 'calc(90vh - 80px)' }}>
+              <div className="w-full max-h-full overflow-auto p-4">
+                {sessionBannerModal.imageUrl ? (
+                  <img
+                    src={sessionBannerModal.imageUrl}
+                    alt={`${sessionBannerModal.title} banner`}
+                    className="w-full h-auto object-contain max-w-full"
+                    onError={() => {
+                      console.error('❌ Failed to load session banner:', sessionBannerModal.imageUrl);
+                    }}
+                    onLoad={() => {
+                      console.log('✅ Session banner loaded successfully:', sessionBannerModal.imageUrl);
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-64 bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center text-purple-600 rounded-xl">
+                    <div className="text-center">
+                      <Icon name="PhotoIcon" className="w-16 h-16 mx-auto mb-4 text-purple-400" />
+                      <p className="text-lg font-medium">No banner image</p>
+                      <p className="text-sm text-gray-500 mt-2">URL: {sessionBannerModal.imageUrl || 'Empty'}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bottom Navigation - Native App Style */}
       <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 bottom-nav-shadow z-[60]">
         {/* Swipe indicator */}
@@ -4392,6 +4512,8 @@ END:VCALENDAR`;
                   setIsMatchingFormOpen(false);
                   setSelectedMatchingExhibitor(null);
                   setIsMatchingFiltersOpen(false);
+                  setIsSupportContactExpanded(false);
+                  setSessionBannerModal({ isOpen: false, imageUrl: '', title: '' });
                   
                   // Switch to new tab
                   setActiveTab(tab.id);
