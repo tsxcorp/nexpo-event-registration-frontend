@@ -3500,8 +3500,8 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                                             }}
                                             className="w-full group relative rounded-xl overflow-hidden bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-100 hover:border-purple-200 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
                                           >
-                                            {/* Optimized height container for A4 banner readability */}
-                                            <div className="w-full h-44 sm:h-52 relative">
+                                            {/* Square container for better banner display */}
+                                            <div className="w-full aspect-square relative">
                                               <img
                                                 src={session.session_banner}
                                                 alt={`${session.title} banner`}
