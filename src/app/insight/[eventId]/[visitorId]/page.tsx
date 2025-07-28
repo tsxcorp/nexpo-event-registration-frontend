@@ -13,6 +13,7 @@ import { EventData, ExhibitorData, eventApi } from '@/lib/api/events';
 import { VisitorData, MatchingEntry, CheckinHistoryEntry, visitorApi } from '@/lib/api/visitors';
 import FileViewer from '@/components/features/FileViewer';
 import ExhibitorDetailModal from '@/components/features/ExhibitorDetailModal';
+import PoweredByFooter from '@/components/common/PoweredByFooter';
 import { renderHtmlContent } from '@/lib/utils/htmlUtils';
 import { i18n } from '@/lib/translation/i18n';
 
@@ -1899,7 +1900,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       {/* Content */}
       <div 
         ref={contentRef}
-        className="max-w-md mx-auto px-4 py-4 pb-24 mobile-content-spacing space-y-4 relative smooth-scroll"
+        className="max-w-md mx-auto px-4 py-4 pb-14 mobile-content-spacing space-y-4 relative smooth-scroll"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -4493,8 +4494,8 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           </div>
         )}
         
-        <div className="max-w-md mx-auto px-4 pt-2 pb-safe">
-          <div className="grid grid-cols-5 gap-1">
+        <div className="max-w-md mx-auto px-4 pt-0.5 pb-0.5">
+                      <div className="grid grid-cols-5 gap-0.5">
             {tabs.map((tab, index) => (
               <button
                 key={tab.id}
@@ -4523,7 +4524,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                     navigator.vibrate(30);
                   }
                 }}
-                className={`flex flex-col items-center py-2 px-2 rounded-lg transition-all duration-300 transform active:scale-95 min-h-[60px] relative touch-manipulation ${
+                className={`flex flex-col items-center py-1 px-2 rounded-lg transition-all duration-300 transform active:scale-95 min-h-[48px] relative touch-manipulation ${
                   activeTab === tab.id
                     ? 'text-blue-600 bg-blue-50'
                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
@@ -4533,18 +4534,18 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                 <div className="relative">
                   <Icon 
                     name={tab.icon} 
-                    className={`w-6 h-6 mb-1 transition-all duration-300 ${
+                    className={`w-5 h-5 mb-0.5 transition-all duration-300 ${
                       activeTab === tab.id ? 'scale-110' : ''
                     }`} 
                     fill={tab.icon === 'HeartIcon' ? 'currentColor' : 'none'} 
                   />
                   {tab.count !== undefined && tab.count > 0 && (
-                    <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs font-bold flex items-center justify-center">
-                      {tab.count > 99 ? '99+' : tab.count}
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full text-[8px] font-bold flex items-center justify-center">
+                      {tab.count > 99 ? '99' : tab.count}
                     </span>
                   )}
                 </div>
-                <span className={`text-xs font-medium transition-all duration-300 ${
+                <span className={`text-[10px] font-medium transition-all duration-300 ${
                   activeTab === tab.id ? 'font-semibold' : ''
                 }`}>
                   {tab.label}
@@ -4558,6 +4559,9 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
             ))}
           </div>
         </div>
+        
+        {/* Powered by Nexpo Footer */}
+        <PoweredByFooter variant="minimal" className="border-t-0" />
       </div>
     </div>
   );
