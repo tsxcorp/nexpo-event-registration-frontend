@@ -2,7 +2,7 @@
 
 // ✅ RegistrationForm.tsx updated to make each section a separate step with conditional display
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, FormProvider, useFieldArray, useWatch } from 'react-hook-form';
 import { FormField } from '@/lib/api/events';
@@ -53,6 +53,41 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
   const [loading, setLoading] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [isNew, setIsNew] = useState(false);
+  
+  // Use useRef for userIntentToSubmit to persist across re-mounts
+  const userIntentToSubmitRef = useRef(false);
+  
+  // Clear any potential browser storage interference
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        // Clear form-related storage to prevent cache issues
+        const storageKeys = Object.keys(localStorage);
+        const formKeys = storageKeys.filter(key => 
+          key.includes('form') || 
+          key.includes('submit') || 
+          key.includes('step') ||
+          key.includes('registration')
+        );
+        formKeys.forEach(key => localStorage.removeItem(key));
+        
+        const sessionKeys = Object.keys(sessionStorage);
+        const sessionFormKeys = sessionKeys.filter(key => 
+          key.includes('form') || 
+          key.includes('submit') || 
+          key.includes('step') ||
+          key.includes('registration')
+        );
+        sessionFormKeys.forEach(key => sessionStorage.removeItem(key));
+        
+        // Reset userIntent
+        userIntentToSubmitRef.current = false;
+      }
+    } catch (error) {
+      // Silent error handling for production
+    }
+  }, []); // Run once on mount
+
 
   // Group fields by sections and sort them
   const groupFieldsBySection = (fields: FormField[]): Section[] => {
@@ -125,11 +160,8 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
 
   // Form values migration function
   const migrateFormValues = useCallback((oldFields: FormField[], newFields: FormField[]) => {
-    console.log('🔄 Starting form values migration...');
     const currentValues = getValues();
     const newValues = { ...currentValues };
-    
-    console.log('📋 Current form values before migration:', currentValues);
     
     // Create mapping from old labels to new labels using field properties
     const fieldMappings: { oldLabel: string; newLabel: string }[] = [];
@@ -154,16 +186,11 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
       }
     });
     
-    console.log('🔄 Field mappings for migration:', fieldMappings);
-    
     // Migrate form values
-    let migrationCount = 0;
     fieldMappings.forEach(({ oldLabel, newLabel }) => {
       if (currentValues[oldLabel] !== undefined) {
-        console.log(`🔄 Migrating: "${oldLabel}" → "${newLabel}"`, currentValues[oldLabel]);
         newValues[newLabel] = currentValues[oldLabel];
         delete newValues[oldLabel];
-        migrationCount++;
       }
     });
     
@@ -171,19 +198,12 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
     Object.keys(newValues).forEach(key => {
       setValue(key, newValues[key]);
     });
-    
-    console.log(`✅ Form values migration completed - ${migrationCount} fields migrated`);
-    console.log('📋 Final form values after migration:', newValues);
   }, [getValues, setValue]);
 
   // Register form migration callback on mount
   useEffect(() => {
-    console.log('🔗 RegistrationForm mounting - checking for migration callback registration');
     if (onRegisterFormMigration) {
-      console.log('📝 Registering form migration callback with parent');
       onRegisterFormMigration(migrateFormValues);
-    } else {
-      console.warn('⚠️ No onRegisterFormMigration prop provided');
     }
   }, [onRegisterFormMigration, migrateFormValues]);
 
@@ -237,6 +257,8 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
   const [currentStep, setCurrentStep] = useState(0);
   const totalSteps = allSteps.length;
 
+
+
   const { fields: groupMembers, append, remove, update } = useFieldArray({
     control,
     name: 'group_members'
@@ -245,6 +267,14 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
   const coreKeys = ['Salutation', 'Full_Name', 'Email', 'Phone_Number'];
 
   const onSubmit = async (data: FormData) => {
+    // CRITICAL: Only allow submit on last step AND when user explicitly intends to submit
+    if (!isLastStep) {
+      return;
+    }
+
+    if (!userIntentToSubmitRef.current) {
+      return;
+    }
     const coreData: Record<string, any> = {};
     const customData: Record<string, any> = {};
 
@@ -308,17 +338,12 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
 
     // 3. Convert customData from field labels to field_id format for backend
     const customDataWithFieldIds = convertFormDataToFieldIds(customData, allVisibleFields);
-    console.log('📋 Custom data converted to field_id format:', customDataWithFieldIds);
-
     const payload = {
       ...coreData,
       group_members: data.group_members,
       Custom_Fields_Value: customDataWithFieldIds, // Use field_id format for backend
       Event_Info: eventId
     };
-    
-    // 4. Log the final payload for debugging
-    console.log('Final Payload to be sent (with field_id format):', JSON.stringify(payload, null, 2));
 
     try {
       setLoading(true);
@@ -345,7 +370,7 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
           Event_Info: eventId
         };
         
-        console.log('Registration data being passed:', registrationData);
+
         
         const queryParams = new URLSearchParams({
           data: JSON.stringify(registrationData),
@@ -353,15 +378,12 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
         });
         
         const thankyouUrl = `/thankyou?${queryParams.toString()}`;
-        console.log('Thankyou URL:', thankyouUrl);
         
         router.push(thankyouUrl);
       } else {
-        console.error('❌ Backend error:', responseData);
         alert('Submission failed.');
       }
     } catch (err) {
-      console.error('❌ Network error:', err);
       alert('Network error. Please try again.');
     } finally {
       setLoading(false);
@@ -419,6 +441,8 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
     const isValid = await trigger(fieldsToValidate as any);
     
     if (isValid && currentStep < totalSteps - 1) {
+      // Reset user intent when changing steps
+      userIntentToSubmitRef.current = false;
       setCurrentStep(currentStep + 1);
       
       // Auto-scroll to top of form after step change
@@ -437,6 +461,8 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
 
   const handlePrevStep = () => {
     if (currentStep > 0) {
+      // Reset user intent when going back
+      userIntentToSubmitRef.current = false;
       setCurrentStep(currentStep - 1);
     }
   };
@@ -444,12 +470,34 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
   const isLastStep = currentStep === totalSteps - 1;
   const currentSection = allSteps[currentStep];
 
+  // Handle form submission - either go to next step or actually submit
+  const handleFormSubmit = async (data: FormData) => {
+    if (isLastStep && userIntentToSubmitRef.current) {
+      // On last step with user intent, proceed with actual form submission
+      await onSubmit(data);
+      // Reset intent after submission
+      userIntentToSubmitRef.current = false;
+    } else {
+      // On other steps, just go to next step (prevent accidental submit)
+      await handleNextStep();
+    }
+  };
+
   // When rendering core fields:
   const getLabel = (key: string, defaultLabel: string) => i18n[currentLanguage]?.[key] || defaultLabel;
 
   return (
     <FormProvider {...methods}>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 sm:space-y-6 pb-20 sm:pb-6">
+      <form 
+        onSubmit={handleSubmit(handleFormSubmit)} 
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !isLastStep) {
+            e.preventDefault();
+            handleNextStep();
+          }
+        }}
+        className="space-y-3 sm:space-y-6 pb-20 sm:pb-6"
+      >
         {/* Multi-Step Indicator */}
         <div className="flex items-center justify-center mb-4 sm:mb-8 px-2 sm:px-4">
           <div className="flex items-center space-x-1 sm:space-x-2 overflow-x-auto max-w-full">
@@ -694,6 +742,9 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
                   type="submit"
                   disabled={loading}
                   className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 sm:px-8 sm:py-3 rounded-lg text-sm sm:text-base font-bold disabled:opacity-50 transition-all duration-200 shadow-md hover:shadow-lg"
+                  onClick={() => {
+                    userIntentToSubmitRef.current = true;
+                  }}
                 >
                   {loading ? (
                     <span className="flex items-center justify-center">

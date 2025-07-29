@@ -1865,24 +1865,24 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                 
                 {/* Right side controls */}
                 <div className="flex-shrink-0 ml-3 flex items-center gap-2">
-                  {/* Status Badge */}
+                {/* Status Badge */}
                   <div className={`px-2.5 py-1 rounded-full text-xs font-semibold border backdrop-blur-sm transition-all duration-300 ${
-                    hasCheckedIn
-                      ? 'bg-emerald-500/20 text-emerald-100 border-emerald-400/30'
-                      : 'bg-amber-500/20 text-amber-100 border-amber-400/30'
-                  }`}>
-                    <div className="flex items-center gap-1">
-                      {hasCheckedIn ? (
-                        <>
-                          <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                  hasCheckedIn
+                    ? 'bg-emerald-500/20 text-emerald-100 border-emerald-400/30'
+                    : 'bg-amber-500/20 text-amber-100 border-amber-400/30'
+                }`}>
+                  <div className="flex items-center gap-1">
+                    {hasCheckedIn ? (
+                      <>
+                        <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
                                                   <span>{t('status_active')}</span>
                       </>
                     ) : (
                       <>
                         <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
                         <span>{t('status_ready')}</span>
-                        </>
-                      )}
+                      </>
+                    )}
                     </div>
                   </div>
                 </div>
@@ -2306,7 +2306,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                                <div className="flex items-center">
                                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
                                  <span className="insight-label text-green-700 font-medium">Check-in {index + 1}:</span>
-                               </div>
+                        </div>
                                <span className="insight-value-sm font-semibold text-green-800">
                                  {checkin.checkintime ? formatCheckinTime(checkin.checkintime) : 'Chưa có thời gian'}
                                </span>
@@ -2327,7 +2327,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
 
               {/* Floor Plan - Moved from More tab */}
               {(displayEventData?.floor_plan_pdf || (displayEventData as any)?.floor_plan_url) && (
-                <div className={`transform transition-all duration-1000 delay-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+              <div className={`transform transition-all duration-1000 delay-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
                   <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
                     <div className="flex items-center mb-3">
                       <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center mr-3">
@@ -2390,10 +2390,10 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                     <div className="flex items-center space-x-2">
                       <div className="flex-shrink-0 w-5 h-5 bg-purple-500 rounded-full flex items-center justify-center">
                         <span className="text-white text-xs font-bold">4</span>
-                      </div>
+                  </div>
                       <div>
                         <p className="text-xs text-blue-700 font-medium">Thêm</p>
-                      </div>
+              </div>
                     </div>
                   </div>
                 </Card>
@@ -3626,7 +3626,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                             alt="Vietnamese"
                             className="w-full h-full object-cover"
                           />
-                        </div>
+                      </div>
                         <span className="text-sm font-medium">{t('language_vietnamese')}</span>
                       </div>
                       {currentLanguage === 'vi' && (
@@ -3691,37 +3691,37 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </Button>
-
+                    
                     {/* Website */}
                     {(displayEventData as any)?.website && (
-                      <Button 
-                        variant="outline" 
-                        className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[48px] rounded-2xl border-gray-200 hover:border-gray-300"
+                    <Button 
+                      variant="outline" 
+                      className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[48px] rounded-2xl border-gray-200 hover:border-gray-300"
                         onClick={() => window.open((displayEventData as any)?.website, '_blank')}
-                      >
-                        <div className="flex items-center">
+                    >
+                      <div className="flex items-center">
                           <svg className="w-4 h-4 mr-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
                           </svg>
                           <span className="text-sm font-medium text-slate-700">Website</span>
-                        </div>
-                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </Button>
+                      </div>
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Button>
                     )}
 
                     {/* Support Contact */}
                     <div className="space-y-0">
-                      <Button 
-                        variant="outline" 
+                    <Button 
+                      variant="outline" 
                         className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[48px] rounded-2xl border-gray-200 hover:border-gray-300"
                         onClick={() => setIsSupportContactExpanded(!isSupportContactExpanded)}
-                      >
-                        <div className="flex items-center">
+                    >
+                      <div className="flex items-center">
                           <Icon name="InformationCircleIcon" className="w-4 h-4 mr-3 text-orange-600" />
                           <span className="text-sm font-medium text-slate-700">Liên hệ hỗ trợ</span>
-                        </div>
+                      </div>
                         <svg 
                           className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
                             isSupportContactExpanded ? 'rotate-90' : 'rotate-0'
@@ -3730,10 +3730,10 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                           stroke="currentColor" 
                           viewBox="0 0 24 24"
                         >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </Button>
-                      
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Button>
+                    
                       {/* Expanded Content */}
                       <div 
                         className={`overflow-hidden transition-all duration-300 ease-in-out ${
@@ -3748,7 +3748,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                               <p className="text-sm text-orange-700">
                                 Vui lòng liên hệ bộ phận lễ tân của ban tổ chức.
                               </p>
-                            </div>
+                      </div>
                           </div>
                         </div>
                       </div>

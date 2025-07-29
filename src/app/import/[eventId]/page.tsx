@@ -21,46 +21,23 @@ type RowResult = {
   message?: string;
 };
 
-const MAX_RECORDS = 1000;
+const MAX_RECORDS = 2000;
 const BATCH_SIZE = 50;
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // --- Validation & Normalization Utilities ---
 
 const processPhoneNumber = (rawPhone: any): { isValid: boolean; normalized: string; error?: string } => {
-  // Return valid for empty cells, as required status is checked separately.
+  // VALIDATION DISABLED: Accept all phone number formats for easier importing
   if (!rawPhone && rawPhone !== 0) {
     return { isValid: true, normalized: '' };
   }
 
-  // 1. Clean the data: remove spaces, dots, dashes, parentheses
-  const cleaned = String(rawPhone).replace(/[\s.()-]/g, '');
-
-  // 2. Handle VN formats
-  // +84xxxxxxxxx -> 0xxxxxxxxx
-  if (cleaned.startsWith('+84') && /^\d{9}$/.test(cleaned.substring(3))) {
-    return { isValid: true, normalized: '0' + cleaned.substring(3) };
-  }
-  // 84xxxxxxxxx -> 0xxxxxxxxx
-  if (cleaned.startsWith('84') && /^\d{9}$/.test(cleaned.substring(2))) {
-    return { isValid: true, normalized: '0' + cleaned.substring(2) };
-  }
-  // 9xxxxxxxxx (9 digits) -> 09xxxxxxxxx
-  if (/^\d{9}$/.test(cleaned)) {
-    return { isValid: true, normalized: '0' + cleaned };
-  }
-  // 0xxxxxxxxx (10 digits) - standard
-  if (/^0\d{9}$/.test(cleaned)) {
-    return { isValid: true, normalized: cleaned };
-  }
+  // Just normalize by converting to string and trimming
+  const normalized = String(rawPhone).trim();
   
-  // 3. Handle international formats
-  if (/^\+\d{8,15}$/.test(cleaned)) {
-    return { isValid: true, normalized: cleaned };
-  }
-
-  // 4. If none of the above, it's invalid
-  return { isValid: false, normalized: String(rawPhone), error: 'SĐT không hợp lệ.' };
+  // Always return valid - no validation
+  return { isValid: true, normalized };
 };
 
 const validateAndNormalizeRow = (row: any, formFields: FormField[]): { isValid: boolean; normalizedRow: any; error?: string } => {
@@ -159,11 +136,32 @@ export default function ImportExcelPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
 
+  // Track import history and final report
+  const [importHistory, setImportHistory] = useState<{
+    totalProcessed: number;
+    totalSuccess: number;
+    totalFailed: number;
+    failedRecords: Array<{ row: any; error: string; rowIndex: number }>;
+    isCompleted: boolean;
+  }>({
+    totalProcessed: 0,
+    totalSuccess: 0,
+    totalFailed: 0,
+    failedRecords: [],
+    isCompleted: false
+  });
+
   const validationSummary = useMemo(() => {
     const total = previewData.length;
-    if (total === 0) return { total: 0, valid: 0, invalid: 0 };
+    if (total === 0) return { total: 0, valid: 0, invalid: 0, success: 0, imported: 0 };
+    
     const invalid = Object.values(rowResults).filter(r => r.status === 'invalid').length;
-    return { total, valid: total - invalid, invalid };
+    const success = Object.values(rowResults).filter(r => r.status === 'success').length;
+    const error = Object.values(rowResults).filter(r => r.status === 'error').length;
+    const imported = success + error;
+    const valid = total - invalid - imported;
+    
+    return { total, valid, invalid, success, imported, error };
   }, [previewData, rowResults]);
 
   // Load event info
@@ -187,6 +185,14 @@ export default function ImportExcelPage() {
     setPreviewData([]);
     setHeaders([]);
     setRowResults({});
+    // Reset import history when new file is loaded
+    setImportHistory({
+      totalProcessed: 0,
+      totalSuccess: 0,
+      totalFailed: 0,
+      failedRecords: [],
+      isCompleted: false
+    });
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -245,9 +251,15 @@ export default function ImportExcelPage() {
     setGeneralError(null);
     setImportProgress({ processed: 0, total: previewData.length });
 
+    // Only import valid records (not already imported)
     const dataToImport = previewData.filter((_, index) => rowResults[index]?.status === 'valid');
     console.log('Data to import:', dataToImport.length, 'records');
     setImportProgress({ processed: 0, total: dataToImport.length });
+
+    // Initialize import tracking
+    const currentBatchFailures: Array<{ row: any; error: string; rowIndex: number }> = [];
+    let batchSuccessCount = 0;
+    let batchFailureCount = 0;
 
     console.log('📋 Starting batch processing for all valid records...');
 
@@ -350,20 +362,42 @@ export default function ImportExcelPage() {
             console.log(`Processing result ${reportIndex}:`, result, 'for index:', actualIndex);
             
             if (actualIndex !== undefined) {
+              const isSuccess = result.status.includes('✅') || result.status.includes('Success');
+              const errorMessage = result.error || result.status || 'Lỗi không xác định';
+              
               newResults[actualIndex] = {
-                status: result.status.includes('✅') || result.status.includes('Success') ? 'success' : 'error',
-                message: result.status.includes('✅') || result.status.includes('Success') ? 'Import thành công' : result.error || result.status || 'Lỗi không xác định'
+                status: isSuccess ? 'success' : 'error',
+                message: isSuccess ? 'Import thành công' : errorMessage
               };
+
+              // Track success/failure for final report
+              if (isSuccess) {
+                batchSuccessCount++;
+              } else {
+                batchFailureCount++;
+                currentBatchFailures.push({
+                  row: previewData[actualIndex],
+                  error: errorMessage,
+                  rowIndex: actualIndex
+                });
+              }
             }
           });
         } else {
           console.error('Invalid report format:', report);
           // Mark all as error if report is invalid
           batchIndices.forEach(index => {
+            const errorMessage = 'Phản hồi từ server không hợp lệ';
             newResults[index] = { 
               status: 'error', 
-              message: 'Phản hồi từ server không hợp lệ' 
+              message: errorMessage
             };
+            batchFailureCount++;
+            currentBatchFailures.push({
+              row: previewData[index],
+              error: errorMessage,
+              rowIndex: index
+            });
           });
         }
         
@@ -380,11 +414,19 @@ export default function ImportExcelPage() {
         
         // Mark all records in this batch as failed
         const newResults = { ...rowResults };
+        const errorMessage = err.response?.data?.details || err.response?.data?.error || err.message || 'Lỗi kết nối API';
+        
         batchIndices.forEach(index => {
           newResults[index] = { 
             status: 'error', 
-            message: err.response?.data?.details || err.response?.data?.error || err.message || 'Lỗi kết nối API' 
+            message: errorMessage
           };
+          batchFailureCount++;
+          currentBatchFailures.push({
+            row: previewData[index],
+            error: errorMessage,
+            rowIndex: index
+          });
         });
         setRowResults(newResults);
 
@@ -403,7 +445,68 @@ export default function ImportExcelPage() {
     }
 
     console.log('✅ Import process completed');
+    
+    // Update import history with final results
+    setImportHistory(prev => ({
+      totalProcessed: prev.totalProcessed + batchSuccessCount + batchFailureCount,
+      totalSuccess: prev.totalSuccess + batchSuccessCount,
+      totalFailed: prev.totalFailed + batchFailureCount,
+      failedRecords: [...prev.failedRecords, ...currentBatchFailures],
+      isCompleted: true
+    }));
+    
     setIsProcessing(false);
+  };
+
+  const handleExportFailedRecords = () => {
+    if (importHistory.failedRecords.length === 0) {
+      alert('Không có dòng lỗi nào để xuất.');
+      return;
+    }
+
+    try {
+      // Prepare failed records data for export
+      const failedData = importHistory.failedRecords.map(({ row, error, rowIndex }) => ({
+        'STT': rowIndex + 1,
+        'Lỗi': error,
+        ...row
+      }));
+
+      // Create workbook and worksheet
+      const ws = XLSX.utils.json_to_sheet(failedData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Failed Records');
+
+      // Auto-adjust column widths
+      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+      const columnWidths: { wch: number }[] = [];
+      
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        let maxWidth = 10;
+        for (let row = range.s.r; row <= range.e.r; row++) {
+          const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+          const cell = ws[cellAddress];
+          if (cell && cell.v) {
+            const cellLength = String(cell.v).length;
+            maxWidth = Math.max(maxWidth, Math.min(cellLength, 50));
+          }
+        }
+        columnWidths.push({ wch: maxWidth });
+      }
+      ws['!cols'] = columnWidths;
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toLocaleString('vi-VN').replace(/[/:]/g, '-');
+      const filename = `loi-import-${timestamp}.xlsx`;
+      
+      // Download file
+      XLSX.writeFile(wb, filename);
+      
+      console.log(`✅ Exported ${failedData.length} failed records to ${filename}`);
+    } catch (error) {
+      console.error('❌ Error exporting failed records:', error);
+      alert('Có lỗi khi xuất file báo cáo lỗi.');
+    }
   };
 
   const handleExportSample = () => {
@@ -485,6 +588,14 @@ export default function ImportExcelPage() {
     setGeneralError(null);
     setImportProgress({ processed: 0, total: 0 });
     setIsProcessing(false);
+    // Reset import history
+    setImportHistory({
+      totalProcessed: 0,
+      totalSuccess: 0,
+      totalFailed: 0,
+      failedRecords: [],
+      isCompleted: false
+    });
     // Reset file input
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     if (fileInput) {
@@ -519,20 +630,26 @@ export default function ImportExcelPage() {
     newData[rowIndex] = { ...newData[rowIndex], [header]: editValue };
     setPreviewData(newData);
 
-    // Re-validate the row
+    // Re-validate the row only if it hasn't been imported yet
+    const currentStatus = rowResults[rowIndex]?.status;
+    const newResults = { ...rowResults };
+    
+    // Don't re-validate if already imported (success/error status should be preserved)
+    if (currentStatus !== 'success' && currentStatus !== 'error') {
     const formFields = eventData?.formFields || [];
     const { isValid, normalizedRow, error } = validateAndNormalizeRow(newData[rowIndex], formFields);
 
-    const newResults = { ...rowResults };
     newResults[rowIndex] = {
       status: isValid ? 'valid' : 'invalid',
       message: error,
     };
-    setRowResults(newResults);
 
-    // Update the row with normalized data
+      // Update the row with normalized data only if re-validating
     newData[rowIndex] = normalizedRow;
     setPreviewData(newData);
+    }
+    
+    setRowResults(newResults);
 
     setEditingCell(null);
     setEditValue('');
@@ -556,15 +673,21 @@ export default function ImportExcelPage() {
     newData[rowIndex] = { ...newData[rowIndex], [header]: newValue };
     setPreviewData(newData);
 
-    // Re-validate the row
+    // Re-validate the row only if it hasn't been imported yet
+    const currentStatus = rowResults[rowIndex]?.status;
+    const newResults = { ...rowResults };
+    
+    // Don't re-validate if already imported (success/error status should be preserved)
+    if (currentStatus !== 'success' && currentStatus !== 'error') {
     const formFields = eventData?.formFields || [];
     const { isValid, normalizedRow, error } = validateAndNormalizeRow(newData[rowIndex], formFields);
 
-    const newResults = { ...rowResults };
     newResults[rowIndex] = {
       status: isValid ? 'valid' : 'invalid',
       message: error,
     };
+    }
+    
     setRowResults(newResults);
 
     setEditingCell(null);
@@ -603,7 +726,7 @@ export default function ImportExcelPage() {
   };
 
   // Helper function to render editable cell content
-  const renderEditableCell = (rowIndex: number, header: string, cellValue: any, isEditing: boolean) => {
+  const renderEditableCell = (rowIndex: number, header: string, cellValue: any, isEditing: boolean, isImported: boolean = false) => {
     const fieldInfo = getFieldOptions(header);
     const isSelectField = fieldInfo.options.length > 0;
 
@@ -722,11 +845,20 @@ export default function ImportExcelPage() {
       }
     } else {
       return (
-        <div className="group">
-          <span>{cellValue}</span>
-          <span className="ml-2 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity text-xs">
+        <div className="group flex items-center w-full">
+          <span className="flex-1 truncate mr-1" title={String(cellValue || '')}>
+            {cellValue}
+          </span>
+          {!isImported && (
+            <span className="flex-shrink-0 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity text-xs">
             {isSelectField ? (fieldInfo.type === 'Multi Select' ? '📋📋' : '📋') : '✏️'}
           </span>
+          )}
+          {isImported && (
+            <span className="flex-shrink-0 text-green-600 text-xs">
+              ✅
+            </span>
+          )}
         </div>
       );
     }
@@ -765,7 +897,7 @@ export default function ImportExcelPage() {
         </Card>
 
         {/* --- Step 1 & 2: Upload and Settings --- */}
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-4 gap-8">
           <div className="lg:col-span-1 space-y-6">
              <Card className="p-6">
               <h2 className="text-xl font-semibold mb-4">Bước 1: Tải File</h2>
@@ -797,13 +929,14 @@ export default function ImportExcelPage() {
           </div>
 
           {/* --- Step 3: Preview and Import --- */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-3">
             <Card className="p-6">
               <div className="mb-4">
                 <h2 className="text-xl font-semibold">Bước 3: Xem Trước & Import</h2>
                 <div className="mt-2 text-sm flex space-x-4">
                   <span>Tổng số: <span className="font-bold">{validationSummary.total}</span></span>
-                  <span className="text-green-600">Hợp lệ: <span className="font-bold">{validationSummary.valid}</span></span>
+                  <span className="text-blue-600">Hợp lệ: <span className="font-bold">{validationSummary.valid}</span></span>
+                  <span className="text-green-600">Thành công: <span className="font-bold">{validationSummary.success}</span></span>
                   <span className="text-red-600">Lỗi: <span className="font-bold">{validationSummary.invalid}</span></span>
                 </div>
               </div>
@@ -826,25 +959,183 @@ export default function ImportExcelPage() {
                 {previewData.length === 0 ? (
                   <div className="text-center py-10 border-2 border-dashed rounded-lg"><p>Vui lòng tải file để xem trước.</p></div>
                 ) : (
-                  <>
+                  <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-lg font-semibold text-blue-800">
+                          📊 File đã sẵn sàng để import
+                        </p>
+                        <p className="text-sm text-blue-600 mt-1">
+                          Bảng dữ liệu chi tiết hiển thị bên dưới với khả năng chỉnh sửa trực tiếp
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <div className="grid grid-cols-5 gap-3 text-center">
+                          <div>
+                            <p className="text-xl font-bold text-gray-700">{validationSummary.total}</p>
+                            <p className="text-xs text-gray-600">Tổng số</p>
+                          </div>
+                          <div>
+                            <p className="text-xl font-bold text-blue-600">{validationSummary.valid}</p>
+                            <p className="text-xs text-blue-600">Hợp lệ</p>
+                          </div>
+                          <div>
+                            <p className="text-xl font-bold text-green-600">{validationSummary.success}</p>
+                            <p className="text-xs text-green-600">Thành công</p>
+                          </div>
+                          <div>
+                            <p className="text-xl font-bold text-red-600">{validationSummary.invalid}</p>
+                            <p className="text-xs text-red-600">Lỗi</p>
+                          </div>
+                          <div>
+                            <p className="text-xl font-bold text-purple-600">{validationSummary.imported}</p>
+                            <p className="text-xs text-purple-600">Đã import</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
+        </div>
+
+        {/* Final Import Report */}
+        {importHistory.isCompleted && (
+          <div className="mt-8">
+            <Card className="p-6 border-l-4 border-l-indigo-500">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-indigo-800">📊 Báo Cáo Import Hoàn Thành</h2>
+                <div className="text-sm text-gray-500">
+                  {new Date().toLocaleString('vi-VN')}
+                </div>
+              </div>
+              
+              <div className="grid md:grid-cols-3 gap-6 mb-6">
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-2xl font-bold text-green-600">{importHistory.totalSuccess}</p>
+                      <p className="text-sm text-green-700">Thành công</p>
+                    </div>
+                    <div className="text-green-500">
+                      <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-red-50 to-pink-50 p-4 rounded-lg border border-red-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-2xl font-bold text-red-600">{importHistory.totalFailed}</p>
+                      <p className="text-sm text-red-700">Thất bại</p>
+                    </div>
+                    <div className="text-red-500">
+                      <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-2xl font-bold text-blue-600">{importHistory.totalProcessed}</p>
+                      <p className="text-sm text-blue-700">Tổng xử lý</p>
+                    </div>
+                    <div className="text-blue-500">
+                      <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {importHistory.failedRecords.length > 0 && (
+                <div className="border-t pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-medium text-red-700">
+                      🚨 Danh sách lỗi ({importHistory.failedRecords.length} dòng)
+                    </h3>
+                    <Button 
+                      onClick={handleExportFailedRecords}
+                      variant="outline"
+                      className="text-red-600 border-red-300 hover:bg-red-50"
+                    >
+                      📤 Xuất file lỗi
+                    </Button>
+                  </div>
+                  
+                  <div className="max-h-60 overflow-y-auto border rounded-lg">
+                    <table className="min-w-full divide-y divide-gray-200 text-sm">
+                      <thead className="bg-red-50 sticky top-0">
+                        <tr>
+                          <th className="px-3 py-2 text-left font-medium text-red-700">STT</th>
+                          <th className="px-3 py-2 text-left font-medium text-red-700">Lỗi</th>
+                          <th className="px-3 py-2 text-left font-medium text-red-700">Dữ liệu</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {importHistory.failedRecords.map(({ row, error, rowIndex }, index) => (
+                          <tr key={index} className="hover:bg-red-50">
+                            <td className="px-3 py-2 text-red-600 font-medium">{rowIndex + 1}</td>
+                            <td className="px-3 py-2 text-red-700 max-w-xs">
+                              <div className="truncate" title={error}>{error}</div>
+                            </td>
+                            <td className="px-3 py-2 text-gray-700 max-w-md">
+                              <div className="truncate" title={JSON.stringify(row)}>
+                                {Object.entries(row).slice(0, 3).map(([key, value]) => 
+                                  `${key}: ${value}`
+                                ).join(', ')}
+                                {Object.keys(row).length > 3 && '...'}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+              
+              {importHistory.totalFailed === 0 && (
+                <div className="text-center py-6 bg-green-50 rounded-lg border border-green-200">
+                  <div className="text-green-600 text-4xl mb-2">🎉</div>
+                  <p className="text-lg font-semibold text-green-800">Import hoàn thành thành công!</p>
+                  <p className="text-sm text-green-600 mt-1">Tất cả {importHistory.totalSuccess} dòng đã được import thành công.</p>
+                </div>
+              )}
+            </Card>
+          </div>
+        )}
+
+        {/* Full Width Preview Table */}
+        {previewData.length > 0 && (
+          <div className="mt-8">
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-4">📋 Bảng Dữ Liệu Chi Tiết</h2>
                     <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <p className="text-sm text-blue-800">
                         💡 <strong>Chỉnh sửa trực tiếp:</strong> Click vào ô để chỉnh sửa dữ liệu. Nhấn Enter để lưu, Esc để hủy. 
-                        Dữ liệu sẽ được validate tự động sau khi chỉnh sửa.
-                        <br />
-                        📋 <strong>Trường Select:</strong> Sẽ hiển thị dropdown với các options có sẵn để chọn.
-                        <br />
-                        📋📋 <strong>Trường Multi Select:</strong> Sẽ hiển thị checkbox để chọn nhiều giá trị, cách nhau bằng dấu phẩy.
-                        <br />
-                        ✅ <strong>Validation:</strong> Tự động kiểm tra giá trị hợp lệ cho Select/Multi Select để tránh lỗi khi import.
                       </p>
                     </div>
-                    <div className="overflow-x-auto border rounded-lg max-h-[60vh]">
+              <div className="overflow-x-auto border rounded-lg max-h-[70vh]">
                       <table className="min-w-full divide-y divide-gray-200 text-sm">
                         <thead className="bg-gray-50 sticky top-0">
                           <tr>
-                            <th className="px-4 py-2 text-left font-medium text-gray-600">Trạng Thái</th>
-                            {headers.map(header => <th key={header} className="px-4 py-2 text-left font-medium text-gray-600 capitalize">{header.replace(/_/g, ' ')}</th>)}
+                      <th className="px-3 py-2 text-left font-medium text-gray-600 w-24">Trạng Thái</th>
+                      {headers.map(header => (
+                        <th key={header} className="px-3 py-2 text-left font-medium text-gray-600 capitalize min-w-[120px] max-w-[200px]">
+                          <div className="truncate" title={header.replace(/_/g, ' ')}>
+                            {header.replace(/_/g, ' ')}
+                          </div>
+                        </th>
+                      ))}
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -859,28 +1150,41 @@ export default function ImportExcelPage() {
                               error: { text: 'Thất bại', color: 'red-200 text-red-900' },
                             };
                             return (
-                              <tr key={rowIndex} className={result?.status === 'invalid' || result?.status === 'error' ? 'bg-red-50' : ''}>
-                                <td className="px-4 py-2">
+                        <tr key={rowIndex} className={
+                          result?.status === 'invalid' || result?.status === 'error' ? 'bg-red-50' : 
+                          result?.status === 'success' ? 'bg-green-50' : ''
+                        }>
+                          <td className="px-3 py-2 w-24">
                                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusConfig[result?.status || 'unvalidated'].color}`}>
                                     {statusConfig[result?.status || 'unvalidated'].text}
                                   </span>
                                   {(result?.status === 'invalid' || result?.status === 'error') && (
-                                    <p className="text-red-600 text-xs mt-1">{result.message}</p>
+                              <p className="text-red-600 text-xs mt-1 truncate" title={result.message}>
+                                {result.message}
+                              </p>
+                            )}
+                            {result?.status === 'success' && (
+                              <p className="text-green-600 text-xs mt-1">✅</p>
                                   )}
                                 </td>
                                 {headers.map(header => {
                                   const isEditing = editingCell?.rowIndex === rowIndex && editingCell?.header === header;
                                   const cellValue = row[header];
+                            const isImported = result?.status === 'success' || result?.status === 'error';
                                   
                                   return (
                                     <td 
                                       key={header} 
-                                      className={`px-4 py-2 text-gray-800 whitespace-nowrap cursor-pointer hover:bg-gray-50 transition-colors ${
+                                 className={`px-3 py-2 text-gray-800 transition-colors min-w-[120px] max-w-[200px] ${
+                                   isImported 
+                                     ? 'opacity-75'
+                                     : 'cursor-pointer hover:bg-gray-50'
+                                 } ${
                                         isEditing ? 'bg-blue-50 border border-blue-300' : ''
                                       }`}
-                                      onClick={() => !isEditing && startEditing(rowIndex, header, cellValue)}
+                                 onClick={() => !isEditing && !isImported && startEditing(rowIndex, header, cellValue)}
                                     >
-                                      {renderEditableCell(rowIndex, header, cellValue, isEditing)}
+                                 {renderEditableCell(rowIndex, header, cellValue, isEditing, isImported)}
                                     </td>
                                   );
                                 })}
@@ -889,13 +1193,10 @@ export default function ImportExcelPage() {
                           })}
                         </tbody>
                       </table>
-                    </div>
-                  </>
-                )}
               </div>
             </Card>
           </div>
-        </div>
+        )}
       </div>
     </RegistrationLayout>
   );

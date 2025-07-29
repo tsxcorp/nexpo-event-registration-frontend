@@ -71,7 +71,7 @@ export function useTranslation(initialEventData: EventData | null) {
       console.log('🌐 Initializing with Vietnamese as default language');
       
       // Always start with original data in Vietnamese
-      setEventData(initialEventData);
+        setEventData(initialEventData);
       console.log('✅ Using original event data');
       
       setLanguageInitialized(true);

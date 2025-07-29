@@ -152,7 +152,7 @@ export default function RegisterPage() {
         isTranslating={isTranslating}
         eventId={eventId}
         onRegisterFormMigration={setFormMigrationCallback}
-        key={`event-info-${currentLanguage}-${forceUpdateKey}`}
+        key={`event-info-${currentLanguage}`}
       />
     </>
   );

@@ -238,7 +238,7 @@
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
-}
+} 
 
 /* React-PDF Styles */
 .react-pdf__Page {

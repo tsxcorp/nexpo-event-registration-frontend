@@ -285,19 +285,19 @@ export default function FileViewer({ title, fileUrl, fileType = 'unknown', onClo
             >
               Tải xuống tài liệu
             </Button>
-            <Button 
-              onClick={() => {
-                setError(false);
-                setLoading(true);
+          <Button 
+            onClick={() => {
+              setError(false);
+              setLoading(true);
                 if (fileType === 'pdf' && fileUrl) {
                   setViewerMode('iframe');
                   setPdfData(fileUrl);
                 }
-              }}
-              variant="outline"
-            >
-              Thử lại
-            </Button>
+            }}
+            variant="outline"
+          >
+            Thử lại
+          </Button>
           </div>
         </div>
       );
@@ -326,7 +326,7 @@ export default function FileViewer({ title, fileUrl, fileType = 'unknown', onClo
           </div>
         )}
         
-                {fileType === 'pdf' && (
+        {fileType === 'pdf' && (
           <iframe
             src={pdfData || fileUrl}
             className="w-full h-96 border-0 rounded-lg"

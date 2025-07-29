@@ -133,9 +133,25 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         
         // Trigger entrance animation
         setTimeout(() => setIsVisible(true), 100);
+        
+        // Focus input after page load for immediate scanner readiness
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+            console.log('🎯 Initial focus set on page load for barcode scanner readiness');
+          }
+        }, 500);
       } catch (err: any) {
         console.error('Error loading event data:', err);
         setError('Không thể tải thông tin sự kiện. Vui lòng thử lại.');
+        
+        // Even on error, focus input for retry
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+            console.log('🎯 Focus set after load error for retry');
+          }
+        }, 1000);
       } finally {
         setLoading(false);
       }
@@ -275,6 +291,14 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       if (inputRef.current) {
         inputRef.current.focus();
         console.log('🎯 Manual input refocused after stopping camera');
+        
+        // Double-check focus stability
+        setTimeout(() => {
+          if (inputRef.current && document.activeElement !== inputRef.current) {
+            inputRef.current.focus();
+            console.log('🎯 Double-check focus after stopping camera');
+          }
+        }, 100);
       }
     }, 100);
   };
@@ -415,6 +439,15 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       }
     } finally {
       setIsProcessing(false);
+      
+      // Always refocus input after processing completes (success or error)
+      // This ensures barcode scanner and manual input remain functional
+      setTimeout(() => {
+        if (inputRef.current && !showSuccessScreen) {
+          inputRef.current.focus();
+          console.log('🎯 Auto-focused input after processing completion');
+        }
+      }, 500); // Short delay to ensure state updates have completed
     }
   };
 
@@ -447,6 +480,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     // Clear error when user starts typing again
     if (error) {
       setError('');
+      console.log('🎯 Error cleared by user input, maintaining focus');
     }
     
     // Auto-submit for barcode scanner (when input looks complete)
@@ -477,6 +511,21 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       return () => clearInterval(interval);
     }
   }, [cameraEnabled]);
+
+  // Auto-focus input when error occurs for better UX
+  useEffect(() => {
+    if (error && inputRef.current) {
+      // Delay focus to ensure error message is displayed first
+      const focusTimer = setTimeout(() => {
+        if (inputRef.current && !isProcessing) {
+          inputRef.current.focus();
+          console.log('🎯 Auto-focused input after error for immediate retry');
+        }
+      }, 1000); // 1 second delay to let user read error message
+      
+      return () => clearTimeout(focusTimer);
+    }
+  }, [error, isProcessing]);
 
   // Handle key events for better barcode scanner support
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -564,6 +613,14 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       if (inputRef.current) {
         inputRef.current.focus();
         console.log('🎯 Manual input refocused after reset');
+        
+        // Ensure input stays focused by checking again after a bit
+        setTimeout(() => {
+          if (inputRef.current && document.activeElement !== inputRef.current) {
+            inputRef.current.focus();
+            console.log('🎯 Double-check focus after reset');
+          }
+        }, 200);
       }
     }, cameraEnabled ? 100 : 50); // Faster focus if camera not running
   };
