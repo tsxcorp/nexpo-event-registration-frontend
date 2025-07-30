@@ -1073,7 +1073,30 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       (companyInfo && companyInfo.length > 30 ? '12px' : '14px') :
       (companyInfo && companyInfo.length > 30 ? '10px' : '12px');
     
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    // Create print window with better popup handling
+    let printWindow: Window | null = null;
+    
+    try {
+      printWindow = window.open('', '_blank', 'width=800,height=600');
+      
+      // Check if popup was blocked
+      if (!printWindow || printWindow.closed || typeof printWindow.closed === 'undefined') {
+        console.warn('⚠️ Popup blocked, trying alternative print method');
+        
+        // Show user-friendly message about popup blocker
+        if (typeof window !== 'undefined' && window.confirm('Popup bị chặn. Bạn có muốn in trong cửa sổ hiện tại không?')) {
+          printWindow = window;
+        } else {
+          console.log('❌ User cancelled print due to popup blocker');
+          setIsPrinting(false);
+          return;
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Error opening print window, using current window:', error);
+      printWindow = window;
+    }
+    
     if (!printWindow) {
       console.error('❌ Failed to open print window');
       setIsPrinting(false);
@@ -1134,11 +1157,23 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     printWindow.document.close();
     
     setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-      printWindow.close();
-      setIsPrinting(false);
-      console.log('🖨️ Print completed with QR image');
+      try {
+        if (printWindow !== window) {
+          // New window - focus and print
+          printWindow.focus();
+          printWindow.print();
+          printWindow.close();
+        } else {
+          // Current window - just print
+          printWindow.print();
+        }
+        setIsPrinting(false);
+        console.log('🖨️ Print completed with QR image');
+      } catch (printError) {
+        console.error('❌ Print error:', printError);
+        setIsPrinting(false);
+        alert('Không thể in tự động. Vui lòng nhấn Ctrl+P để in thủ công.');
+      }
     }, 1000);
   };
 
@@ -1160,7 +1195,30 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       (companyInfo && companyInfo.length > 30 ? '12px' : '14px') :
       (companyInfo && companyInfo.length > 30 ? '10px' : '12px');
     
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    // Create print window with better popup handling
+    let printWindow: Window | null = null;
+    
+    try {
+      printWindow = window.open('', '_blank', 'width=800,height=600');
+      
+      // Check if popup was blocked
+      if (!printWindow || printWindow.closed || typeof printWindow.closed === 'undefined') {
+        console.warn('⚠️ Popup blocked, trying alternative print method');
+        
+        // Show user-friendly message about popup blocker
+        if (typeof window !== 'undefined' && window.confirm('Popup bị chặn. Bạn có muốn in trong cửa sổ hiện tại không?')) {
+          printWindow = window;
+        } else {
+          console.log('❌ User cancelled print due to popup blocker');
+          setIsPrinting(false);
+          return;
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Error opening print window, using current window:', error);
+      printWindow = window;
+    }
+    
     if (!printWindow) {
       console.error('❌ Failed to open print window');
       setIsPrinting(false);
@@ -1225,11 +1283,23 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     printWindow.document.close();
     
     setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-      printWindow.close();
-      setIsPrinting(false);
-      console.log('🖨️ Print completed with text QR fallback');
+      try {
+        if (printWindow !== window) {
+          // New window - focus and print
+          printWindow.focus();
+          printWindow.print();
+          printWindow.close();
+        } else {
+          // Current window - just print
+          printWindow.print();
+        }
+        setIsPrinting(false);
+        console.log('🖨️ Print completed with text QR fallback');
+      } catch (printError) {
+        console.error('❌ Print error:', printError);
+        setIsPrinting(false);
+        alert('Không thể in tự động. Vui lòng nhấn Ctrl+P để in thủ công.');
+      }
     }, 1000);
   };
 
@@ -1352,8 +1422,32 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         
         console.log('✅ QR image pre-loaded, starting print...');
         
-        // Create print window
-        const printWindow = window.open('', '_blank', 'width=800,height=600');
+        // Create print window with better popup handling
+        let printWindow: Window | null = null;
+        
+        try {
+          // Try to open print window
+          printWindow = window.open('', '_blank', 'width=800,height=600');
+          
+          // Check if popup was blocked
+          if (!printWindow || printWindow.closed || typeof printWindow.closed === 'undefined') {
+            console.warn('⚠️ Popup blocked, trying alternative print method');
+            
+            // Show user-friendly message about popup blocker
+            if (typeof window !== 'undefined' && window.confirm('Popup bị chặn. Bạn có muốn in trong cửa sổ hiện tại không?')) {
+              printWindow = window;
+            } else {
+              console.log('❌ User cancelled print due to popup blocker');
+              document.body.removeChild(stagingDiv);
+              setIsPrinting(false);
+              return;
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Error opening print window, using current window:', error);
+          printWindow = window;
+        }
+        
         if (!printWindow) {
           console.error('❌ Failed to open print window');
           document.body.removeChild(stagingDiv);
@@ -1410,10 +1504,22 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         
         // Wait a bit for content to render, then print
         setTimeout(() => {
-          printWindow.focus();
-          printWindow.print();
-          printWindow.close();
-          console.log('🖨️ Print completed');
+          try {
+            if (printWindow !== window) {
+              // New window - focus and print
+              printWindow.focus();
+              printWindow.print();
+              printWindow.close();
+            } else {
+              // Current window - just print
+              printWindow.print();
+            }
+            console.log('🖨️ Print completed');
+          } catch (printError) {
+            console.error('❌ Print error:', printError);
+            // Show user-friendly message
+            alert('Không thể in tự động. Vui lòng nhấn Ctrl+P để in thủ công.');
+          }
         }, isMobile ? 1000 : 500); // Longer wait on mobile
         
         // Clean up staging div
