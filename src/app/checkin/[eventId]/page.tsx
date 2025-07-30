@@ -669,8 +669,8 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   };
 
   // Generate QR image with fallback (no React hooks)
-  const generateQRImage = (qrData: string) => {
-    console.log('🔥 Generating QR image for data:', qrData);
+  const generateQRImage = (qrData: string, imageSize: string = '18mm') => {
+    console.log('🔥 Generating QR image for data:', qrData, 'size:', imageSize);
     
     // Primary QR API
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
@@ -681,8 +681,8 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         src={qrUrl}
         alt={`QR Code: ${qrData}`}
         style={{
-          width: '18mm',
-          height: '18mm',
+          width: imageSize,
+          height: imageSize,
           objectFit: 'contain'
         }}
         onError={(e) => {
@@ -691,14 +691,14 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           const img = e.target as HTMLImageElement;
           const fallback = document.createElement('div');
           fallback.style.cssText = `
-            width: 18mm;
-            height: 18mm;
+            width: ${imageSize};
+            height: ${imageSize};
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             border: 2px solid #000;
-            font-size: 6px;
+            font-size: ${imageSize === '26mm' ? '8px' : '6px'};
             text-align: center;
             color: #000;
             padding: 1mm;
@@ -730,10 +730,23 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       visitor_keys: Object.keys(visitorData)
     });
     
+    // Get badge layout to determine QR size
+    const badgeLayout = getBadgeLayout();
+    
+    // Larger QR for vertical layout (more space available)
+    const qrContainerSize = badgeLayout.isVerticalLayout ? '28mm' : '20mm';
+    const qrImageSize = badgeLayout.isVerticalLayout ? '26mm' : '18mm';
+    
+    console.log('🎫 QR size decision:', {
+      layout: badgeLayout.isVerticalLayout ? 'vertical' : 'horizontal',
+      containerSize: qrContainerSize,
+      imageSize: qrImageSize
+    });
+    
     return (
       <div style={{
-        width: '20mm',
-        height: '20mm',
+        width: qrContainerSize,
+        height: qrContainerSize,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -743,7 +756,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         flexShrink: 0,
         position: 'relative'
       }}>
-        {generateQRImage(qrData)}
+        {generateQRImage(qrData, qrImageSize)}
       </div>
     );
   };
@@ -1037,6 +1050,11 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   const printBadgeWithQR = (visitorData: VisitorData, companyInfo: string, qrUrl: string) => {
     const badgeLayout = getBadgeLayout();
     const contentHeight = badgeLayout.height - 30;
+    
+    // QR size for print - larger for vertical layout
+    const printQrContainerSize = badgeLayout.isVerticalLayout ? '28mm' : '20mm';
+    const printQrImageSize = badgeLayout.isVerticalLayout ? '26mm' : '18mm';
+    
     const nameSize = badgeLayout.isVerticalLayout ? 
       (visitorData.name.length > 20 ? '16px' : visitorData.name.length > 15 ? '18px' : '20px') :
       (visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px');
@@ -1071,10 +1089,10 @@ export default function CheckinPage({ params }: CheckinPageProps) {
             gap: 4mm; box-sizing: border-box;
           }
           .qr-container { 
-            width: 20mm; height: 20mm; display: flex; align-items: center; justify-content: center; 
+            width: ${printQrContainerSize}; height: ${printQrContainerSize}; display: flex; align-items: center; justify-content: center; 
             background: #fff; flex-shrink: 0; order: ${badgeLayout.isVerticalLayout ? '1' : '0'}; 
           }
-          .qr-img { width: 18mm; height: 18mm; object-fit: contain; }
+          .qr-img { width: ${printQrImageSize}; height: ${printQrImageSize}; object-fit: contain; }
           .info { 
             flex: ${badgeLayout.isVerticalLayout ? '0' : '1'}; 
             display: flex; flex-direction: column; justify-content: center; 
@@ -1119,6 +1137,11 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     
     const badgeLayout = getBadgeLayout();
     const contentHeight = badgeLayout.height - 30;
+    
+    // QR size for print - larger for vertical layout
+    const printQrContainerSize = badgeLayout.isVerticalLayout ? '28mm' : '20mm';
+    const printQrImageSize = badgeLayout.isVerticalLayout ? '26mm' : '18mm';
+    
     const nameSize = badgeLayout.isVerticalLayout ? 
       (visitorData.name.length > 20 ? '16px' : visitorData.name.length > 15 ? '18px' : '20px') :
       (visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px');
@@ -1153,9 +1176,9 @@ export default function CheckinPage({ params }: CheckinPageProps) {
             gap: 4mm; box-sizing: border-box;
           }
           .qr-fallback {
-            width: 20mm; height: 20mm; border: 2px solid #000;
+            width: ${printQrContainerSize}; height: ${printQrContainerSize}; border: 2px solid #000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-size: 8px; text-align: center; color: #000; background: #fff; font-weight: bold;
+            font-size: ${printQrImageSize === '26mm' ? '10px' : '8px'}; text-align: center; color: #000; background: #fff; font-weight: bold;
             flex-shrink: 0; order: ${badgeLayout.isVerticalLayout ? '1' : '0'};
           }
           .info { 
@@ -1265,14 +1288,18 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}&format=png&ecc=M`;
       console.log('🔗 Print QR URL:', qrUrl);
       
+      // QR size for print - larger for vertical layout
+      const printQrContainerSize = badgeLayout.isVerticalLayout ? '28mm' : '20mm';
+      const printQrImageSize = badgeLayout.isVerticalLayout ? '26mm' : '18mm';
+      
       stagingDiv.innerHTML = `
         <!-- QR Code -->
-        <div style="width: 20mm; height: 20mm; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0; order: ${badgeLayout.isVerticalLayout ? '1' : '0'};">
+        <div style="width: ${printQrContainerSize}; height: ${printQrContainerSize}; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0; order: ${badgeLayout.isVerticalLayout ? '1' : '0'};">
           <img 
             id="print-qr-img"
             src="${qrUrl}" 
             alt="QR Code: ${qrData}"
-            style="width: 18mm; height: 18mm; object-fit: contain;"
+            style="width: ${printQrImageSize}; height: ${printQrImageSize}; object-fit: contain;"
             crossorigin="anonymous"
           />
         </div>
@@ -1398,14 +1425,14 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         if (qrContainer) {
           qrContainer.innerHTML = `
             <div style="
-              width: 18mm; 
-              height: 18mm; 
+              width: ${printQrImageSize}; 
+              height: ${printQrImageSize}; 
               border: 2px solid #000; 
               display: flex; 
               flex-direction: column;
               align-items: center; 
               justify-content: center; 
-              font-size: 6px; 
+              font-size: ${printQrImageSize === '26mm' ? '8px' : '6px'}; 
               text-align: center; 
               color: #000; 
               background: #fff; 
