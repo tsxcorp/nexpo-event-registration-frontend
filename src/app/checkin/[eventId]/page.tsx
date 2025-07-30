@@ -315,6 +315,9 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     if (trimmedId.length < 3) {
       setError('❌ ID visitor phải có ít nhất 3 ký tự.');
       setIsProcessing(false);
+      // Reset input immediately for validation errors
+      setManualInput('');
+      console.log('🔄 Input reset after validation error');
       return;
     }
 
@@ -355,6 +358,10 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           
           setError(`❌ Visitor không thuộc sự kiện này.\n\n• Visitor: ${response.visitor.name}\n• Thuộc sự kiện: ${response.visitor.event_name}\n• Hiện tại: ${eventData?.name}\n\n💡 Vui lòng kiểm tra lại QR code hoặc visitor ID.`);
           setIsProcessing(false);
+          
+          // Reset input immediately for security violations
+          setManualInput('');
+          console.log('🔄 Input reset after security violation');
           
           // Strong haptic feedback for security violation
           if ('vibrate' in navigator) {
@@ -410,11 +417,11 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         if ('vibrate' in navigator) {
           navigator.vibrate([100, 50, 100]);
         }
-        
-        // Clear manual input
-        setManualInput('');
       } else {
         setError('❌ Không tìm thấy thông tin visitor.');
+        // Reset input for visitor not found
+        setManualInput('');
+        console.log('🔄 Input reset after visitor not found');
       }
     } catch (error: any) {
       console.error('❌ Check-in error:', error);
@@ -433,6 +440,10 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       }
       
       setError(errorMessage);
+      
+      // Reset input for all other errors
+      setManualInput('');
+      console.log('🔄 Input reset after API error');
       
       if ('vibrate' in navigator) {
         navigator.vibrate([200, 100, 200]);
@@ -515,13 +526,13 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   // Auto-focus input when error occurs for better UX
   useEffect(() => {
     if (error && inputRef.current) {
-      // Delay focus to ensure error message is displayed first
+      // Shorter delay for better UX - user can see error but input is ready quickly
       const focusTimer = setTimeout(() => {
         if (inputRef.current && !isProcessing) {
           inputRef.current.focus();
           console.log('🎯 Auto-focused input after error for immediate retry');
         }
-      }, 1000); // 1 second delay to let user read error message
+      }, 500); // Reduced delay for faster retry
       
       return () => clearTimeout(focusTimer);
     }
