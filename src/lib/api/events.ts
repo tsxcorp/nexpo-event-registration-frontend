@@ -119,6 +119,30 @@ export const eventApi = {
     return { event };
   },
 
+  getAllEvents: async (): Promise<{ events: EventData[] }> => {
+    // Get all events using NEXPO parameter
+    const response = await apiClient.get('/api/events/?eventId=NEXPO');
+    let events = response.data.events || response.data || [];
+    
+    // Ensure events is an array
+    if (!Array.isArray(events)) {
+      events = [];
+    }
+    
+    // Process each event to ensure formFields consistency
+    events = events.map((event: any) => {
+      if (!event.formFields && event.form_fields) {
+        event.formFields = event.form_fields;
+      }
+      if (!Array.isArray(event.formFields)) {
+        event.formFields = [];
+      }
+      return event;
+    });
+    
+    return { events };
+  },
+
   submitRegistration: async (eventId: string, data: Record<string, any>) => {
     const response = await apiClient.post(`/api/events/${eventId}/register`, data);
     return response.data;
