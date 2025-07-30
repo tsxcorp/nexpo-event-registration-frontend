@@ -77,19 +77,7 @@ export default function HomePage() {
     }
   };
 
-  // Check if event is active
-  const isEventActive = (status: any) => {
-    if (typeof status === 'string') {
-      return status.toLowerCase() === 'active';
-    }
-    if (typeof status === 'boolean') {
-      return status === true;
-    }
-    if (typeof status === 'number') {
-      return status === 1;
-    }
-    return false;
-  };
+
 
   const handleRegisterClick = (eventId: string) => {
     router.push(`/register/${eventId}`);
@@ -311,16 +299,7 @@ export default function HomePage() {
                     </div>
                   )}
 
-                  {/* Event Status */}
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      isEventActive(event.status) 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {isEventActive(event.status) ? 'Đang mở đăng ký' : 'Đã đóng'}
-                    </div>
-                  </div>
+
                 </div>
 
                 {/* Register Button */}
@@ -335,15 +314,6 @@ export default function HomePage() {
             ))}
           </div>
         )}
-      </div>
-
-      {/* Footer */}
-      <div className="bg-gray-50 border-t border-gray-200 mt-12">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="text-center text-gray-600">
-            <p>&copy; 2024 NEXPO Event Registration. All rights reserved.</p>
-          </div>
-        </div>
       </div>
 
       {/* Footer with Contact Info */}

@@ -72,19 +72,7 @@ export default function NotFound() {
     }
   };
 
-  // Check if event is active
-  const isEventActive = (status: any) => {
-    if (typeof status === 'string') {
-      return status.toLowerCase() === 'active';
-    }
-    if (typeof status === 'boolean') {
-      return status === true;
-    }
-    if (typeof status === 'number') {
-      return status === 1;
-    }
-    return false;
-  };
+
 
   const handleRegisterClick = (eventId: string) => {
     router.push(`/register/${eventId}`);
@@ -309,16 +297,7 @@ export default function NotFound() {
                       </div>
                     )}
 
-                    {/* Event Status */}
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        isEventActive(event.status) 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {isEventActive(event.status) ? 'Đang mở đăng ký' : 'Đã đóng'}
-                      </div>
-                    </div>
+
                   </div>
 
                   {/* Register Button */}
@@ -334,15 +313,6 @@ export default function NotFound() {
             </div>
           </>
         )}
-      </div>
-
-      {/* Footer */}
-      <div className="bg-gray-50 border-t border-gray-200 mt-12">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="text-center text-gray-600">
-            <p>&copy; 2024 NEXPO Event Registration. All rights reserved.</p>
-          </div>
-        </div>
       </div>
 
       {/* Footer with Contact Info */}
@@ -387,7 +357,7 @@ export default function NotFound() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
-                  TP. Hồ Chí Minh, Việt Nam
+                  Lầu 5 - Toà nhà Ngọc Linh Nhi, 97 Trần Quang Diệu, Phường 14, Quận 3, TP.HCM
                 </div>
               </div>
             </div>
