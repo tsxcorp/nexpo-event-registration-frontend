@@ -638,7 +638,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
   };
 
   // Generate QR Code with Nexpo favicon in center
-  const generateQRCodeWithLogo = async (data: string, size: number = 200): Promise<string> => {
+  const generateQRCodeWithLogo = async (data: string, size: number = 400): Promise<string> => {
     return new Promise((resolve, reject) => {
       try {
         // Import QRCode library dynamically for client-side only
@@ -755,6 +755,59 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
     });
   };
 
+  // New function for Badge QR with orange background, no logo
+  const generateBadgeQRCode = async (data: string, size: number = 400): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      try {
+        // Import QRCode library dynamically for client-side only
+        import('qrcode').then(QRCode => {
+          // Create canvas with padding for background
+          const padding = 20;
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject('Canvas context not available');
+            return;
+          }
+
+          canvas.width = size + padding * 2;
+          canvas.height = size + padding * 2;
+
+          // Fill with orange background
+          ctx.fillStyle = '#ff8c00'; // Orange background
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          // Generate QR code
+          QRCode.toCanvas(canvas, data, {
+            width: size,
+            margin: 0,
+            color: {
+              dark: '#000000',
+              light: '#ffffff'
+            },
+            errorCorrectionLevel: 'M'
+          }, (error: Error | null | undefined) => {
+            if (error) {
+              console.error('Badge QR generation error:', error);
+              reject(error);
+              return;
+            }
+
+            // Convert canvas to data URL
+            const dataURL = canvas.toDataURL('image/png');
+            resolve(dataURL);
+          });
+        }).catch(err => {
+          console.error('QRCode import error:', err);
+          reject(err);
+        });
+      } catch (error) {
+        console.error('Badge QR generation setup error:', error);
+        reject(error);
+      }
+    });
+  };
+
   const generateQRCode = () => {
     if (!visitorData) return '';
     
@@ -771,8 +824,8 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           qrData = visitorId;
         }
       } else if (qrMode === 'redeem') {
-        // Show redeem QR for re-printing card
-        qrData = visitorData.group_id || visitorId;
+        // Show redeem QR for re-printing card - use visitorId instead of group_id
+        qrData = visitorId;
       }
     } else {
       // User hasn't checked in - show personal or group QR for check-in
@@ -1571,7 +1624,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
 
 
 
-  // Generate QR code with loading state and logo
+  // Generate QR code with loading state and logo or badge style
   const generateQRCodeWithLoading = useCallback(async () => {
     setQrCodeLoading(true);
     setQrCodeError(false);
@@ -1580,15 +1633,22 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
     try {
       const qrData = generateQRCode();
       if (qrData) {
-        const qrImageUrl = await generateQRCodeWithLogo(qrData, 320);
+        let qrImageUrl = '';
+        if (hasCheckedIn && qrMode === 'badge') {
+          // Badge QR: cam, không logo
+          qrImageUrl = await generateBadgeQRCode(qrData, 400);
+        } else {
+          // Các mode khác: có logo Nexpo
+          qrImageUrl = await generateQRCodeWithLogo(qrData, 400);
+        }
         setQrCodeImage(qrImageUrl);
       }
     } catch (error) {
-      console.error('Error generating QR code with logo:', error);
+      console.error('Error generating QR code:', error);
       setQrCodeError(true);
       // Fallback to simple QR code without logo
       const qrData = generateQRCode();
-      const fallbackUrl = `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(qrData)}`;
+      const fallbackUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qrData)}`;
       setQrCodeImage(fallbackUrl);
     } finally {
       setQrCodeLoading(false);

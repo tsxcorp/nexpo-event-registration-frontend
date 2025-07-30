@@ -6,6 +6,10 @@ export const apiClient = axios.create({
   baseURL,
   headers: {
     'Content-Type': 'application/json',
+    // Disable cache for development
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
   },
 });
 

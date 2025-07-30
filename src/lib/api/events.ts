@@ -107,7 +107,8 @@ export interface EventData {
 export const eventApi = {
   getEventInfo: async (eventId: string): Promise<{ event: EventData }> => {
     // The backend uses a query parameter for this specific route
-    const response = await apiClient.get(`/api/events/?eventId=${eventId}`);
+    const timestamp = Date.now(); // Cache busting
+    const response = await apiClient.get(`/api/events/?eventId=${eventId}&_t=${timestamp}`);
     let event = response.data.event || response.data;
     // Robust mapping for formFields (camelCase or snake_case)
     if (!event.formFields && event.form_fields) {
@@ -121,7 +122,8 @@ export const eventApi = {
 
   getAllEvents: async (): Promise<{ events: EventData[] }> => {
     // Get all events using NEXPO parameter
-    const response = await apiClient.get('/api/events/?eventId=NEXPO');
+    const timestamp = Date.now(); // Cache busting
+    const response = await apiClient.get(`/api/events/?eventId=NEXPO&_t=${timestamp}`);
     let events = response.data.events || response.data || [];
     
     // Ensure events is an array
