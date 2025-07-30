@@ -400,6 +400,10 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         if (eventData?.badge_printing) {
           setTimeout(() => {
             console.log('🖨️ Auto-printing badge for visitor (badge_printing=true):', response.visitor);
+            
+            // Show printing status to user
+            setSuccess(`✅ Check-in thành công cho ${response.visitor.name}! 🖨️ Đang chuẩn bị in thẻ...`);
+            
             printBadge(response.visitor);
           }, 500);
         } else {
@@ -1019,28 +1023,67 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       testImg.crossOrigin = 'anonymous';
       
       testImg.onload = () => {
-        console.log(`✅ QR source ${currentSourceIndex + 1} loaded successfully`);
-        printWithQRImage(qrUrl);
+        // Additional verification: ensure image is actually loaded
+        if (testImg.complete && testImg.naturalWidth > 0) {
+          console.log(`✅ QR source ${currentSourceIndex + 1} loaded successfully:`, {
+            complete: testImg.complete,
+            naturalWidth: testImg.naturalWidth,
+            naturalHeight: testImg.naturalHeight
+          });
+          printWithQRImage(qrUrl);
+        } else {
+          console.log(`⚠️ QR source ${currentSourceIndex + 1} onload fired but not fully loaded, retrying...`);
+          setTimeout(() => {
+            if (testImg.complete && testImg.naturalWidth > 0) {
+              console.log(`✅ QR source ${currentSourceIndex + 1} verified as loaded`);
+              printWithQRImage(qrUrl);
+            } else {
+              console.log(`❌ QR source ${currentSourceIndex + 1} failed verification`);
+              testImg.onerror = null;
+              testImg.onload = null;
+              currentSourceIndex++;
+              tryNextQRSource();
+            }
+          }, 1000);
+        }
       };
       
       testImg.onerror = () => {
         console.log(`❌ QR source ${currentSourceIndex + 1} failed, trying next...`);
+        testImg.onerror = null;
+        testImg.onload = null;
         currentSourceIndex++;
         setTimeout(tryNextQRSource, 500);
       };
       
       testImg.src = qrUrl;
       
-      // Timeout for this source
-      setTimeout(() => {
-        if (!testImg.complete) {
-          console.log(`⏰ QR source ${currentSourceIndex + 1} timeout`);
-          testImg.onerror = null;
-          testImg.onload = null;
-          currentSourceIndex++;
-          tryNextQRSource();
+      // Enhanced timeout with retry logic
+      let retryCount = 0;
+      const maxRetries = 2;
+      const timeoutDuration = 4000;
+      
+      const timeoutHandler = () => {
+        if (!testImg.complete || testImg.naturalWidth === 0) {
+          retryCount++;
+          console.log(`⏰ QR source ${currentSourceIndex + 1} attempt ${retryCount}/${maxRetries} timeout`);
+          
+          if (retryCount >= maxRetries) {
+            console.log(`❌ QR source ${currentSourceIndex + 1} failed after ${maxRetries} attempts`);
+            testImg.onerror = null;
+            testImg.onload = null;
+            currentSourceIndex++;
+            tryNextQRSource();
+          } else {
+            // Retry with new timestamp
+            console.log(`🔄 Retrying QR source ${currentSourceIndex + 1}...`);
+            testImg.src = qrUrl + '&t=' + Date.now() + '&retry=' + retryCount;
+            setTimeout(timeoutHandler, timeoutDuration);
+          }
         }
-      }, 3000);
+      };
+      
+      setTimeout(timeoutHandler, timeoutDuration);
     };
     
     const printWithQRImage = (qrUrl: string) => {
@@ -1314,6 +1357,9 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     setIsPrinting(true);
     console.log('🖨️ printBadge called with visitor:', visitorData);
     
+    // Update success message to show QR loading status
+    setSuccess(`✅ Check-in thành công! 🖨️ Đang tải QR code để in thẻ...`);
+    
     // Detect mobile device
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     console.log('📱 Device type:', isMobile ? 'Mobile' : 'Desktop');
@@ -1421,6 +1467,27 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         printExecuted = true;
         
         console.log('✅ QR image pre-loaded, starting print...');
+        
+        // Additional verification: ensure QR image is actually loaded
+        if (!qrImg.complete || qrImg.naturalWidth === 0) {
+          console.warn('⚠️ QR image not fully loaded, waiting a bit more...');
+          setTimeout(() => {
+            if (!printExecuted) {
+              handleQRLoad();
+            }
+          }, 500);
+          return;
+        }
+        
+        console.log('✅ QR image verified as fully loaded:', {
+          complete: qrImg.complete,
+          naturalWidth: qrImg.naturalWidth,
+          naturalHeight: qrImg.naturalHeight,
+          src: qrImg.src
+        });
+        
+        // Update success message to show QR is ready
+        setSuccess(`✅ Check-in thành công! 🖨️ QR code đã sẵn sàng, đang mở cửa sổ in...`);
         
         // Create print window with better popup handling
         let printWindow: Window | null = null;
@@ -1582,22 +1649,41 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           handleQRError();
         };
         
-        // Mobile-friendly timeout (longer for slow connections)
-        const timeoutDuration = isMobile ? 10000 : 5000;
-        setTimeout(() => {
-          if (!printExecuted) {
-            console.log(`⏰ QR load timeout after ${timeoutDuration}ms, proceeding with fallback`);
-            handleQRError();
-          }
-        }, timeoutDuration);
+        // Mobile-friendly timeout with progressive retry
+        const timeoutDuration = isMobile ? 15000 : 8000;
+        let retryCount = 0;
+        const maxRetries = 3;
         
-        // Force image loading by setting src again (mobile fix)
-        setTimeout(() => {
-          if (!printExecuted && !qrImg.complete) {
-            console.log('🔄 Force reloading QR image for mobile...');
-            qrImg.src = qrUrl + '&t=' + Date.now(); // Add timestamp to force reload
+        const timeoutHandler = () => {
+          if (!printExecuted) {
+            retryCount++;
+            console.log(`⏰ QR load attempt ${retryCount}/${maxRetries} after ${timeoutDuration}ms`);
+            
+            if (retryCount >= maxRetries) {
+              console.log(`❌ QR load failed after ${maxRetries} attempts, proceeding with fallback`);
+              handleQRError();
+            } else {
+              // Retry with new timestamp
+              console.log('🔄 Retrying QR image load...');
+              qrImg.src = qrUrl + '&t=' + Date.now() + '&retry=' + retryCount;
+              
+              // Set timeout for next retry
+              setTimeout(timeoutHandler, timeoutDuration);
+            }
           }
-        }, 2000);
+        };
+        
+        setTimeout(timeoutHandler, timeoutDuration);
+        
+        // Progressive loading check
+        const checkProgress = () => {
+          if (!printExecuted && !qrImg.complete) {
+            console.log('⏳ QR image still loading, checking progress...');
+            setTimeout(checkProgress, 1000);
+          }
+        };
+        
+        setTimeout(checkProgress, 2000);
       }
     } catch (error) {
       console.error('❌ Error in printBadge:', error);
