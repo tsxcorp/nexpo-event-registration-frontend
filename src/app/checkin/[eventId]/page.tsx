@@ -9,6 +9,7 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { EventData, eventApi } from '@/lib/api/events';
 import { VisitorData, visitorApi } from '@/lib/api/visitors';
 import { useEventMetadata } from '@/hooks/useEventMetadata';
+import { useGoogleAnalytics } from '@/hooks/useGoogleAnalytics';
 import { Html5Qrcode } from 'html5-qrcode';
 
 interface CheckinPageProps {
@@ -49,6 +50,8 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     event: eventData, 
     currentLanguage: 'vi' 
   });
+
+  const { trackCheckin, trackQRScan, trackBadgePrint } = useGoogleAnalytics();
 
   // Modern Icon Component
   const Icon = ({ name, className = "w-5 h-5", fill = "none", ...props }: { name: string; className?: string; fill?: string }) => {
@@ -208,6 +211,9 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         config,
         (decodedText) => {
           console.log('🔍 Camera QR Code detected:', decodedText);
+          
+          // Track camera QR scan
+          trackQRScan('camera');
           
           // Prevent duplicate scans in cooldown period
           if (scanCooldown) {
@@ -397,6 +403,9 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         setVisitor(response.visitor);
         setSuccess(`✅ Check-in thành công cho ${response.visitor.name}!`);
         
+        // Track successful checkin
+        trackCheckin(eventId, eventData?.name || 'Unknown Event', response.visitor.id);
+        
         // Auto-print badge only if backend allows AND user has toggle enabled
         if (eventData?.badge_printing && autoPrintEnabled) {
           setTimeout(() => {
@@ -405,6 +414,8 @@ export default function CheckinPage({ params }: CheckinPageProps) {
             // Show printing status to user
             setSuccess(`✅ Check-in thành công cho ${response.visitor.name}! 🖨️ Đang chuẩn bị in thẻ...`);
             
+            // Track badge printing
+            trackBadgePrint(eventId, eventData?.name || 'Unknown Event');
             printBadge(response.visitor);
           }, 500);
         } else if (eventData?.badge_printing && !autoPrintEnabled) {
@@ -482,9 +493,11 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       if (isLikelyBarcodeScanner) {
         console.log('📟 Detected barcode scanner input');
         setSuccess('📟 Barcode scanner QR được quét thành công!');
+        trackQRScan('barcode');
       } else {
         console.log('⌨️ Detected manual typing input');
         setSuccess('⌨️ Manual input được xử lý thành công!');
+        trackQRScan('manual');
       }
       
       processCheckin(manualInput.trim());
