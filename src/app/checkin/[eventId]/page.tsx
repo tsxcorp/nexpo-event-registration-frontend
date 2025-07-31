@@ -43,6 +43,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   const [scanCooldown, setScanCooldown] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
   const [continuousMode, setContinuousMode] = useState(false);
+  const [autoPrintEnabled, setAutoPrintEnabled] = useState(true); // User-controlled auto-print toggle (only shown when backend allows printing)
 
   const { generateShareUrls } = useEventMetadata({ 
     event: eventData, 
@@ -396,18 +397,21 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         setVisitor(response.visitor);
         setSuccess(`✅ Check-in thành công cho ${response.visitor.name}!`);
         
-        // Auto-print badge only if badge_printing is enabled
-        if (eventData?.badge_printing) {
+        // Auto-print badge only if backend allows AND user has toggle enabled
+        if (eventData?.badge_printing && autoPrintEnabled) {
           setTimeout(() => {
-            console.log('🖨️ Auto-printing badge for visitor (badge_printing=true):', response.visitor);
+            console.log('🖨️ Auto-printing badge for visitor (backend=true, user-toggle=true):', response.visitor);
             
             // Show printing status to user
             setSuccess(`✅ Check-in thành công cho ${response.visitor.name}! 🖨️ Đang chuẩn bị in thẻ...`);
             
             printBadge(response.visitor);
           }, 500);
+        } else if (eventData?.badge_printing && !autoPrintEnabled) {
+          console.log('🚫 Badge printing disabled by user toggle (backend=true, user-toggle=false)');
+          setSuccess(`✅ Check-in thành công cho ${response.visitor.name}! (Auto-print đã tắt)`);
         } else {
-          console.log('🚫 Badge printing disabled (badge_printing=false)');
+          console.log('🚫 Badge printing disabled by backend (badge_printing=false)');
         }
         
         // Show success screen
@@ -1837,24 +1841,48 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                     {eventData.badge_printing ? (
                       <div className="flex items-center gap-1 text-xs text-green-300">
                         <Icon name="PrinterIcon" className="w-3 h-3" />
-                        <span>Event này sẽ tự động in thẻ đeo</span>
+                        <span>Event này hỗ trợ in thẻ đeo</span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-1 text-xs text-orange-300">
                         <Icon name="ExclamationTriangleIcon" className="w-3 h-3" />
-                        <span>Event này không tự động in thẻ đeo</span>
+                        <span>Event này không hỗ trợ in thẻ đeo</span>
                       </div>
                     )}
                   </div>
                 </div>
               </div>
-              <Button
-                onClick={() => router.push(`/insight/${eventId}`)}
-                variant="outline"
-                className="text-white border-white/20 hover:bg-white/10"
-              >
-                Dashboard
-              </Button>
+              <div className="flex items-center gap-3">
+                {/* Auto-Print Toggle - Only show when backend allows printing */}
+                {eventData.badge_printing && (
+                  <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <Icon name="PrinterIcon" className="w-4 h-4 text-white" />
+                      <span className="text-xs text-white font-medium">Auto-print</span>
+                    </div>
+                    <button
+                      onClick={() => setAutoPrintEnabled(!autoPrintEnabled)}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                        autoPrintEnabled ? 'bg-green-500' : 'bg-gray-400'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                          autoPrintEnabled ? 'translate-x-5' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                )}
+                
+                <Button
+                  onClick={() => router.push(`/insight/${eventId}`)}
+                  variant="outline"
+                  className="text-white border-white/20 hover:bg-white/10"
+                >
+                  Dashboard
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -1877,6 +1905,22 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                     : "Nhập Visitor ID hoặc quét QR code để check-in"
                   }
                 </p>
+                
+                {/* Auto-Print Status */}
+                {eventData?.badge_printing && (
+                  <div className="mt-2 flex items-center justify-center gap-2">
+                    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                      autoPrintEnabled 
+                        ? 'bg-green-100 text-green-700 border border-green-200' 
+                        : 'bg-blue-100 text-blue-700 border border-blue-200'
+                    }`}>
+                      <Icon name="PrinterIcon" className="w-3 h-3" />
+                      <span>
+                        {autoPrintEnabled ? 'Auto-print: Bật' : 'Auto-print: Tắt'}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 
                 {/* Hybrid Mode Indicator */}
@@ -2196,10 +2240,17 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                   <span>✓ Check-in thành công</span>
                 </div>
                 
-                {eventData?.badge_printing && (
+                {eventData?.badge_printing && autoPrintEnabled && (
                   <div className="flex items-center justify-center gap-2 text-sm text-emerald-700">
                     <Icon name="PrinterIcon" className="w-4 h-4" />
                     <span>✓ Thẻ đeo đã được in tự động</span>
+                  </div>
+                )}
+                
+                {eventData?.badge_printing && !autoPrintEnabled && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-blue-700">
+                    <Icon name="PrinterIcon" className="w-4 h-4" />
+                    <span>ℹ️ Auto-print đã tắt (chỉ check-in)</span>
                   </div>
                 )}
               </div>
