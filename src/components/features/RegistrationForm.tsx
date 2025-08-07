@@ -358,6 +358,18 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
       const zohoRecordId = result.zoho_record_id;
 
       if (response.ok && zohoRecordId) {
+        // Combine backend response with frontend group members data
+        const frontendGroupMembers = data.group_members || [];
+        const backendGroupMembers = result.group_members || [];
+        
+        // Merge frontend data (full info) with backend data (IDs)
+        const enrichedGroupMembers = frontendGroupMembers.map((frontendMember, index) => ({
+          ...frontendMember, // Full member info from frontend
+          id: backendGroupMembers[index]?.id || null, // Zoho ID from backend
+          index: backendGroupMembers[index]?.index || index + 2,
+          status: backendGroupMembers[index]?.status || "submitted"
+        }));
+
         const registrationData = {
           Salutation: coreData.Salutation,
           Full_Name: coreData.Full_Name,
@@ -366,7 +378,7 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
           ...customData, // Keep original labels for Thank You page display
           zoho_record_id: zohoRecordId,
           group_id: result.group_id,
-          group_members: result.group_members || [],
+          group_members: enrichedGroupMembers, // Use enriched data instead
           Event_Info: eventId
         };
         

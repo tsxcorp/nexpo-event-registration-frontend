@@ -227,6 +227,14 @@ export default function ImportExcelPage() {
           });
           setRowResults(initialResults);
           setPreviewData(normalizedData);
+          
+          // Auto scroll to first error after a short delay
+          setTimeout(() => {
+            const firstErrorRow = document.querySelector('tr.bg-red-50');
+            if (firstErrorRow) {
+              firstErrorRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 500);
         }
       } catch (error) {
         setGeneralError("File không hợp lệ hoặc không đúng định dạng.");
@@ -600,6 +608,28 @@ export default function ImportExcelPage() {
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     if (fileInput) {
       fileInput.value = '';
+    }
+  };
+
+  const scrollToNextError = () => {
+    const errorRows = document.querySelectorAll('tr.bg-red-50');
+    const currentScroll = window.scrollY;
+    let nextErrorRow = null;
+    
+    for (let i = 0; i < errorRows.length; i++) {
+      const row = errorRows[i];
+      const rect = row.getBoundingClientRect();
+      if (rect.top > 100) { // 100px from top
+        nextErrorRow = row;
+        break;
+      }
+    }
+    
+    if (nextErrorRow) {
+      nextErrorRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (errorRows.length > 0) {
+      // If no next error found, scroll to first error
+      errorRows[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
 
@@ -994,6 +1024,52 @@ export default function ImportExcelPage() {
                         </div>
                       </div>
                     </div>
+                    
+                    {/* Error Summary */}
+                    {validationSummary.invalid > 0 && (
+                      <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="mb-3 p-2 bg-red-100 rounded text-xs text-red-800">
+                          💡 <strong>Hướng dẫn sửa lỗi:</strong> 
+                          <ul className="mt-1 ml-4 list-disc">
+                            <li>Click vào ô có lỗi để chỉnh sửa trực tiếp</li>
+                            <li>Sử dụng nút "Lỗi tiếp theo" để di chuyển giữa các lỗi</li>
+                            <li>Sau khi sửa, lỗi sẽ tự động biến mất khi hợp lệ</li>
+                          </ul>
+                        </div>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-sm font-semibold text-red-800">
+                            🚨 Tổng hợp lỗi ({validationSummary.invalid} dòng)
+                          </h3>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-red-600">
+                              Click vào từng dòng để xem chi tiết và sửa lỗi
+                            </span>
+                            <button
+                              onClick={scrollToNextError}
+                              className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                            >
+                              🔍 Lỗi tiếp theo
+                            </button>
+                          </div>
+                        </div>
+                        <div className="max-h-32 overflow-y-auto">
+                          {Object.entries(rowResults)
+                            .filter(([_, result]) => result?.status === 'invalid')
+                            .slice(0, 10) // Chỉ hiển thị 10 lỗi đầu tiên
+                            .map(([index, result]) => (
+                              <div key={index} className="text-xs text-red-700 mb-1 flex items-start">
+                                <span className="font-medium mr-2">Dòng {Number(index) + 1}:</span>
+                                <span className="flex-1">{result?.message}</span>
+                              </div>
+                            ))}
+                          {validationSummary.invalid > 10 && (
+                            <div className="text-xs text-red-600 mt-1">
+                              ... và {validationSummary.invalid - 10} lỗi khác. Vui lòng xem bảng dưới để sửa tất cả lỗi.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1159,9 +1235,14 @@ export default function ImportExcelPage() {
                                     {statusConfig[result?.status || 'unvalidated'].text}
                                   </span>
                                   {(result?.status === 'invalid' || result?.status === 'error') && (
-                              <p className="text-red-600 text-xs mt-1 truncate" title={result.message}>
-                                {result.message}
-                              </p>
+                              <div className="mt-1">
+                                <p className="text-red-600 text-xs break-words" title={result.message}>
+                                  {result.message}
+                                </p>
+                                <p className="text-red-500 text-xs mt-1">
+                                  💡 Click vào ô để sửa lỗi
+                                </p>
+                              </div>
                             )}
                             {result?.status === 'success' && (
                               <p className="text-green-600 text-xs mt-1">✅</p>
