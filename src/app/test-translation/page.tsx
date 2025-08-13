@@ -13,6 +13,9 @@ export default function TestTranslationPage() {
   const [htmlContent, setHtmlContent] = useState(`<p>1. Mục đích thu thập thông tin bao gồm:</p><p>Đăng kí trước, hoàn thành hợp đồng</p>`);
   const [translatedHtml, setTranslatedHtml] = useState('');
 
+  // Test translation object
+  const [translationObjectResult, setTranslationObjectResult] = useState('');
+
   const handleTranslate = async () => {
     setIsLoading(true);
     try {
@@ -34,6 +37,15 @@ export default function TestTranslationPage() {
         id: 'test',
         name: 'Test Event',
         description: 'Test Description',
+        start_date: '2024-01-01',
+        end_date: '2024-01-02',
+        location: 'Test Location',
+        banner: '',
+        logo: '',
+        favicon: '',
+        header: '',
+        footer: '',
+        email: '',
         formFields: [{
           type: 'Agreement' as const,
           content: htmlContent,
@@ -50,7 +62,12 @@ export default function TestTranslationPage() {
           section_condition: '',
           matching_field: false,
           values: []
-        }]
+        }],
+        registration_form: [],
+        status: 'active',
+        created_date: '2024-01-01',
+        badge_size: 'standard',
+        badge_printing: false
       };
       
       console.log('🚀 Starting HTML translation test...');
@@ -65,6 +82,168 @@ export default function TestTranslationPage() {
     } catch (error) {
       console.error('HTML Translation failed:', error);
       setTranslatedHtml('HTML Translation failed: ' + (error instanceof Error ? error.message : String(error)));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Test translation object logic
+  const handleTestTranslationObject = async () => {
+    setIsLoading(true);
+    try {
+      console.log('🧪 Testing translation object logic...');
+      
+      // Create mock event data with translation objects
+      const mockEventData = {
+        id: 'test',
+        name: 'Test Event',
+        description: 'Test Description',
+        start_date: '2024-01-01',
+        end_date: '2024-01-02',
+        location: 'Test Location',
+        banner: '',
+        logo: '',
+        favicon: '',
+        header: '',
+        footer: '',
+        email: '',
+        formFields: [
+          {
+            field_id: 'aw2025_policy',
+            sort: 1,
+            label: 'CHÍNH SÁCH BẢO MẬT EN',
+            type: 'Agreement',
+            placeholder: '',
+            values: [''],
+            required: true,
+            helptext: '',
+            field_condition: '',
+            section_name: 'CHÍNH SÁCH & ĐIỀU KHOẢN',
+            section_sort: 0,
+            section_condition: '',
+            title: '',
+            content: '<div><b>1. Mục đích thu thập thông tin bao gồm:</b> Đăng kí trước, hoàn thành hợp đồng...</div>',
+            checkbox_label: 'Tôi đã đọc và đồng ý với chính sách bảo mật (bắt buộc) EN',
+            link_text: '',
+            link_url: '',
+            groupmember: false,
+            matching_field: false,
+            translation: {
+              en_sectionname: 'PRIVACY POLICY & TERMS',
+              en_label: 'PRIVACY POLICY',
+              en_value: '',
+              en_placeholder: '',
+              en_helptext: '',
+              en_agreementcontent: '<div><b>1. Purpose of information collection includes:</b> Pre-registration, contract completion...</div>',
+              en_agreementtitle: '',
+              en_checkboxlabel: 'I have read and agree to the privacy policy (required)',
+              en_linktext: ''
+            }
+          },
+          {
+            field_id: 'aw2025_company_name',
+            sort: 4,
+            label: ' Tên Công Ty',
+            type: 'Text',
+            placeholder: '',
+            values: [''],
+            required: true,
+            helptext: '',
+            field_condition: '',
+            section_name: 'THÔNG TIN CÔNG TY',
+            section_sort: 2,
+            section_condition: '',
+            title: '',
+            content: '',
+            checkbox_label: '',
+            link_text: '',
+            link_url: '',
+            groupmember: false,
+            matching_field: false,
+            translation: {
+              en_sectionname: 'COMPANY INFORMATION',
+              en_label: 'Company Name',
+              en_value: '',
+              en_placeholder: '',
+              en_helptext: '',
+              en_agreementcontent: '',
+              en_agreementtitle: '',
+              en_checkboxlabel: '',
+              en_linktext: ''
+            }
+          },
+          {
+            field_id: 'aw2025_company_type',
+            sort: 0,
+            label: 'Loại hình doanh nghiệp',
+            type: 'Select',
+            placeholder: '',
+            values: ['Xuất Khẩu Nhập Khẩu ', 'Sản Xuất', ' Phân Phối', ' Dịch Vụ', ' Khác'],
+            required: true,
+            helptext: '',
+            field_condition: 'show if {aw2025_purpose} = "Kết nối giao thương"',
+            section_name: 'THÔNG TIN CÔNG TY',
+            section_sort: 2,
+            section_condition: '',
+            title: '',
+            content: '',
+            checkbox_label: '',
+            link_text: '',
+            link_url: '',
+            groupmember: false,
+            matching_field: false,
+            translation: {
+              en_sectionname: 'COMPANY INFORMATION',
+              en_label: 'Business Type',
+              en_value: 'Import Export,Manufacturing,Distribution,Services,Other',
+              en_placeholder: '',
+              en_helptext: '',
+              en_agreementcontent: '',
+              en_agreementtitle: '',
+              en_checkboxlabel: '',
+              en_linktext: ''
+            }
+          }
+        ],
+        registration_form: [],
+        status: 'active',
+        created_date: '2024-01-01',
+        badge_size: 'standard',
+        badge_printing: false
+      };
+      
+      console.log('🚀 Starting translation object test...');
+      console.log('📋 Mock event data with translation objects:', mockEventData);
+      
+      const translatedEvent = await translationService.translateEventData(mockEventData, 'en');
+      
+      console.log('🎯 Translation result:', translatedEvent);
+      
+      // Format the results for display
+      const results = translatedEvent.formFields?.map((field, index) => {
+        return `
+          <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+            <h4>Field ${index + 1}: ${field.field_id}</h4>
+            <p><strong>Original Label:</strong> ${mockEventData.formFields[index].label}</p>
+            <p><strong>Translated Label:</strong> ${field.label}</p>
+            <p><strong>Original Section:</strong> ${mockEventData.formFields[index].section_name}</p>
+            <p><strong>Translated Section:</strong> ${field.section_name}</p>
+            ${field.type === 'Agreement' ? `<p><strong>Original Checkbox:</strong> ${mockEventData.formFields[index].checkbox_label}</p>
+            <p><strong>Translated Checkbox:</strong> ${field.checkbox_label}</p>` : ''}
+            ${field.type === 'Select' ? `<p><strong>Original Values:</strong> ${JSON.stringify(mockEventData.formFields[index].values)}</p>
+            <p><strong>Translated Values:</strong> ${JSON.stringify(field.values)}</p>` : ''}
+          </div>
+        `;
+      }).join('');
+      
+      setTranslationObjectResult(`
+        <h3>Translation Object Test Results:</h3>
+        ${results}
+      `);
+      
+    } catch (error) {
+      console.error('Translation object test failed:', error);
+      setTranslationObjectResult('Translation object test failed: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setIsLoading(false);
     }
@@ -142,6 +321,34 @@ export default function TestTranslationPage() {
               </label>
               <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 min-h-[40px]">
                 {translatedText || 'Translation will appear here...'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Translation Object Test */}
+        <div className="border-b pb-6">
+          <h2 className="text-lg font-semibold mb-4">Translation Object Test</h2>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              This test verifies that fields with translation objects use the pre-defined translations instead of Google Translate.
+            </p>
+            
+            <button
+              onClick={handleTestTranslationObject}
+              disabled={isLoading}
+              className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 disabled:opacity-50 flex items-center space-x-2"
+            >
+              {isLoading && <LoadingSpinner size="sm" />}
+              <span>{isLoading ? 'Testing...' : 'Test Translation Object Logic'}</span>
+            </button>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Translation Object Results
+              </label>
+              <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 min-h-[200px]">
+                <div dangerouslySetInnerHTML={{ __html: translationObjectResult || 'Translation object test results will appear here...' }} />
               </div>
             </div>
           </div>

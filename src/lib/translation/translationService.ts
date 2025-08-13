@@ -560,72 +560,7 @@ class TranslationService {
       translatedEvent.formFields = await Promise.all(
         eventData.formFields.map(async (field, index) => {
           console.log(`📋 Translating field ${index + 1}/${eventData.formFields!.length}:`, field.label);
-          const translatedField = { ...field };
-
-          // Translate field label
-          if (field.label) {
-            translatedField.label = await this.translate(field.label, targetLang);
-          }
-
-          // Translate help text
-          if (field.helptext) {
-            translatedField.helptext = await this.translate(field.helptext, targetLang);
-          }
-
-          // Translate placeholder
-          if (field.placeholder) {
-            translatedField.placeholder = await this.translate(field.placeholder, targetLang);
-          }
-
-          // Translate section name
-          if (field.section_name) {
-            translatedField.section_name = await this.translate(field.section_name, targetLang);
-          }
-
-          // Translate checkbox label for Agreement fields
-          if (field.type === 'Agreement' && field.checkbox_label) {
-            translatedField.checkbox_label = await this.translate(field.checkbox_label, targetLang);
-          }
-
-          // Translate content for Agreement fields
-          if (field.type === 'Agreement' && field.content) {
-            console.log('🔄 Translating Agreement content:', { 
-              fieldType: field.type, 
-              hasContent: !!field.content,
-              contentPreview: field.content?.substring(0, 100) 
-            });
-            translatedField.content = await this.translateHtmlContent(field.content, targetLang);
-            console.log('✅ Agreement content translated:', translatedField.content?.substring(0, 100));
-          } else if (field.type === 'Agreement') {
-            console.log('⚠️ Agreement field has no content:', { fieldType: field.type, hasContent: !!field.content });
-          }
-
-          // Translate select values - only translate labels, keep values unchanged
-          if (field.values && field.values.length > 0) {
-            console.log(`📋 Translating ${field.values.length} values for field:`, field.label);
-            
-            // Check if values are already in {value, label} format
-            if (typeof field.values[0] === 'object' && 'value' in field.values[0] && 'label' in field.values[0]) {
-              // Already in correct format, only translate labels
-              const translatedOptions = await Promise.all(
-                field.values.map(async (option: any) => ({
-                  value: option.value, // Keep original value
-                  label: await this.translate(option.label, targetLang) // Translate label
-                }))
-              );
-              translatedField.values = translatedOptions;
-            } else {
-              // Convert string array to {value, label} format and translate labels
-              const translatedOptions = await Promise.all(
-                (field.values as string[]).map(async (value: string) => ({
-                  value: value, // Keep original value
-                  label: await this.translate(value, targetLang) // Translate label
-                }))
-              );
-              translatedField.values = translatedOptions;
-            }
-          }
-
+          const translatedField = await this.translateFormField(field, targetLang);
           console.log(`✅ Field ${index + 1} translated:`, translatedField.label);
           return translatedField;
         })
@@ -737,6 +672,234 @@ class TranslationService {
     
     console.log('⚠️ Returning original HTML');
     return html;
+  }
+
+  // Translate form field using translation object if available
+  private async translateFormField(field: FormField, targetLang: string): Promise<FormField> {
+    console.log(`📋 Translating field: ${field.label} (${field.type})`);
+    
+    const translatedField = { ...field };
+    
+    // Check if field has translation object
+    if (field.translation) {
+      console.log('🔍 Field has translation object, checking for existing translations...');
+      
+      // Map target language to translation object keys
+      const translationKeyMap: { [key: string]: string } = {
+        'en': 'en_',
+        'zh': 'zh_',
+        'ja': 'ja_',
+        'ko': 'ko_'
+      };
+      
+      const prefix = translationKeyMap[targetLang];
+      if (prefix) {
+        // Translate label
+        const labelKey = `${prefix}label` as keyof typeof field.translation;
+        if (field.translation[labelKey]) {
+          translatedField.label = field.translation[labelKey] as string;
+          console.log(`✅ Using existing translation for label: ${translatedField.label}`);
+        } else {
+          console.log('🔄 No existing translation for label, using Google Translate');
+          translatedField.label = await this.translate(field.label, targetLang);
+        }
+        
+        // Translate help text
+        const helptextKey = `${prefix}helptext` as keyof typeof field.translation;
+        if (field.translation[helptextKey]) {
+          translatedField.helptext = field.translation[helptextKey] as string;
+          console.log(`✅ Using existing translation for helptext: ${translatedField.helptext}`);
+        } else if (field.helptext) {
+          console.log('🔄 No existing translation for helptext, using Google Translate');
+          translatedField.helptext = await this.translate(field.helptext, targetLang);
+        }
+        
+        // Translate placeholder
+        const placeholderKey = `${prefix}placeholder` as keyof typeof field.translation;
+        if (field.translation[placeholderKey]) {
+          translatedField.placeholder = field.translation[placeholderKey] as string;
+          console.log(`✅ Using existing translation for placeholder: ${translatedField.placeholder}`);
+        } else if (field.placeholder) {
+          console.log('🔄 No existing translation for placeholder, using Google Translate');
+          translatedField.placeholder = await this.translate(field.placeholder, targetLang);
+        }
+        
+        // Translate section name
+        const sectionnameKey = `${prefix}sectionname` as keyof typeof field.translation;
+        if (field.translation[sectionnameKey]) {
+          translatedField.section_name = field.translation[sectionnameKey] as string;
+          console.log(`✅ Using existing translation for section_name: ${translatedField.section_name}`);
+        } else if (field.section_name) {
+          console.log('🔄 No existing translation for section_name, using Google Translate');
+          translatedField.section_name = await this.translate(field.section_name, targetLang);
+        }
+        
+        // Handle Agreement fields
+        if (field.type === 'Agreement') {
+          // Translate checkbox label
+          const checkboxlabelKey = `${prefix}checkboxlabel` as keyof typeof field.translation;
+          if (field.translation[checkboxlabelKey]) {
+            translatedField.checkbox_label = field.translation[checkboxlabelKey] as string;
+            console.log(`✅ Using existing translation for checkbox_label: ${translatedField.checkbox_label}`);
+          } else if (field.checkbox_label) {
+            console.log('🔄 No existing translation for checkbox_label, using Google Translate');
+            translatedField.checkbox_label = await this.translate(field.checkbox_label, targetLang);
+          }
+          
+          // Translate agreement content
+          const agreementcontentKey = `${prefix}agreementcontent` as keyof typeof field.translation;
+          if (field.translation[agreementcontentKey]) {
+            translatedField.content = field.translation[agreementcontentKey] as string;
+            console.log(`✅ Using existing translation for agreement content`);
+          } else if (field.content) {
+            console.log('🔄 No existing translation for agreement content, using Google Translate');
+            translatedField.content = await this.translateHtmlContent(field.content, targetLang);
+          }
+          
+          // Translate agreement title
+          const agreementtitleKey = `${prefix}agreementtitle` as keyof typeof field.translation;
+          if (field.translation[agreementtitleKey]) {
+            translatedField.title = field.translation[agreementtitleKey] as string;
+            console.log(`✅ Using existing translation for agreement title: ${translatedField.title}`);
+          } else if (field.title) {
+            console.log('🔄 No existing translation for agreement title, using Google Translate');
+            translatedField.title = await this.translate(field.title, targetLang);
+          }
+        }
+        
+        // Handle Select and Multi Select values
+        if ((field.type === 'Select' || field.type === 'Multi Select') && field.values && field.values.length > 0) {
+          const valueKey = `${prefix}value` as keyof typeof field.translation;
+          if (field.translation[valueKey]) {
+            // Parse comma-separated values from translation
+            const translatedValues = (field.translation[valueKey] as string).split(',').map((v: string) => v.trim());
+            console.log(`✅ Using existing translation for values: ${translatedValues.join(', ')}`);
+            
+            // Convert to {value, label} format if needed
+            if (typeof field.values[0] === 'object' && 'value' in field.values[0] && 'label' in field.values[0]) {
+              // Already in correct format, update labels
+              translatedField.values = field.values.map((option: any, index: number) => ({
+                value: option.value,
+                label: translatedValues[index] || option.label
+              }));
+            } else {
+              // Convert string array to {value, label} format
+              translatedField.values = (field.values as string[]).map((value: string, index: number) => ({
+                value: value,
+                label: translatedValues[index] || value
+              }));
+            }
+          } else {
+            console.log('🔄 No existing translation for values, using Google Translate');
+            // Use existing logic for Google Translate
+            if (typeof field.values[0] === 'object' && 'value' in field.values[0] && 'label' in field.values[0]) {
+              const translatedOptions = await Promise.all(
+                field.values.map(async (option: any) => ({
+                  value: option.value,
+                  label: await this.translate(option.label, targetLang)
+                }))
+              );
+              translatedField.values = translatedOptions;
+            } else {
+              const translatedOptions = await Promise.all(
+                (field.values as string[]).map(async (value: string) => ({
+                  value: value,
+                  label: await this.translate(value, targetLang)
+                }))
+              );
+              translatedField.values = translatedOptions;
+            }
+          }
+        }
+        
+        // Handle link text for fields with links
+        if (field.link_text) {
+          const linktextKey = `${prefix}linktext` as keyof typeof field.translation;
+          if (field.translation[linktextKey]) {
+            translatedField.link_text = field.translation[linktextKey] as string;
+            console.log(`✅ Using existing translation for link_text: ${translatedField.link_text}`);
+          } else {
+            console.log('🔄 No existing translation for link_text, using Google Translate');
+            translatedField.link_text = await this.translate(field.link_text, targetLang);
+          }
+        }
+        
+      } else {
+        console.log(`⚠️ No translation mapping for language: ${targetLang}, using Google Translate`);
+        // Fallback to original translation logic
+        return await this.translateFieldWithGoogle(field, targetLang);
+      }
+    } else {
+      console.log('🔄 No translation object found, using Google Translate');
+      // Fallback to original translation logic
+      return await this.translateFieldWithGoogle(field, targetLang);
+    }
+    
+    console.log(`✅ Field translation completed: ${translatedField.label}`);
+    return translatedField;
+  }
+
+  // Original field translation logic (renamed for clarity)
+  private async translateFieldWithGoogle(field: FormField, targetLang: string): Promise<FormField> {
+    console.log(`📋 Translating field with Google: ${field.label}`);
+    
+    const translatedField = { ...field };
+
+    // Translate field label
+    if (field.label) {
+      translatedField.label = await this.translate(field.label, targetLang);
+    }
+
+    // Translate help text
+    if (field.helptext) {
+      translatedField.helptext = await this.translate(field.helptext, targetLang);
+    }
+
+    // Translate placeholder
+    if (field.placeholder) {
+      translatedField.placeholder = await this.translate(field.placeholder, targetLang);
+    }
+
+    // Translate section name
+    if (field.section_name) {
+      translatedField.section_name = await this.translate(field.section_name, targetLang);
+    }
+
+    // Translate checkbox label for Agreement fields
+    if (field.type === 'Agreement' && field.checkbox_label) {
+      translatedField.checkbox_label = await this.translate(field.checkbox_label, targetLang);
+    }
+
+    // Translate content for Agreement fields
+    if (field.type === 'Agreement' && field.content) {
+      console.log('🔄 Translating Agreement content with Google Translate');
+      translatedField.content = await this.translateHtmlContent(field.content, targetLang);
+    }
+
+    // Translate select values
+    if (field.values && field.values.length > 0) {
+      console.log(`📋 Translating ${field.values.length} values with Google Translate`);
+      
+      if (typeof field.values[0] === 'object' && 'value' in field.values[0] && 'label' in field.values[0]) {
+        const translatedOptions = await Promise.all(
+          field.values.map(async (option: any) => ({
+            value: option.value,
+            label: await this.translate(option.label, targetLang)
+          }))
+        );
+        translatedField.values = translatedOptions;
+      } else {
+        const translatedOptions = await Promise.all(
+          (field.values as string[]).map(async (value: string) => ({
+            value: value,
+            label: await this.translate(value, targetLang)
+          }))
+        );
+        translatedField.values = translatedOptions;
+      }
+    }
+
+    return translatedField;
   }
 
   // Get translation suggestions for improvement

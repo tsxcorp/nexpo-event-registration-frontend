@@ -52,7 +52,16 @@ const EventInfo: FC<EventInfoProps> = ({
     location: currentLanguage === 'en' ? 'Ho Chi Minh City Convention Center' : 'Trung Tâm Hội Nghị TP.HCM',
     banner: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&h=600&fit=crop',
     logo: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=200&h=200&fit=crop',
-    formFields: []
+    favicon: '',
+    header: '',
+    footer: '',
+    email: '',
+    formFields: [],
+    registration_form: [],
+    status: 'active',
+    created_date: new Date().toISOString(),
+    badge_size: 'standard',
+    badge_printing: false
   };
 
   // Use dummy data if event is invalid or missing
