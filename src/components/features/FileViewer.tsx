@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { i18n } from '@/lib/translation/i18n';
 
 // Dynamically import react-pdf to avoid SSR issues
 const DynamicDocument = dynamic(
@@ -31,9 +32,10 @@ interface FileViewerProps {
   fileUrl?: string;
   fileType?: 'pdf' | 'image' | 'unknown';
   onClose: () => void;
+  currentLanguage?: 'vi' | 'en';
 }
 
-export default function FileViewer({ title, fileUrl, fileType = 'unknown', onClose }: FileViewerProps) {
+export default function FileViewer({ title, fileUrl, fileType = 'unknown', onClose, currentLanguage = 'vi' }: FileViewerProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [numPages, setNumPages] = useState<number | null>(null);
@@ -263,7 +265,7 @@ export default function FileViewer({ title, fileUrl, fileType = 'unknown', onClo
             </svg>
           </div>
           <p className="text-gray-600">Tài liệu chưa có sẵn</p>
-          <p className="text-sm text-gray-500 mt-2">Vui lòng liên hệ ban tổ chức để biết thêm chi tiết</p>
+                      <p className="text-sm text-gray-500 mt-2">{i18n[currentLanguage]?.please_contact_organizers_for_details || "Vui lòng liên hệ ban tổ chức để biết thêm chi tiết"}</p>
         </div>
       );
     }
@@ -276,8 +278,8 @@ export default function FileViewer({ title, fileUrl, fileType = 'unknown', onClo
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <p className="text-red-600">Không thể tải tài liệu</p>
-          <p className="text-sm text-gray-500 mt-2">Tài liệu có thể cần được download</p>
+          <p className="text-red-600">{i18n[currentLanguage]?.unable_to_load_document || "Không thể tải tài liệu"}</p>
+                      <p className="text-sm text-gray-500 mt-2">{i18n[currentLanguage]?.document_may_need_to_be_downloaded || "Tài liệu có thể cần được download"}</p>
           <div className="space-y-2 mt-4">
             <Button 
               onClick={() => window.open(fileUrl, '_blank')}

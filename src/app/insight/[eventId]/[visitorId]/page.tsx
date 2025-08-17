@@ -465,7 +465,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
 
     } catch (err: any) {
       console.error('💥 Error loading data:', err);
-      setError('Không thể tải dữ liệu. Vui lòng thử lại.');
+              setError(i18n[currentLanguage]?.['Không thể tải dữ liệu. Vui lòng thử lại.'] || 'Không thể tải dữ liệu. Vui lòng thử lại.');
     } finally {
       setLoading(false);
       setIsLoadingData(false);
@@ -1296,7 +1296,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       
     } catch (error) {
       console.error('Error creating PDF:', error);
-      showToast('❌ Có lỗi khi tạo PDF. Vui lòng thử lại.', 'error');
+              showToast(`❌ ${i18n[currentLanguage]?.['Có lỗi khi tạo PDF. Vui lòng thử lại.'] || 'Có lỗi khi tạo PDF. Vui lòng thử lại.'}`, 'error');
     }
   };
 
@@ -1335,7 +1335,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       }
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
-      showToast('Không thể copy QR data', 'error');
+              showToast(i18n[currentLanguage]?.['Không thể copy QR data'] || 'Không thể copy QR data', 'error');
     }
   };
 
@@ -1400,12 +1400,12 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
   // Submit matching request
   const submitMatchingRequest = async () => {
     if (!eventData || !visitorData || !matchingFormData.exhibitor) {
-      showToast('Vui lòng điền đầy đủ thông tin', 'error');
+              showToast(i18n[currentLanguage]?.['Vui lòng điền đầy đủ thông tin'] || 'Vui lòng điền đầy đủ thông tin', 'error');
       return;
     }
 
     if (!matchingFormData.date || !matchingFormData.time) {
-      showToast('Vui lòng chọn ngày và giờ', 'error');
+              showToast(i18n[currentLanguage]?.['Vui lòng chọn ngày và giờ'] || 'Vui lòng chọn ngày và giờ', 'error');
       return;
     }
 
@@ -1756,7 +1756,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           <LoadingSpinner 
             size="lg" 
             showLogo={true} 
-            text={i18n[currentLanguage]?.loading || 'Loading event information...'}
+            text={i18n[currentLanguage]?.['Đang tải thông tin sự kiện...'] || 'Đang tải thông tin sự kiện...'}
           />
         </div>
       </div>
@@ -1935,7 +1935,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                     {hasCheckedIn ? (
                       <>
                         <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-                                                  <span>{t('status_active')}</span>
+                                                  <span>{i18n[currentLanguage]?.active || 'Hoạt động'}</span>
                       </>
                     ) : (
                       <>
@@ -1977,7 +1977,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                 <Icon name="MagnifyingGlassIcon" className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search exhibitors, booth, products..."
+                                      placeholder={i18n[currentLanguage]?.search_exhibitors_booths_products || 'Tìm kiếm nhà triễn lãm, gian hàng, sản phẩm...'}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-11 pr-11 py-3 text-sm focus:outline-none focus:ring-0 border-0 bg-transparent placeholder-gray-400 text-gray-700"
@@ -2006,16 +2006,16 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                     </div>
                     <div className="text-left">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-gray-800">Categories</span>
+                        <span className="text-sm font-semibold text-gray-800">{i18n[currentLanguage]?.categories || 'Danh mục'}</span>
                         <span className="text-xs text-gray-500 bg-white px-2 py-0.5 rounded-full">
                           {getUniqueCategories().length}
                         </span>
                       </div>
                       <div className="text-xs text-gray-500 mt-0.5">
-                        {selectedCategories.length === 0 
-                          ? 'Tap to filter by categories'
-                          : `${selectedCategories.length} selected`
-                        }
+                                            {selectedCategories.length === 0
+                      ? (i18n[currentLanguage]?.tap_to_filter_by_categories || 'Nhấn để lọc theo danh mục')
+                      : `${selectedCategories.length} ${i18n[currentLanguage]?.selected || 'đã chọn'}`
+                    }
                       </div>
                     </div>
                   </div>
@@ -2050,10 +2050,10 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                 <div className="flex items-center gap-2">
                   <div className={`w-1.5 h-1.5 rounded-full ${isSearching ? 'bg-indigo-500 animate-pulse' : 'bg-emerald-500'}`}></div>
                                       <p className="text-xs text-gray-500 font-medium">
-                      {isSearching ? 'Searching...' : `${filteredExhibitors.length} results`}
+                      {isSearching ? (i18n[currentLanguage]?.searching || 'Đang tìm kiếm...') : `${filteredExhibitors.length} ${i18n[currentLanguage]?.results || 'kết quả'}`}
                       {selectedCategories.length > 0 && (
                         <span className="ml-2 text-indigo-600">
-                          • {selectedCategories.length} categor{selectedCategories.length === 1 ? 'y' : 'ies'}
+                          • {selectedCategories.length} {i18n[currentLanguage]?.categories_singular || 'danh mục'}
                         </span>
                       )}
                     </p>
@@ -2090,7 +2090,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
               <div className={`transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
                 <Card className="p-3 hover:shadow-md transition-shadow duration-300 rounded-2xl border-gray-100">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-semibold text-gray-800">Thông tin của bạn</h3>
+                    <h3 className="text-sm font-semibold text-gray-800">{i18n[currentLanguage]?.your_information || 'Thông tin của bạn'}</h3>
                     <div className={`px-2 py-1 rounded-full text-xs font-medium ${
                       hasCheckedIn
                         ? 'bg-emerald-100 text-emerald-700' 
@@ -2104,28 +2104,28 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                   
                   <div className="space-y-2.5">
                     <div className="flex items-center justify-between py-1">
-                      <span className="text-sm font-medium text-gray-600 min-w-[70px]">Tên:</span>
+                                              <span className="text-sm font-medium text-gray-600 min-w-[70px]">{i18n[currentLanguage]?.name || 'Tên'}:</span>
                       <span className="text-sm font-semibold text-gray-900 text-right flex-1 ml-3">{visitorData.name}</span>
                     </div>
                     <div className="flex items-center justify-between py-1">
-                      <span className="text-sm font-medium text-gray-600 min-w-[70px]">Email:</span>
+                                              <span className="text-sm font-medium text-gray-600 min-w-[70px]">{i18n[currentLanguage]?.email || 'Email'}:</span>
                       <span className="text-sm text-gray-700 text-right flex-1 ml-3 truncate">{visitorData.email}</span>
                     </div>
                     {visitorData.phone && (
                       <div className="flex items-center justify-between py-1">
-                        <span className="text-sm font-medium text-gray-600 min-w-[70px]">SĐT:</span>
+                        <span className="text-sm font-medium text-gray-600 min-w-[70px]">{i18n[currentLanguage]?.phone_number || 'Số Điện Thoại'}:</span>
                         <span className="text-sm text-gray-700 text-right flex-1 ml-3">{visitorData.phone}</span>
                     </div>
                     )}
                     {visitorData.company && (
                       <div className="flex items-center justify-between py-1">
-                        <span className="text-sm font-medium text-gray-600 min-w-[70px]">Công ty:</span>
+                        <span className="text-sm font-medium text-gray-600 min-w-[70px]">{i18n[currentLanguage]?.company || 'Công Ty'}:</span>
                         <span className="text-sm text-gray-700 text-right flex-1 ml-3 truncate">{visitorData.company}</span>
                       </div>
                     )}
                     {visitorData.group_id && (
                       <div className="flex items-center justify-between py-1">
-                        <span className="text-sm font-medium text-gray-600 min-w-[70px]">Group ID:</span>
+                        <span className="text-sm font-medium text-gray-600 min-w-[70px]">{i18n[currentLanguage]?.group_id || 'Mã Nhóm'}:</span>
                         <span className="text-sm text-gray-700 text-right flex-1 ml-3">{visitorData.group_id}</span>
                       </div>
                     )}
@@ -2194,9 +2194,9 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                       <div className="mb-1">
                         <p className="text-xs text-gray-600 mb-1 text-center">
                           {hasCheckedIn ? (
-                            qrMode === 'badge' ? 'Badge QR Code' : 'Redeem QR Code (để in lại thẻ)'
+                            qrMode === 'badge' ? i18n[currentLanguage]?.badge_qr_code || 'Badge QR Code' : i18n[currentLanguage]?.redeem_qr_code_to_reprint_badge || 'Redeem QR Code (để in lại thẻ)'
                           ) : (
-                            qrMode === 'personal' ? 'QR Check-in (Cá nhân)' : 'QR Check-in (Nhóm)'
+                            qrMode === 'personal' ? i18n[currentLanguage]?.qr_checkin_personal || 'QR Check-in (Cá nhân)' : i18n[currentLanguage]?.qr_checkin_group || 'QR Check-in (Nhóm)'
                           )}
                         </p>
                         <div className="inline-block p-1.5 bg-white rounded-2xl shadow-sm relative">
@@ -2207,7 +2207,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                               {/* Spinning logo indicator */}
                               <div className="relative z-10 flex flex-col items-center">
                                 <div className="animate-spin rounded-full h-8 w-8 border-3 border-blue-200 border-t-blue-600"></div>
-                                <div className="text-[10px] text-blue-600 font-semibold mt-2 animate-pulse">Generating</div>
+                                <div className="text-[10px] text-blue-600 font-semibold mt-2 animate-pulse">{i18n[currentLanguage]?.generating || 'Generating'}</div>
                               </div>
                               {/* Shimmer effect */}
                               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent transform -skew-x-12 animate-shimmer"></div>
@@ -2218,7 +2218,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                                 <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-2 mx-auto">
                                   <span className="text-red-500 text-lg">⚠️</span>
                                 </div>
-                                <div className="text-[10px] text-red-600 font-semibold">Error</div>
+                                <div className="text-[10px] text-red-600 font-semibold">{i18n[currentLanguage]?.error || 'Error'}</div>
                               </div>
                               <div className="absolute inset-0 bg-gradient-to-r from-red-100/30 to-orange-100/30 rounded-xl"></div>
                             </div>
@@ -2261,7 +2261,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                                 <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2 mx-auto">
                                   <span className="text-gray-400 text-lg">📱</span>
                                 </div>
-                                <div className="text-[10px] text-gray-500 font-semibold">No QR</div>
+                                <div className="text-[10px] text-gray-500 font-semibold">{i18n[currentLanguage]?.no_qr || 'No QR'}</div>
                               </div>
                               <div className="absolute inset-0 bg-gradient-to-r from-gray-100/30 to-slate-100/30 rounded-xl"></div>
                             </div>
@@ -2274,7 +2274,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                             onClick={copyQrDataToClipboard}
                             className="text-xs text-slate-600 hover:text-slate-800 transition-colors duration-200 bg-slate-50 hover:bg-slate-100 px-3 py-1 rounded-full"
                           >
-                            📋 {t('copy_qr_data')}
+                            📋 {i18n[currentLanguage]?.copy_qr_data || 'Copy QR Data'}
                           </button>
                         </div>
                       </div>
@@ -2283,7 +2283,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                       {!hasCheckedIn && qrMode === 'group' && visitorData.group_id && (
                         <div className="mb-1 p-2 bg-blue-50 rounded-lg text-center">
                           <p className="text-xs text-blue-700">
-                            <strong>Group ID:</strong> {visitorData.group_id} • Check-in toàn nhóm
+                            <strong>{i18n[currentLanguage]?.group_id || 'Group ID'}:</strong> {visitorData.group_id} • {i18n[currentLanguage]?.checkin_entire_group || 'Check-in toàn nhóm'}
                           </p>
                         </div>
                       )}
@@ -2333,7 +2333,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                       </div>
-                      <h3 className="insight-h3 text-green-800">Lịch sử check-in</h3>
+                      <h3 className="insight-h3 text-green-800">{i18n[currentLanguage]?.checkin_history || 'Lịch sử check-in'}</h3>
                       <span className="ml-2 bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">
                         {visitorData.check_in_history.length}
                       </span>
@@ -2389,12 +2389,12 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
               {(displayEventData?.floor_plan_pdf || (displayEventData as any)?.floor_plan_url) && (
               <div className={`transform transition-all duration-1000 delay-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
                   <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
-                    <div className="flex items-center mb-3">
+                    {/* <div className="flex items-center mb-3">
                       <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center mr-3">
                         <Icon name="MapIcon" className="w-3.5 h-3.5 text-emerald-600" />
                       </div>
                       <h3 className="insight-h3 text-emerald-800">Sơ đồ triển lãm</h3>
-                    </div>
+                    </div> */}
                     <Button 
                       variant="outline" 
                       className="w-full flex items-center justify-between transform hover:scale-105 transition-transform duration-200 min-h-[48px] rounded-2xl border-emerald-200 hover:border-emerald-300 bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100"
@@ -2402,7 +2402,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                     >
                       <div className="flex items-center">
                         <Icon name="MapIcon" className="w-4 h-4 mr-3 text-emerald-600" />
-                        <span className="text-sm font-medium text-slate-700">Xem sơ đồ triển lãm</span>
+                        <span className="text-sm font-medium text-slate-700">{i18n[currentLanguage]?.exhibition_map || 'Sơ đồ triển lãm'}</span>
                       </div>
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -2425,7 +2425,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                         <span className="text-white text-xs font-bold">1</span>
                       </div>
                       <div>
-                        <p className="text-xs text-blue-700 font-medium">Exhibitors</p>
+                        <p className="text-xs text-blue-700 font-medium">{i18n[currentLanguage]?.exhibitors || 'Exhibitors'}</p>
                       </div>
                     </div>
                     
@@ -2452,7 +2452,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                         <span className="text-white text-xs font-bold">4</span>
                   </div>
                       <div>
-                        <p className="text-xs text-blue-700 font-medium">Thêm</p>
+                        <p className="text-xs text-blue-700 font-medium">{i18n[currentLanguage]?.add || 'Thêm'}</p>
               </div>
                     </div>
                   </div>
@@ -2476,7 +2476,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                       }`}
                     >
                       <Icon name="BuildingOfficeIcon" className="w-4 h-4" />
-                      <span>All ({eventData?.exhibitors?.length || 0})</span>
+                                              <span>{i18n[currentLanguage]?.all || 'Tất cả'} ({eventData?.exhibitors?.length || 0})</span>
                     </button>
                     <button
                       onClick={() => setExhibitorViewMode('favorites')}
@@ -2487,7 +2487,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                       }`}
                     >
                       <Icon name="HeartIcon" className="w-4 h-4" fill={exhibitorViewMode === 'favorites' ? 'currentColor' : 'none'} />
-                      <span>Favorites ({favoriteExhibitors.length})</span>
+                                              <span>{i18n[currentLanguage]?.favorites || 'Yêu thích'} ({favoriteExhibitors.length})</span>
                     </button>
                   </div>
                 </Card>
@@ -2511,7 +2511,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                   <div className={`transform transition-all duration-1000 delay-400 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
                     <Card className="p-4 hover:shadow-md transition-shadow duration-300 rounded-3xl border-gray-100">
                       <h3 className="insight-h3 mb-3">
-                        {searchQuery ? `Kết quả tìm kiếm (${filteredExhibitors.length})` : `All Exhibitors (${filteredExhibitors.length})`}
+                        {searchQuery ? `Kết quả tìm kiếm (${filteredExhibitors.length})` : `${i18n[currentLanguage]?.all_exhibitors || 'Tất cả Exhibitors'} (${filteredExhibitors.length})`}
                       </h3>
                       <div className="space-y-4">
                         {filteredExhibitors.map((exhibitor, index) => (
@@ -2548,7 +2548,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                                   <div className="mb-1.5">
                                     <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-full">
                                       <Icon name="MapPinIcon" className="w-2.5 h-2.5" />
-                                      Booth {(exhibitor as any).booth_no}
+                                      {i18n[currentLanguage]?.booth || 'Booth'} {(exhibitor as any).booth_no}
                                     </span>
                                   </div>
                                 )}
@@ -2950,7 +2950,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                                   <div className="mb-1.5">
                                     <span className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 bg-rose-100 px-2.5 py-0.5 rounded-full">
                                       <Icon name="MapPinIcon" className="w-2.5 h-2.5" />
-                                      Booth {(exhibitor as any).booth_no}
+                                      {i18n[currentLanguage]?.booth || 'Booth'} {(exhibitor as any).booth_no}
                                     </span>
                                   </div>
                                 )}
@@ -3157,10 +3157,10 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                             if (firstLine) return firstLine;
                           }
                           // Last resort: use booth number or exhibitor ID
-                          return exhibitor?.booth_no ? `Booth ${exhibitor.booth_no}` : `Exhibitor ${matching.exhibitor_profile_id}`;
+                          return exhibitor?.booth_no ? `${i18n[currentLanguage]?.booth || 'Booth'} ${exhibitor.booth_no}` : `${i18n[currentLanguage]?.exhibitor || 'Exhibitor'} ${matching.exhibitor_profile_id}`;
                         };
                         
-                        const exhibitorName = exhibitor ? getExhibitorName(exhibitor) : `Exhibitor ID: ${matching.exhibitor_profile_id}`;
+                        const exhibitorName = exhibitor ? getExhibitorName(exhibitor) : `${i18n[currentLanguage]?.exhibitor_id || 'Exhibitor ID'}: ${matching.exhibitor_profile_id}`;
                         const exhibitorBooth = exhibitor ? (exhibitor as any).booth_no : null;
                         
                         return (
@@ -3185,7 +3185,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                                 </h4>
                                 {exhibitorBooth && (
                                   <p className="text-sm text-emerald-600 font-medium">
-                                    Booth {exhibitorBooth}
+                                    {i18n[currentLanguage]?.booth || 'Booth'} {exhibitorBooth}
                                   </p>
                                 )}
                               </div>
@@ -3244,7 +3244,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                                 }`}
                               >
                                 <Icon name="CalendarPlusIcon" className="w-4 h-4" />
-                                <span>{matching.confirmed ? 'Add to Calendar' : 'Pending Confirmation'}</span>
+                                <span>{matching.confirmed ? (i18n[currentLanguage]?.add_to_calendar || 'Thêm vào lịch') : (i18n[currentLanguage]?.['Chờ xác nhận'] || 'Chờ xác nhận')}</span>
                               </button>
                             </div>
                                                       </div>
@@ -3587,7 +3587,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                                               
                                               {/* Click hint tooltip */}
                                               <div className="absolute top-2 right-2 bg-purple-600 bg-opacity-80 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                                Tap to view
+                                                {i18n[currentLanguage]?.tap_to_view || 'Nhấn để xem'}
                                               </div>
                                             </div>
                                           </button>
@@ -3969,10 +3969,10 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
               <div>
-                <h3 className="text-lg font-semibold text-gray-800">Select Categories</h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  Choose categories to filter exhibitors
-                </p>
+                <h3 className="text-lg font-semibold text-gray-800">{i18n[currentLanguage]?.select_categories || 'Chọn danh mục'}</h3>
+                                  <p className="text-sm text-gray-500 mt-1">
+                    {i18n[currentLanguage]?.select_categories_to_filter_exhibitors || 'Chọn danh mục để lọc exhibitors'}
+                  </p>
               </div>
               <button
                 onClick={() => setIsCategoryModalOpen(false)}
@@ -4034,7 +4034,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                           </span>
                         </div>
                         <span className="text-xs text-gray-500">
-                          {count} exhibitor{count !== 1 ? 's' : ''}
+                          {count} {i18n[currentLanguage]?.exhibitors_vi || 'Nhà triễn lãm'}{count !== 1 ? '' : ''}
                         </span>
                       </div>
 
@@ -4055,13 +4055,13 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
             <div className="border-t border-gray-100 p-6 bg-gray-50">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm text-gray-600">
-                  {selectedCategories.length} of {getUniqueCategories().length} selected
+                                          {selectedCategories.length} {i18n[currentLanguage]?.of || 'của'} {getUniqueCategories().length} {i18n[currentLanguage]?.selected || 'đã chọn'}
                 </span>
                 <button
                   onClick={() => setSelectedCategories([])}
                   className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
                 >
-                  Clear All
+                                      {i18n[currentLanguage]?.clear_all || 'Xóa tất cả'}
                 </button>
               </div>
               
@@ -4070,13 +4070,13 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                   onClick={() => setIsCategoryModalOpen(false)}
                   className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
                 >
-                  Cancel
+                                      {i18n[currentLanguage]?.cancel || 'Hủy'}
                 </button>
                 <button
                   onClick={applyCategoryFilters}
                   className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
                 >
-                  Apply Filters
+                                      {i18n[currentLanguage]?.apply_filters || 'Áp dụng bộ lọc'}
                 </button>
               </div>
             </div>
@@ -4411,13 +4411,13 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
 
               {/* Time Filter */}
               <div className="mb-6">
-                <h4 className="text-sm font-semibold text-gray-700 mb-3">Time of Day</h4>
+                                    <h4 className="text-sm font-semibold text-gray-700 mb-3">{i18n[currentLanguage]?.time_of_day || 'Thời gian trong ngày'}</h4>
                 <div className="space-y-2">
                   {[
-                    { value: 'all', label: 'All Times', icon: '🕐' },
-                    { value: 'morning', label: 'Morning (6:00 - 12:00)', icon: '🌅' },
-                    { value: 'afternoon', label: 'Afternoon (12:00 - 18:00)', icon: '☀️' },
-                    { value: 'evening', label: 'Evening (18:00 - 24:00)', icon: '🌙' }
+                                          { value: 'all', label: i18n[currentLanguage]?.all_times || 'Tất cả thời gian', icon: '🕐' },
+                                          { value: 'morning', label: `${i18n[currentLanguage]?.morning || 'Sáng'} (6:00 - 12:00)`, icon: '🌅' },
+                                          { value: 'afternoon', label: `${i18n[currentLanguage]?.afternoon || 'Chiều'} (12:00 - 18:00)`, icon: '☀️' },
+                                          { value: 'evening', label: `${i18n[currentLanguage]?.evening || 'Tối'} (18:00 - 24:00)`, icon: '🌙' }
                   ].map(option => (
                     <label key={option.value} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl cursor-pointer group">
                       <input
@@ -4439,12 +4439,12 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
 
               {/* Status Filter */}
               <div className="mb-6">
-                <h4 className="text-sm font-semibold text-gray-700 mb-3">Status</h4>
+                                    <h4 className="text-sm font-semibold text-gray-700 mb-3">{i18n[currentLanguage]?.status || 'Trạng thái'}</h4>
                 <div className="space-y-2">
                   {[
-                    { value: 'all', label: 'All Status', icon: '📋' },
-                    { value: 'confirmed', label: 'Confirmed', icon: '✅' },
-                    { value: 'pending', label: 'Pending', icon: '⏳' }
+                                          { value: 'all', label: i18n[currentLanguage]?.all_status || 'Tất cả trạng thái', icon: '📋' },
+                    { value: 'confirmed', label: i18n[currentLanguage]?.['Đã xác nhận'] || 'Đã xác nhận', icon: '✅' },
+                    { value: 'pending', label: i18n[currentLanguage]?.['Chờ xác nhận'] || 'Chờ xác nhận', icon: '⏳' }
                   ].map(option => (
                     <label key={option.value} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl cursor-pointer group">
                       <input
@@ -4469,7 +4469,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
             <div className="border-t border-gray-100 p-6 bg-gray-50">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm text-gray-600">
-                  {getFilteredMatchingEntries().length} of {visitorData?.matching_list?.length || 0} matching(s)
+                                          {getFilteredMatchingEntries().length} {i18n[currentLanguage]?.of || 'của'} {visitorData?.matching_list?.length || 0} {i18n[currentLanguage]?.matching_singular || 'matching'}(s)
                 </span>
                 <button
                   onClick={() => {

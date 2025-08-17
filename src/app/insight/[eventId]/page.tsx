@@ -76,7 +76,7 @@ export default function InsightAccessPage({ params }: InsightAccessPageProps) {
         setTimeout(() => setIsVisible(true), 100);
       } catch (err: any) {
         console.error('Error loading event data:', err);
-        setError('Không thể tải thông tin sự kiện. Vui lòng thử lại.');
+        setError(i18n[currentLanguage]?.unable_to_load_event_info || 'Không thể tải thông tin sự kiện. Vui lòng thử lại.');
       } finally {
         setLoading(false);
       }
@@ -101,7 +101,7 @@ export default function InsightAccessPage({ params }: InsightAccessPageProps) {
       router.push(`/insight/${eventId}/${visitorId.trim()}`);
     } catch (err: any) {
       console.error('Error navigating:', err);
-      setError('Có lỗi xảy ra. Vui lòng thử lại.');
+              setError(i18n[currentLanguage]?.an_error_occurred || 'Có lỗi xảy ra. Vui lòng thử lại.');
     } finally {
       setSubmitting(false);
     }
@@ -165,7 +165,7 @@ export default function InsightAccessPage({ params }: InsightAccessPageProps) {
         <Card className="max-w-md w-full mx-4 p-6 text-center shadow-xl">
           <div className="text-red-500 mb-4">
             <Icon name="ExclamationTriangleIcon" className="w-16 h-16 mx-auto mb-4" />
-            <h2 className="insight-h2 font-bold text-gray-900 mb-2">Không tìm thấy sự kiện</h2>
+            <h2 className="insight-h2 font-bold text-gray-900 mb-2">{i18n[currentLanguage]?.event_not_found || 'Không tìm thấy sự kiện'}</h2>
             <p className="insight-text-secondary">{error || 'Sự kiện không tồn tại hoặc đã kết thúc'}</p>
           </div>
           <Button 
@@ -173,7 +173,7 @@ export default function InsightAccessPage({ params }: InsightAccessPageProps) {
             variant="primary"
             className="w-full min-h-[48px]"
           >
-            Về trang chủ
+            {i18n[currentLanguage]?.back_to_home || 'Về trang chủ'}
           </Button>
         </Card>
       </div>

@@ -11,6 +11,7 @@ import { VisitorData, visitorApi } from '@/lib/api/visitors';
 import { useEventMetadata } from '@/hooks/useEventMetadata';
 import { useGoogleAnalytics } from '@/hooks/useGoogleAnalytics';
 import { Html5Qrcode } from 'html5-qrcode';
+import { i18n } from '@/lib/translation/i18n';
 
 interface CheckinPageProps {
   params: Promise<{
@@ -45,6 +46,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   const [isPrinting, setIsPrinting] = useState(false);
   const [continuousMode, setContinuousMode] = useState(false);
   const [autoPrintEnabled, setAutoPrintEnabled] = useState(true); // User-controlled auto-print toggle (only shown when backend allows printing)
+  const [currentLanguage, setCurrentLanguage] = useState<'vi' | 'en'>('vi');
 
   const { generateShareUrls } = useEventMetadata({ 
     event: eventData, 
@@ -147,7 +149,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         }, 500);
       } catch (err: any) {
         console.error('Error loading event data:', err);
-        setError('Không thể tải thông tin sự kiện. Vui lòng thử lại.');
+        setError(i18n[currentLanguage]?.unable_to_load_event_info || 'Không thể tải thông tin sự kiện. Vui lòng thử lại.');
         
         // Even on error, focus input for retry
         setTimeout(() => {
@@ -274,7 +276,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
 
     } catch (err: any) {
       console.error('Camera initialization error:', err);
-      setError('Không thể khởi tạo camera. Vui lòng sử dụng manual input.');
+              setError(i18n[currentLanguage]?.unable_to_initialize_camera || 'Không thể khởi tạo camera. Vui lòng sử dụng manual input.');
       setScanning(false);
     }
   };
@@ -437,7 +439,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           navigator.vibrate([100, 50, 100]);
         }
       } else {
-        setError('❌ Không tìm thấy thông tin visitor.');
+        setError(`❌ ${i18n[currentLanguage]?.['Không tìm thấy thông tin visitor.'] || 'Không tìm thấy thông tin visitor.'}`);
         // Reset input for visitor not found
         setManualInput('');
         console.log('🔄 Input reset after visitor not found');
@@ -446,16 +448,16 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       console.error('❌ Check-in error:', error);
       
       // Handle specific error types
-      let errorMessage = '❌ Có lỗi xảy ra khi check-in. Vui lòng thử lại.';
+              let errorMessage = `❌ ${i18n[currentLanguage]?.['Có lỗi xảy ra khi check-in. Vui lòng thử lại.'] || 'Có lỗi xảy ra khi check-in. Vui lòng thử lại.'}`;
       
       if (error.message === 'Visitor not found') {
-        errorMessage = '❌ Không tìm thấy visitor với ID này. Vui lòng kiểm tra lại mã QR hoặc ID.';
+                  errorMessage = `❌ ${i18n[currentLanguage]?.['Không tìm thấy visitor với ID này. Vui lòng kiểm tra lại mã QR hoặc ID.'] || 'Không tìm thấy visitor với ID này. Vui lòng kiểm tra lại mã QR hoặc ID.'}`;
       } else if (error.message === 'Visitor ID is required') {
-        errorMessage = '❌ Vui lòng nhập ID visitor.';
+        errorMessage = `❌ ${i18n[currentLanguage]?.['Vui lòng nhập ID visitor.'] || 'Vui lòng nhập ID visitor.'}`;
       } else if (error.message.includes('Server error')) {
-        errorMessage = '❌ Lỗi hệ thống. Vui lòng thử lại sau.';
+        errorMessage = `❌ ${i18n[currentLanguage]?.['Lỗi hệ thống. Vui lòng thử lại sau.'] || 'Lỗi hệ thống. Vui lòng thử lại sau.'}`;
       } else if (error.message.includes('Failed to fetch visitor data')) {
-        errorMessage = '❌ Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.';
+        errorMessage = `❌ ${i18n[currentLanguage]?.['Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.'] || 'Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.'}`;
       }
       
       setError(errorMessage);

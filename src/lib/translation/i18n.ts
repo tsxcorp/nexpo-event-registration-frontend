@@ -5,22 +5,7 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     Full_Name: "Họ và tên",
     Email: "Email",
     Phone_Number: "Số điện thoại",
-    
-    // Form field labels
-    "privacy policy": "Chính sách bảo mật",
-    "clause": "Điều khoản",
-    "company name": "Tên công ty",
-    "business type": "Loại hình kinh doanh",
-    "agree to receive information about new events": "Đồng ý nhận thông tin về sự kiện mới",
-    "vietnam industrial automation exhibition": "Triển lãm Tự động hóa Công nghiệp Việt Nam",
-    "vietnam vision exhibition": "Triển lãm Tầm nhìn Việt Nam",
-    "smart factory exhibition": "Triển lãm Nhà máy Thông minh",
-    "smart logistics exhibition": "Triển lãm Logistics Thông minh",
-    "labor protection": "Bảo hộ lao động",
-    "reason for visit (choose 1 or more)": "Lý do tham quan (chọn 1 hoặc nhiều)",
-    "reason for knowing about this event (choose 1 or more)": "Lý do biết về sự kiện này (chọn 1 hoặc nhiều)",
-    "purpose of visit": "Mục đích tham quan",
-    "position": "Chức vụ",
+
     
     // Placeholders
     salutation_placeholder: "-- Chọn xưng hô --",
@@ -41,7 +26,7 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     
     // Salutation options
     mr: "Ông",
-    ms: "Cô", 
+    ms: "Cô",
     mrs: "Bà",
     
     // Other
@@ -52,9 +37,9 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     // Insight Page Translations
     // Tabs
     tab_checkin: "Check-in",
-    tab_exhibitors: "Exhibitors", 
-    tab_matching: "Matching",
-    tab_agenda: "Agenda",
+    tab_exhibitors: "Nhà Triễn Lãm",
+    tab_matching: "Kết Nối",
+    tab_agenda: "Lịch trình",
     tab_more: "Thêm",
     
     // Access Page
@@ -79,23 +64,23 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     
     // Dashboard Header
     registered_date: "Đăng ký:",
-    status_active: "Active",
-    status_ready: "Ready",
+    status_active: "Đang hoạt động",
+    status_ready: "Sẵn sàng",
     
     // QR Section
     qr_mode_personal: "Cá nhân",
-    qr_mode_group: "Nhóm", 
-    qr_mode_badge: "Badge QR",
-    qr_mode_redeem: "Redeem QR",
+    qr_mode_group: "Nhóm",
+    qr_mode_badge: "Mã QR Khách Tham Dự",
+    qr_mode_redeem: "Mã QR In Thẻ",
     qr_desc_badge: "Sử dụng QR này để truy cập các dịch vụ tại sự kiện",
-    qr_desc_redeem: "Scan QR này để in lại thẻ đeo nếu bạn làm mất thẻ",
-    qr_desc_personal: "Scan QR này để check-in cá nhân và nhận thẻ đeo",
-    qr_desc_group: "Scan QR này để check-in theo nhóm và nhận thẻ đeo",
-    qr_status_active: "Active Badge",
-    qr_status_ready: "Check-in Ready",
-    copy_qr_data: "Copy QR Data",
-    qr_copy_success: "Đã copy QR data vào clipboard",
-    qr_copy_error: "Không thể copy QR data",
+    qr_desc_redeem: "Quét QR này để in lại thẻ đeo nếu bạn làm mất thẻ",
+    qr_desc_personal: "Quét QR này để check-in cá nhân và nhận thẻ đeo",
+    qr_desc_group: "Quét QR này để check-in theo nhóm và nhận thẻ đeo",
+    qr_status_active: "Badge đang hoạt động",
+    qr_status_ready: "Sẵn sàng Check-in",
+    copy_qr_data: "Sao chép dữ liệu QR",
+    qr_copy_success: "Đã sao chép dữ liệu QR vào clipboard",
+    qr_copy_error: "Không thể sao chép dữ liệu QR",
     
     // Check-in History
     checkin_history: "Lịch sử check-in",
@@ -110,7 +95,7 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     loading: "Đang tải dữ liệu sự kiện...",
     translating: "Đang dịch nội dung...",
     event_not_found: "Không tìm thấy sự kiện.",
-    no_form_fields: "Không có form fields để hiển thị",
+    no_form_fields: "Không có trường biểu mẫu để hiển thị",
     
     // Buttons
     back: "Quay lại",
@@ -143,12 +128,107 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     back_to_home: "Quay về trang chủ",
     yes: "Có",
     no: "Không",
+
     
-    // Common field values - keeping minimal set for UI consistency
-    "xuất khẩu nhập khẩu": "Xuất khẩu nhập khẩu",
-    "sản xuất": "Sản xuất",
-    "phân phối": "Phân phối",
-    "dịch vụ": "Dịch vụ",
+    // Registration form specific translations (camelCase)
+    information_fields: "trường thông tin",
+    member_list: "Danh sách thành viên",
+    document_not_available: "Tài liệu chưa có sẵn",
+    no_events_created_yet: "Hiện tại chưa có sự kiện nào được tạo.",
+    switched_to_personal_qr_no_group: "Đã chuyển về QR cá nhân vì bạn chưa có nhóm",
+    no_group_id_contact_organizers: "Chưa có Group ID • Liên hệ ban tổ chức",
+    no_time_available: "Chưa có thời gian",
+    no_matching_exhibitors_found: "Không tìm thấy nhà triễn lãm phù hợp",
+    no_exhibitor_information_available: "Chưa có thông tin nhà triễn lãm",
+    no_favorite_exhibitors: "Chưa có nhà triễn lãm yêu thích",
+    no_matching_created: "Chưa có kết nối nào được tạo",
+    
+    // Core UI Elements (camelCase)
+    phone_number: "Số Điện Thoại",
+    name: "Tên",
+    email: "Email",
+    company: "Công Ty",
+    group_id: "Mã Nhóm",
+    your_information: "Thông tin của bạn",
+    exhibition_map: "Sơ đồ triển lãm",
+    active: "Hoạt động",
+    search_exhibitors_booths_products: "Tìm kiếm nhà triễn lãm, gian hàng, sản phẩm...",
+    categories: "Danh mục",
+    tap_to_filter_by_categories: "Nhấn để lọc theo danh mục",
+    selected: "đã chọn",
+    searching: "Đang tìm kiếm...",
+    results: "kết quả",
+    categories_singular: "danh mục",
+    select_categories: "Chọn danh mục",
+    select_categories_to_filter_exhibitors: "Chọn danh mục để lọc nhà triễn lãm",
+    all: "Tất cả",
+    favorites: "Yêu thích",
+    add: "Thêm",
+    exhibitors: "Exhibitors",
+    all_exhibitors: "Tất cả Exhibitors",
+    booth: "Booth",
+    exhibitor: "Exhibitor",
+    exhibitor_id: "Exhibitor ID",
+    add_to_calendar: "Thêm vào lịch",
+    tap_to_view: "Nhấn để xem",
+    exhibitors_vi: "Nhà triễn lãm",
+    of: "của",
+    clear_all: "Xóa tất cả",
+    apply_filters: "Áp dụng bộ lọc",
+    time_of_day: "Thời gian trong ngày",
+    all_times: "Tất cả thời gian",
+    morning: "Sáng",
+    afternoon: "Chiều",
+    evening: "Tối",
+    status: "Trạng thái",
+    all_status: "Tất cả trạng thái",
+    matching_singular: "matching",
+    
+    // Error Messages (camelCase)
+    unable_to_load_event_info: "Không thể tải thông tin sự kiện. Vui lòng thử lại.",
+    an_error_occurred: "Có lỗi xảy ra. Vui lòng thử lại.",
+    unable_to_load_event_list: "Không thể tải danh sách sự kiện. Vui lòng thử lại.",
+    page_not_found: "Trang không tồn tại",
+    page_not_found_description: "Trang bạn đang tìm kiếm không tồn tại. Vui lòng chọn một sự kiện bên dưới.",
+    unable_to_initialize_camera: "Không thể khởi tạo camera. Vui lòng sử dụng manual input.",
+    please_contact_organizers_for_details: "Vui lòng liên hệ ban tổ chức để biết thêm chi tiết",
+    unable_to_load_document: "Không thể tải tài liệu",
+    document_may_need_to_be_downloaded: "Tài liệu có thể cần được download",
+    
+    // Form Validation (camelCase)
+    please_select_salutation: "Vui lòng chọn xưng hô.",
+    please_enter_full_name: "Vui lòng nhập họ và tên.",
+    please_enter_email: "Vui lòng nhập email.",
+    please_enter_valid_email: "Vui lòng nhập email hợp lệ.",
+    please_enter_phone_number: "Vui lòng nhập số điện thoại.",
+    please_enter_valid_phone_number: "Vui lòng nhập số điện thoại hợp lệ.",
+    please_select_an_option: "Vui lòng chọn một tùy chọn.",
+    please_select_file: "Vui lòng chọn file.",
+    
+    // Member Management (camelCase)
+    member_phone: "SĐT thành viên",
+    member_number: "Thành viên #",
+    
+    // QR Code Instructions (camelCase)
+    use_group_qr_to_checkin_all_members_at_once: "Sử dụng QR nhóm để check-in tất cả thành viên cùng lúc",
+    each_member_can_use_personal_qr_to_checkin_individually: "Mỗi thành viên có thể sử dụng QR cá nhân để check-in riêng lẻ",
+    save_or_print_page_to_easily_access_qr_codes_at_event: "Lưu hoặc in trang này để dễ dàng truy cập QR codes tại sự kiện",
+    present_qr_code_at_registration_desk_to_checkin_to_event: "Trình QR code này tại quầy đăng ký để check-in vào sự kiện",
+    
+    // Import & Export (camelCase)
+    please_fix_errors_before_import: "Vui lòng sửa các lỗi trong file trước khi import.",
+    error_exporting_error_report: "Có lỗi khi xuất file báo cáo lỗi.",
+    please_upload_file_to_preview: "Vui lòng tải file để xem trước.",
+    
+    // QR Code related keys (camelCase)
+    badge_qr_code: "Mã QR Thẻ Đeo",
+    redeem_qr_code_to_reprint_badge: "Redeem QR Code (để in lại thẻ)",
+    qr_checkin_personal: "QR Check-in (Cá nhân)",
+    qr_checkin_group: "QR Check-in (Nhóm)",
+    generating: "Generating",
+    error: "Error",
+    no_qr: "No QR",
+    checkin_entire_group: "Check-in toàn nhóm",
     
     // About Nexpo
     about_nexpo: "Về Nexpo",
@@ -164,28 +244,14 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     language_vietnamese: "Tiếng Việt",
     language_english: "English"
   },
+
   en: {
     // Core field labels
     Salutation: "Salutation",
     Full_Name: "Full Name",
-    Email: "Email",
     Phone_Number: "Phone Number",
     
-    // Form field labels
-    "privacy policy": "Privacy Policy",
-    "clause": "Terms and Conditions",
-    "company name": "Company Name",
-    "business type": "Business Type",
-    "agree to receive information about new events": "Agree to receive information about new events",
-    "vietnam industrial automation exhibition": "Vietnam Industrial Automation Exhibition",
-    "vietnam vision exhibition": "Vietnam Vision Exhibition",
-    "smart factory exhibition": "Smart Factory Exhibition",
-    "smart logistics exhibition": "Smart Logistics Exhibition",
-    "labor protection": "Labor Protection",
-    "reason for visit (choose 1 or more)": "Reason for visit (choose 1 or more)",
-    "reason for knowing about this event (choose 1 or more)": "Reason for knowing about this event (choose 1 or more)",
-    "purpose of visit": "Purpose of visit",
-    "position": "Position",
+ 
     
     // Placeholders
     salutation_placeholder: "-- Select salutation --",
@@ -212,12 +278,13 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     // Other
     register_title: "Register",
     company_info: "Company Information",
+    thank_you: "Thank you for registering!",
     
     // Insight Page Translations
     // Tabs
     tab_checkin: "Check-in",
     tab_exhibitors: "Exhibitors",
-    tab_matching: "Matching", 
+    tab_matching: "Matching",
     tab_agenda: "Agenda",
     tab_more: "More",
     
@@ -236,9 +303,9 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     visitor_code_not_exist: "Access code is invalid or does not exist",
     visitor_code_wrong_event: "Access code does not belong to this event. Visitor belongs to event:",
     check_visitor_code: "Please check your access code from the organizers.",
-    reenter_visitor_code: "Re-enter access code", 
+    reenter_visitor_code: "Re-enter access code",
     try_again: "Try again",
-    auto_redirect: "Automatically redirecting to access code page in",
+    auto_redirect: "Auto redirect to access code page in",
     seconds: "seconds",
     
     // Dashboard Header
@@ -249,7 +316,7 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     // QR Section
     qr_mode_personal: "Personal",
     qr_mode_group: "Group",
-    qr_mode_badge: "Badge QR", 
+    qr_mode_badge: "Badge QR",
     qr_mode_redeem: "Redeem QR",
     qr_desc_badge: "Use this QR to access services at the event",
     qr_desc_redeem: "Scan this QR to reprint your badge if you lose it",
@@ -266,7 +333,6 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     checkin_entry: "Check-in",
     created_at: "Created at:",
     no_checkin_time: "No check-in time",
-    thank_you: "Thank you for registering!",
     submit: "Submit",
     required: "(required)",
     optional: "(optional)",
@@ -309,11 +375,147 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     yes: "Yes",
     no: "No",
     
-    // Common field values - keeping minimal set for UI consistency
-    "xuất khẩu nhập khẩu": "Export/Import",
-    "sản xuất": "Manufacturing",
-    "phân phối": "Distribution",
-    "dịch vụ": "Service",
+    // Common field values
+    
+    // Registration form specific translations (camelCase)
+    information_fields: "information fields",
+    member_list: "Member List",
+    document_not_available: "Document not available",
+    no_events_created_yet: "No events have been created yet.",
+    switched_to_personal_qr_no_group: "Switched to personal QR because you don't have a group",
+    no_group_id_contact_organizers: "No Group ID • Contact organizers",
+    no_time_available: "No time available",
+    no_matching_exhibitors_found: "No matching exhibitors found",
+    no_exhibitor_information_available: "No exhibitor information available",
+    no_favorite_exhibitors: "No favorite exhibitors",
+    no_matching_created: "No matching has been created",
+    member_phone: "Member Phone",
+    use_group_qr_to_checkin_all_members_at_once: "Use group QR to check-in all members at once",
+    each_member_can_use_personal_qr_to_checkin_individually: "Each member can use personal QR to check-in individually",
+    member_number: "Member #",
+    add_new_member: "Add New Member",
+    edit_member: "Edit Member",
+    fill_information_for_new_member: "Fill information for new member",
+    update_member_information: "Update member information",
+    save_changes: "Save Changes",
+    basic_information: "Basic Information",
+    additional_information: "Additional Information",
+    save_or_print_page_to_easily_access_qr_codes_at_event: "Save or print this page to easily access QR codes at the event",
+    present_qr_code_at_registration_desk_to_checkin_to_event: "Present this QR code at the registration desk to check in to the event",
+    loading_information: "Loading information...",
+    loading_event_information: "Loading event information...",
+    
+    // Error messages (camelCase)
+    unable_to_connect_to_server: "Unable to connect to server. Please check network connection.",
+    unable_to_print_automatically: "Unable to print automatically. Please press Ctrl+P to print manually.",
+    unable_to_load_data: "Unable to load data. Please try again.",
+    unable_to_copy_qr_data: "Unable to copy QR data",
+    unable_to_load_information: "Unable to load information",
+    an_error_occurred_general: "An error occurred",
+    error_creating_pdf: "Error creating PDF. Please try again.",
+    error_sending_matching_request: "Error sending matching request",
+    error_during_checkin: "Error occurred during check-in. Please try again.",
+    
+    // Not found messages (camelCase)
+    event_not_found_with_period: "Event not found.",
+    registration_information_not_found: "Registration information not found.",
+    visitor_information_not_found: "Visitor information not found.",
+    visitor_with_id_not_found: "Visitor with this ID not found. Please check the QR code or ID.",
+    no_matching_found: "No matching found",
+    
+    // Page messages (camelCase)
+    back_to_main_page_after: "Back to main page after",
+    auto_scan_next_after: "Auto scan next after",
+    auto_redirect_to_access_code_page_after: "Auto redirect to access code page after",
+    
+    // Form validation messages (camelCase)
+    please_select_an_option: "Please select an option.",
+    please_select_file: "Please select a file.",
+    please_fix_errors_before_import: "Please fix errors in the file before importing.",
+    please_upload_file_to_preview: "Please upload the file to preview.",
+    please_fill_in_all_information: "Please fill in all information",
+    please_select_date_and_time: "Please select date and time",
+    please_check_access_code_from_organizers: "Please check the access code from the organizers.",
+    please_come_back_later_for_details: "Please come back later to see detailed information",
+    please_contact_organizers_reception: "Please contact the organizers' reception department.",
+    please_enter_visitor_id: "Please enter visitor ID.",
+    system_error_try_again_later: "System error. Please try again later.",
+    please_contact_organizers_for_details: "Please contact the organizers for more details",
+    
+    // Import page messages (camelCase)
+    click_error_cell_to_edit_directly: "Click on the error cell to edit directly",
+    no_error_rows_to_export: "No error rows to export.",
+    and_other_errors_see_table_below: "and other errors. Please see the table below to fix all errors.",
+    
+    // Check-in messages (camelCase)
+    camera_access_denied_use_manual_input: "Camera access denied. You can still use manual input.",
+    visitor_id_must_have_at_least_3_characters: "Visitor ID must have at least 3 characters.",
+    visitor_does_not_belong_to_this_event: "Visitor does not belong to this event.",
+    please_check_qr_code_or_visitor_id_again: "Please check the QR code or visitor ID again.",
+    popup_blocked_print_in_current_window: "Popup blocked. Do you want to print in the current window?",
+    this_event_does_not_support_badge_printing: "This event does not support badge printing",
+    event_does_not_exist_or_ended: "Event does not exist or has ended",
+    
+    // Insight page messages (camelCase)
+    no_description: "No description",
+    do_not_share_code_with_others: "Do not share this code with others.",
+    invalid_access_code: "Invalid access code",
+    visitor_id_does_not_exist_or_invalid: "Visitor ID does not exist or is invalid.",
+    no_matching_suitable_for_current_filter: "No matching suitable for current filter",
+    are_you_sure_delete_all_favorite_exhibitors: "Are you sure you want to delete all favorite exhibitors?",
+    rating_very_interested_interested_may_cooperate: "Rating: Very interested Interested May cooperate",
+    wish_you_successful_exhibition_visit: "Wish you a successful exhibition visit!",
+    
+    // File viewer messages (camelCase)
+    document_may_need_to_be_downloaded: "Document may need to be downloaded",
+    
+    // Exhibitor modal messages (camelCase)
+    no_other_media: "No other media",
+    
+    // Insight page additional messages (camelCase)
+    exhibitor_singular: "exhibitor",
+    exhibitor_label: "Exhibitor",
+    category: "Category",
+    tap_to_filter_by_category: "Tap to Filter by Category",
+    category_singular: "category",
+    select_category: "Select Category",
+    
+    // Core UI Elements (camelCase)
+    phone_number: "Phone",
+    name: "Name",
+    company: "Company",
+    group_id: "Group ID",
+    your_information: "Your Information",
+    exhibition_map: "Exhibition Map",
+    active: "Active",
+    search_exhibitors_booths_products: "Search exhibitors, booths, products...",
+    categories: "Categories",
+    tap_to_filter_by_categories: "Tap to filter by categories",
+    selected: "selected",
+    searching: "Searching...",
+    results: "results",
+    categories_singular: "categories",
+    select_categories: "Select Categories",
+    select_categories_to_filter_exhibitors: "Select categories to filter exhibitors",
+    all: "All",
+    favorites: "Favorites",
+    add: "Add",
+    exhibitors: "Exhibitors",
+    exhibitor_id: "Exhibitor ID",
+    add_to_calendar: "Add to Calendar",
+    tap_to_view: "Tap to View",
+    exhibitors_vi: "Exhibitors",
+    of: "of",
+    clear_all: "Clear All",
+    apply_filters: "Apply Filters",
+    time_of_day: "Time of Day",
+    all_times: "All Times",
+    morning: "Morning",
+    afternoon: "Afternoon",
+    evening: "Evening",
+    status: "Status",
+    all_status: "All Status",
+    matching_singular: "matching",
     
     // About Nexpo
     about_nexpo: "About Nexpo",
@@ -321,12 +523,22 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     about_nexpo_description: "Nexpo is a comprehensive platform for event and exhibition management – empowering organizers and participants with seamless interaction, smart tools, and a connected event experience.",
     about_nexpo_support: "Support: contact@nexpo.vn",
     about_nexpo_website: "Official Website: https://nexpo.vn",
-    about_nexpo_address: "Address: 5th Floor - Ngọc Linh Nhi Building, 97 Tran Quang Dieu, Ward 14, District 3, HCMC",
+    about_nexpo_address: "Address: 5th Floor - Ngoc Linh Nhi Building, 97 Tran Quang Dieu, Ward 14, District 3, HCMC",
     about_nexpo_hotline: "Hotline: 028.6682.7794",
     visit_website: "Visit Website",
     contact_us: "Contact Us",
     translating_content: "Translating...",
     language_vietnamese: "Vietnamese",
-    language_english: "English"
+    language_english: "English",
+    
+    // QR Code related keys (camelCase)
+    badge_qr_code: "Badge QR Code",
+    redeem_qr_code_to_reprint_badge: "Redeem QR Code (to reprint badge)",
+    qr_checkin_personal: "QR Check-in (Personal)",
+    qr_checkin_group: "QR Check-in (Group)",
+    generating: "Generating",
+    error: "Error",
+    no_qr: "No QR",
+    checkin_entire_group: "Check-in entire group"
   },
-}; 
+};

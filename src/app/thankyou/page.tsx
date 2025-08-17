@@ -39,7 +39,7 @@ export default function ThankYouPage() {
         <LoadingSpinner 
           size="lg" 
           showLogo={true} 
-          text="Đang tải thông tin..."
+          text={i18n['vi']?.["Đang tải thông tin..."] || "Đang tải thông tin..."}
         />
       </div>
     }>
@@ -501,10 +501,10 @@ function ThankYouContent() {
                               ) : (
                                 <>
                                   <h5 className="font-bold text-green-800 text-base mb-1">
-                                    Thành viên {idx + 1}
+                                    {i18n[currentLanguage]?.member || "Thành viên"} {idx + 1}
                                   </h5>
-                                  <p className="text-sm text-gray-600 mb-1">Email thành viên {idx + 1}</p>
-                                  <p className="text-sm text-gray-600">SĐT thành viên {idx + 1}</p>
+                                  <p className="text-sm text-gray-600 mb-1">{i18n[currentLanguage]?.member_email || "Email thành viên"} {idx + 1}</p>
+                                  <p className="text-sm text-gray-600">{i18n[currentLanguage]?.member_phone || "SĐT thành viên"} {idx + 1}</p>
                                 </>
                               )}
                             </div>
@@ -517,17 +517,17 @@ function ThankYouContent() {
                     <div className="mt-6 space-y-3">
                       <div className="bg-green-100 rounded-lg p-3">
                         <p className="text-xs text-green-700 font-medium text-center">
-                          💡 Sử dụng QR nhóm để check-in tất cả thành viên cùng lúc
+                          💡 {i18n[currentLanguage]?.use_group_qr_to_checkin_all_members_at_once || "Sử dụng QR nhóm để check-in tất cả thành viên cùng lúc"}
                         </p>
                       </div>
                       <div className="bg-blue-100 rounded-lg p-3">
                         <p className="text-xs text-blue-700 font-medium text-center">
-                          👤 Mỗi thành viên có thể sử dụng QR cá nhân để check-in riêng lẻ
+                          👤 {i18n[currentLanguage]?.each_member_can_use_personal_qr_to_checkin_individually || "Mỗi thành viên có thể sử dụng QR cá nhân để check-in riêng lẻ"}
                         </p>
                       </div>
                       <div className="bg-orange-100 rounded-lg p-3">
                         <p className="text-xs text-orange-700 font-medium text-center">
-                          📱 Lưu hoặc in trang này để dễ dàng truy cập QR codes tại sự kiện
+                          📱 {i18n[currentLanguage]?.save_or_print_page_to_easily_access_qr_codes_at_event || "Lưu hoặc in trang này để dễ dàng truy cập QR codes tại sự kiện"}
                         </p>
                       </div>
                     </div>
@@ -560,7 +560,7 @@ function ThankYouContent() {
                   {/* Individual Usage Instructions */}
                   <div className="mt-4 bg-blue-100 rounded-lg p-3">
                     <p className="text-xs text-blue-700 font-medium text-center">
-                      📱 Trình QR code này tại quầy đăng ký để check-in vào sự kiện
+                      📱 {i18n[currentLanguage]?.present_qr_code_at_registration_desk_to_checkin_to_event || "Trình QR code này tại quầy đăng ký để check-in vào sự kiện"}
                     </p>
                   </div>
                 </div>

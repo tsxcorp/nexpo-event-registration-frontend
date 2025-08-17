@@ -12,6 +12,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import ProgressBar from '@/components/common/ProgressBar';
+import { i18n } from '@/lib/translation/i18n';
 
 type RowStatus = 'unvalidated' | 'valid' | 'invalid' | 'importing' | 'success' | 'error';
 type ImportPolicy = 'stopOnError' | 'skipErrors';
@@ -135,6 +136,7 @@ export default function ImportExcelPage() {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
+  const [currentLanguage, setCurrentLanguage] = useState<'vi' | 'en'>('vi');
 
   // Track import history and final report
   const [importHistory, setImportHistory] = useState<{
@@ -251,7 +253,7 @@ export default function ImportExcelPage() {
     console.log('Import policy:', importPolicy);
     
     if (!eventData || validationSummary.invalid > 0 && importPolicy === 'stopOnError') {
-      setGeneralError("Vui lòng sửa các lỗi trong file trước khi import.");
+              setGeneralError(i18n[currentLanguage]?.please_fix_errors_before_import || "Vui lòng sửa các lỗi trong file trước khi import.");
       return;
     }
     
@@ -513,7 +515,7 @@ export default function ImportExcelPage() {
       console.log(`✅ Exported ${failedData.length} failed records to ${filename}`);
     } catch (error) {
       console.error('❌ Error exporting failed records:', error);
-      alert('Có lỗi khi xuất file báo cáo lỗi.');
+              alert(i18n[currentLanguage]?.error_exporting_error_report || 'Có lỗi khi xuất file báo cáo lỗi.');
     }
   };
 
@@ -987,7 +989,7 @@ export default function ImportExcelPage() {
 
               <div className="mt-4">
                 {previewData.length === 0 ? (
-                  <div className="text-center py-10 border-2 border-dashed rounded-lg"><p>Vui lòng tải file để xem trước.</p></div>
+                  <div className="text-center py-10 border-2 border-dashed rounded-lg"><p>{i18n[currentLanguage]?.please_upload_file_to_preview || "Vui lòng tải file để xem trước."}</p></div>
                 ) : (
                   <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
                     <div className="flex items-center justify-between">

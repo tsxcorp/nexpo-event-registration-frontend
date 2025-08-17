@@ -564,7 +564,7 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
                       <>
                         <div className="text-center">
                           <span className="inline-block bg-blue-100 text-blue-800 text-xs sm:text-sm font-medium px-3 py-1 sm:px-4 sm:py-2 rounded-full">
-                            {visibleFields.length} trường thông tin
+                            {visibleFields.length} {i18n[currentLanguage]?.information_fields || "trường thông tin"}
                           </span>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
@@ -590,11 +590,11 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
               <div className="p-3 sm:p-6">
                 <div className="flex items-center justify-center mb-3 sm:mb-4">
                   <span className="bg-orange-100 text-orange-800 text-xs sm:text-sm font-bold px-3 py-1 sm:px-4 sm:py-2 rounded-full">
-                    Thành viên nhóm ({groupMembers.length})
+                    {i18n[currentLanguage]?.["Thành viên nhóm"] || "Thành viên nhóm"} ({groupMembers.length})
                   </span>
                 </div>
                 <h3 className="text-base sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 text-center">
-                  Danh sách thành viên
+                  {i18n[currentLanguage]?.["Danh sách thành viên"] || "Danh sách thành viên"}
                 </h3>
                 <div className="space-y-3 sm:space-y-4">
                   {groupMembers.map((member, index) => {
@@ -615,10 +615,10 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
                                   <div>
                                     <h4 className="font-bold text-gray-900 text-sm sm:text-base">
                                       {memberData.Salutation && `${memberData.Salutation} `}
-                                      {memberData.Full_Name || 'Chưa có tên'}
+                                      {memberData.Full_Name || i18n[currentLanguage]?.no_name_yet || 'Chưa có tên'}
                                     </h4>
                                     <p className="text-xs sm:text-sm text-gray-600">
-                                      {memberData.Email || 'Chưa có email'}
+                                      {memberData.Email || i18n[currentLanguage]?.no_email_yet || 'Chưa có email'}
                                     </p>
                                     {memberData.Phone_Number && (
                                       <p className="text-xs sm:text-sm text-gray-600">
@@ -629,10 +629,10 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
                                 ) : (
                                   <div>
                                     <h4 className="font-bold text-gray-500 text-sm sm:text-base">
-                                      Thành viên {index + 1}
+                                      {i18n[currentLanguage]?.member || "Thành viên"} {index + 1}
                                     </h4>
                                     <p className="text-xs sm:text-sm text-gray-400 italic">
-                                      Chưa có thông tin
+                                      {i18n[currentLanguage]?.no_information_yet || "Chưa có thông tin"}
                                     </p>
                                   </div>
                                 )}
@@ -696,7 +696,7 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
                             </span>
                           </div>
                           <span className="text-xs text-gray-400">
-                            Thành viên #{index + 1}
+                            {i18n[currentLanguage]?.member_number || "Thành viên #"}{index + 1}
                           </span>
                         </div>
                       </div>
@@ -715,7 +715,7 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
                       <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                       </svg>
-                      Thêm thành viên mới
+                      {i18n[currentLanguage]?.["Thêm thành viên mới"] || "Thêm thành viên mới"}
                     </span>
                   </Button>
                 </div>
@@ -795,10 +795,10 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <h3 className="text-lg sm:text-xl font-bold">
-                      {isNew ? 'Thêm thành viên mới' : `Chỉnh sửa thành viên ${editIndex + 1}`}
+                      {isNew ? i18n[currentLanguage]?.["Thêm thành viên mới"] || 'Thêm thành viên mới' : `${i18n[currentLanguage]?.["Chỉnh sửa thành viên"] || "Chỉnh sửa thành viên"} ${editIndex + 1}`}
                     </h3>
                     <p className="text-blue-100 text-xs sm:text-sm mt-1">
-                      {isNew ? 'Điền thông tin cho thành viên mới' : 'Cập nhật thông tin thành viên'}
+                      {isNew ? i18n[currentLanguage]?.["Điền thông tin cho thành viên mới"] || 'Điền thông tin cho thành viên mới' : i18n[currentLanguage]?.["Cập nhật thông tin thành viên"] || 'Cập nhật thông tin thành viên'}
                     </p>
                   </div>
                   <Button
@@ -822,7 +822,7 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
                       <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                         <span className="text-blue-600 font-bold text-sm">👤</span>
                       </div>
-                      Thông tin cơ bản
+                      {i18n[currentLanguage]?.["Thông tin cơ bản"] || "Thông tin cơ bản"}
                     </h4>
                   </div>
                   
@@ -840,7 +840,7 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
                           <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                             <span className="text-green-600 font-bold text-sm">⚙️</span>
                           </div>
-                          Thông tin bổ sung
+                          {i18n[currentLanguage]?.["Thông tin bổ sung"] || "Thông tin bổ sung"}
                         </h4>
                       </div>
                       <div className="md:col-span-2">
@@ -870,7 +870,7 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
                     onClick={handleConfirmDialog}
                     className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-bold transition-all duration-200 shadow-md hover:shadow-lg mb-3 sm:mb-0"
                   >
-                    {isNew ? '✅ Thêm thành viên' : '💾 Lưu thay đổi'}
+                    {isNew ? `✅ ${i18n[currentLanguage]?.["Thêm thành viên"] || "Thêm thành viên"}` : `💾 ${i18n[currentLanguage]?.["Lưu thay đổi"] || "Lưu thay đổi"}`}
                   </Button>
                 </div>
               </div>

@@ -25,7 +25,7 @@ export default function NotFound() {
         console.log('📋 Loaded events for 404 page:', response.events.length);
       } catch (err: any) {
         console.error('Error loading events:', err);
-        setError('Không thể tải danh sách sự kiện. Vui lòng thử lại.');
+        setError(i18n[currentLanguage]?.unable_to_load_event_list || 'Không thể tải danh sách sự kiện. Vui lòng thử lại.');
       } finally {
         setLoading(false);
       }
@@ -129,10 +129,10 @@ export default function NotFound() {
             
             <h1 className="text-5xl font-bold text-white mb-3">404</h1>
             <h2 className="text-2xl font-semibold text-white mb-3">
-              Trang không tồn tại
+              {i18n[currentLanguage]?.page_not_found || 'Trang không tồn tại'}
             </h2>
             <p className="text-lg text-red-100 mb-4">
-              Trang bạn đang tìm kiếm không tồn tại. Vui lòng chọn một sự kiện bên dưới.
+              {i18n[currentLanguage]?.page_not_found_description || 'Trang bạn đang tìm kiếm không tồn tại. Vui lòng chọn một sự kiện bên dưới.'}
             </p>
 
             {/* Platform Description - Compact */}

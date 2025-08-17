@@ -130,7 +130,7 @@ export default function DynamicFormFields({ fields, prefix, currentLanguage = 'v
               <select
                 {...register(fieldName, {
                   required: isRequired ? t.field_required : false,
-                  validate: val => !isRequired || val !== '' || (currentLanguage === 'vi' ? 'Vui lòng chọn một tùy chọn.' : 'Please select an option.'),
+                  validate: val => !isRequired || val !== '' || (i18n[currentLanguage]?.please_select_an_option || 'Vui lòng chọn một tùy chọn.'),
                 })}
                 defaultValue=""
                 className={`appearance-none w-full px-3 py-2 sm:px-4 sm:py-3 pr-10 sm:pr-12 border border-gray-300 sm:border-2 rounded-lg bg-white text-gray-900 font-medium text-sm sm:text-base shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none transition-all duration-200 ${fieldError ? 'border-red-500 focus:ring-red-500' : ''}`}
@@ -305,7 +305,7 @@ export default function DynamicFormFields({ fields, prefix, currentLanguage = 'v
                   validate: {
                     sizeLimit: (value: FileList) => {
                       if (!value || value.length === 0)
-                        return !isRequired || (currentLanguage === 'vi' ? 'Vui lòng chọn file.' : 'Please select a file.');
+                        return !isRequired || (i18n[currentLanguage]?.please_select_file || 'Vui lòng chọn file.');
                       const file = value[0];
                       const maxSize =
                         fieldType === 'Image' ? 5 * 1024 * 1024 : 30 * 1024 * 1024;
