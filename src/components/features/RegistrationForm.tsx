@@ -45,9 +45,18 @@ interface Props {
   eventId: string;
   currentLanguage?: string;
   onRegisterFormMigration?: (callback: (oldFields: FormField[], newFields: FormField[]) => void) => void;
+  isEmbedded?: boolean;
+  embedConfig?: {
+    theme: string;
+    language: string;
+    showHeader: boolean;
+    showFooter: boolean;
+    showProgress: boolean;
+    autoResize: boolean;
+  };
 }
 
-export default function RegistrationForm({ fields, eventId, currentLanguage = 'vi', onRegisterFormMigration }: Props) {
+export default function RegistrationForm({ fields, eventId, currentLanguage = 'vi', onRegisterFormMigration, isEmbedded = false, embedConfig }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexpo Embed Test - JotForm Style</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .demo-section {
+            margin: 40px 0;
+            padding: 20px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .demo-title {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .note {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 Nexpo Registration Form Embed Test</h1>
+    <p>This page demonstrates both embed methods for registration forms.</p>
+    
+    <!-- JotForm Style Single Script Demo -->
+    <div class="demo-section">
+        <div class="demo-title">✨ Method 1: JotForm-Style Single Script (NEW)</div>
+        <p>Just one script tag - no container div needed!</p>
+        
+        <div class="code-block">
+&lt;script src="http://localhost:3000/embed/123/script.js?theme=light&amp;lang=vi"&gt;&lt;/script&gt;
+        </div>
+        
+        <div class="note">
+            <strong>🚀 Live Demo:</strong> The form below is loaded with the single script method:
+        </div>
+        
+        <!-- ACTUAL EMBED: JotForm Style -->
+        <script src="http://localhost:3000/embed/123/script.js?theme=light&lang=vi"></script>
+    </div>
+    
+    <!-- Traditional iframe Demo -->
+    <div class="demo-section">
+        <div class="demo-title">📱 Method 2: Traditional iframe</div>
+        <p>Standard iframe approach for maximum compatibility.</p>
+        
+        <div class="code-block">
+&lt;iframe 
+  src="http://localhost:3000/embed-form/123?theme=dark&amp;lang=en"
+  width="100%" 
+  height="600px"
+  frameborder="0"&gt;
+&lt;/iframe&gt;
+        </div>
+        
+        <div class="note">
+            <strong>🎨 Live Demo:</strong> Dark theme, English language iframe:
+        </div>
+        
+        <!-- ACTUAL EMBED: iframe -->
+        <iframe 
+            src="http://localhost:3000/embed-form/123?theme=dark&lang=en&header=true&footer=true"
+            width="100%" 
+            height="600px"
+            frameborder="0"
+            style="border: none; border-radius: 8px;">
+        </iframe>
+    </div>
+    
+    <!-- Minimal Theme Demo -->
+    <div class="demo-section">
+        <div class="demo-title">✨ Method 3: Minimal Theme Single Script</div>
+        <p>Single script with minimal theme and custom dimensions.</p>
+        
+        <div class="code-block">
+&lt;script src="http://localhost:3000/embed/123/script.js?theme=minimal&amp;width=500px&amp;height=400px"&gt;&lt;/script&gt;
+        </div>
+        
+        <div class="note">
+            <strong>🎯 Live Demo:</strong> Minimal theme, custom dimensions:
+        </div>
+        
+        <!-- ACTUAL EMBED: Minimal -->
+        <script src="http://localhost:3000/embed/123/script.js?theme=minimal&width=500px&height=400px&header=false&footer=false"></script>
+    </div>
+    
+    <div class="note">
+        <strong>💡 Testing Instructions:</strong>
+        <ol>
+            <li>Start your Next.js dev server: <code>npm run dev</code></li>
+            <li>Open this HTML file in a browser</li>
+            <li>Check browser console for embed loading logs</li>
+            <li>Test different configurations by modifying the script URLs</li>
+            <li>Verify auto-resize functionality by interacting with forms</li>
+        </ol>
+    </div>
+    
+    <div style="text-align: center; margin-top: 50px; color: #666;">
+        <p>🎉 Nexpo Registration Form Embed System</p>
+        <p>Test completed successfully if you see 3 different registration forms above.</p>
+    </div>
+</body>
+</html>
