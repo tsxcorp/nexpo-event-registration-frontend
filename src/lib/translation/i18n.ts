@@ -5,7 +5,7 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     Full_Name: "Họ và tên",
     Email: "Email",
     Phone_Number: "Số điện thoại",
-
+    
     
     // Placeholders
     salutation_placeholder: "-- Chọn xưng hô --",
@@ -26,7 +26,7 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     
     // Salutation options
     mr: "Ông",
-    ms: "Cô",
+    ms: "Cô", 
     mrs: "Bà",
     
     // Other
@@ -69,7 +69,7 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     
     // QR Section
     qr_mode_personal: "Cá nhân",
-    qr_mode_group: "Nhóm",
+    qr_mode_group: "Nhóm", 
     qr_mode_badge: "Mã QR Khách Tham Dự",
     qr_mode_redeem: "Mã QR In Thẻ",
     qr_desc_badge: "Sử dụng QR này để truy cập các dịch vụ tại sự kiện",
@@ -128,7 +128,7 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     back_to_home: "Quay về trang chủ",
     yes: "Có",
     no: "Không",
-
+    
     
     // Registration form specific translations (camelCase)
     information_fields: "trường thông tin",
@@ -284,7 +284,7 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     // Tabs
     tab_checkin: "Check-in",
     tab_exhibitors: "Exhibitors",
-    tab_matching: "Matching",
+    tab_matching: "Matching", 
     tab_agenda: "Agenda",
     tab_more: "More",
     
@@ -303,7 +303,7 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     visitor_code_not_exist: "Access code is invalid or does not exist",
     visitor_code_wrong_event: "Access code does not belong to this event. Visitor belongs to event:",
     check_visitor_code: "Please check your access code from the organizers.",
-    reenter_visitor_code: "Re-enter access code",
+    reenter_visitor_code: "Re-enter access code", 
     try_again: "Try again",
     auto_redirect: "Auto redirect to access code page in",
     seconds: "seconds",
@@ -316,7 +316,7 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     // QR Section
     qr_mode_personal: "Personal",
     qr_mode_group: "Group",
-    qr_mode_badge: "Badge QR",
+    qr_mode_badge: "Badge QR", 
     qr_mode_redeem: "Redeem QR",
     qr_desc_badge: "Use this QR to access services at the event",
     qr_desc_redeem: "Scan this QR to reprint your badge if you lose it",
