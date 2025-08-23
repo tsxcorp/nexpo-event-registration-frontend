@@ -134,13 +134,15 @@ export default function CheckinMultiPage() {
         
         console.log('🔍 Loading available events for multi-checkin...');
         
-        // Test backend connection first
-        await visitorApi.checkBackendConnection();
+        // Test backend connection first (parallel with events loading)
+        const backendCheck = visitorApi.checkBackendConnection();
         
-        const response = await eventApi.getAllEvents();
+        // Load events without detailed=true for faster loading
+        const response = await eventApi.getAllEventsBasic();
         console.log('📋 Available events loaded:', response.events);
         
-
+        // Wait for backend check to complete
+        await backendCheck;
         
         // Filter active events or events that support check-in
         const activeEvents = response.events.filter(event => {
@@ -155,8 +157,11 @@ export default function CheckinMultiPage() {
         setSelectedEvents(activeEvents);
         console.log('🎯 Auto-selected all events for multi-event check-in:', activeEvents.map(e => e.name));
         
-        // Trigger entrance animation
-        setTimeout(() => setIsVisible(true), 100);
+        // Trigger entrance animation immediately
+        setIsVisible(true);
+        
+        // Load detailed event data in background for badge printing
+        loadDetailedEventData(activeEvents);
         
       } catch (err: any) {
         console.error('Error loading available events:', err);
@@ -168,6 +173,27 @@ export default function CheckinMultiPage() {
 
     loadAvailableEvents();
   }, []);
+
+  // Load detailed event data in background
+  const loadDetailedEventData = async (events: EventData[]) => {
+    try {
+      console.log('🔄 Loading detailed event data in background...');
+      const response = await eventApi.getAllEvents();
+      
+      // Update events with detailed data
+      setAvailableEvents(prevEvents => 
+        prevEvents.map(event => {
+          const detailedEvent = response.events.find(e => e.id === event.id);
+          return detailedEvent || event;
+        })
+      );
+      
+      console.log('✅ Detailed event data loaded successfully');
+    } catch (error) {
+      console.warn('⚠️ Failed to load detailed event data:', error);
+      // Don't fail the whole process, just log warning
+    }
+  };
 
   // Auto-focus input when events are selected
   useEffect(() => {

@@ -290,6 +290,38 @@ export const eventApi = {
     return { events };
   },
 
+  getAllEventsBasic: async (): Promise<{ events: EventData[] }> => {
+    // Get all events without detailed=true for faster loading
+    const response = await apiClient.get(`/api/events/?eventId=NEXPO`);
+    
+
+    
+    let events = response.data.events || response.data || [];
+    
+    // Ensure events is an array
+    if (!Array.isArray(events)) {
+      events = [];
+    }
+    
+
+    
+    // Minimal processing for basic event list
+    events = events.map((event: any) => {
+      // Only essential fields for multi-event selection
+      return {
+        id: event.id,
+        name: event.name,
+        badge_printing: event.badge_printing || false,
+        badge_size: event.badge_size || '',
+        badge_custom_content: event.badge_custom_content || ''
+      };
+    });
+    
+
+    
+    return { events };
+  },
+
   submitRegistration: async (eventId: string, data: Record<string, any>) => {
     const response = await apiClient.post(`/api/events/${eventId}/register`, data);
     return response.data;
