@@ -699,11 +699,11 @@ export default function CheckinMultiPage() {
       // Try direct field first
       if (visitorData[fieldName as keyof VisitorData]) {
         const value = visitorData[fieldName as keyof VisitorData];
-        if (value && String(value).trim()) {
-          console.log('✅ Found custom content in direct field:', fieldName, value);
-          results.push(String(value).trim());
-          continue;
-        }
+                 if (value && String(value).trim()) {
+           console.log('✅ Found custom content in direct field:', fieldName, value);
+           results.push(String(value).trim().toUpperCase());
+           continue;
+         }
       }
       
       // Try custom_fields
@@ -712,11 +712,11 @@ export default function CheckinMultiPage() {
           ? JSON.parse(visitorData.custom_fields) 
           : visitorData.custom_fields;
           
-        if (customFields[fieldName] && customFields[fieldName].trim()) {
-          console.log('✅ Found custom content in custom_fields:', fieldName, customFields[fieldName]);
-          results.push(customFields[fieldName].trim());
-          continue;
-        }
+                 if (customFields[fieldName] && customFields[fieldName].trim()) {
+           console.log('✅ Found custom content in custom_fields:', fieldName, customFields[fieldName]);
+           results.push(customFields[fieldName].trim().toUpperCase());
+           continue;
+         }
       } catch (error) {
         console.log('⚠️ Error parsing custom_fields for field:', fieldName, error);
       }
