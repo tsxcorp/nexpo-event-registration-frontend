@@ -148,7 +148,45 @@ export const eventApi = {
     // The backend uses a query parameter for this specific route
     const timestamp = Date.now(); // Cache busting
     const response = await apiClient.get(`/api/events/?eventId=${eventId}&_t=${timestamp}`);
-    let event = response.data.event || response.data;
+    
+    // Check if response has event object first
+    let event = response.data.event;
+    
+    // If no event object, try to construct from response.data
+    if (!event && response.data) {
+      event = {
+        id: response.data.id || eventId,
+        name: response.data.name || '',
+        description: response.data.description || '',
+        start_date: response.data.start_date || '',
+        end_date: response.data.end_date || '',
+        banner: response.data.banner || '',
+        logo: response.data.logo || '',
+        header: response.data.header || '',
+        footer: response.data.footer || '',
+        favicon: response.data.favicon || '',
+        email: response.data.email || '',
+        location: response.data.location || '',
+        formFields: response.data.formFields || [],
+        exhibitors: response.data.exhibitors || [],
+        sessions: response.data.sessions || [],
+        registration_form: response.data.registration_form || [],
+        status: response.data.status || '',
+        created_date: response.data.created_date || '',
+        badge_size: response.data.badge_size || '',
+        badge_printing: response.data.badge_printing || false,
+        floor_plan_pdf: response.data.floor_plan_pdf || '',
+        directory_url: response.data.directory_url || ''
+      };
+    }
+    
+    // Ensure we have a valid event object
+    if (!event) {
+      throw new Error(`Event ${eventId} not found`);
+    }
+    
+
+    
     // Robust mapping for formFields (camelCase or snake_case)
     if (!event.formFields && event.form_fields) {
       event.formFields = event.form_fields;
@@ -156,13 +194,47 @@ export const eventApi = {
     if (!Array.isArray(event.formFields)) {
       event.formFields = [];
     }
+    
+    // Map badge_printing field (check multiple possible names)
+    if (event.badge_printing === undefined) {
+      // Try different possible field names
+      if (event.badgePrinting !== undefined) {
+        event.badge_printing = event.badgePrinting;
+      } else if (event.badge_print !== undefined) {
+        event.badge_printing = event.badge_print;
+      } else if (event.badgeprint !== undefined) {
+        event.badge_printing = event.badgeprint;
+      } else if (event.print_badge !== undefined) {
+        event.badge_printing = event.print_badge;
+      } else if (event.printBadge !== undefined) {
+        event.badge_printing = event.printBadge;
+      }
+    }
+    
+    // Ensure badge_printing is boolean
+    if (event.badge_printing !== undefined) {
+      // Convert string "true"/"false" to boolean
+      if (typeof event.badge_printing === 'string') {
+        event.badge_printing = event.badge_printing.toLowerCase() === 'true';
+      }
+      // Convert number 1/0 to boolean
+      else if (typeof event.badge_printing === 'number') {
+        event.badge_printing = event.badge_printing === 1;
+      }
+    }
+    
+
+    
     return { event };
   },
 
   getAllEvents: async (): Promise<{ events: EventData[] }> => {
-    // Get all events using NEXPO parameter
+    // Get all events using NEXPO parameter with detailed=true for accurate data
     const timestamp = Date.now(); // Cache busting
-    const response = await apiClient.get(`/api/events/?eventId=NEXPO&_t=${timestamp}`);
+    const response = await apiClient.get(`/api/events/?eventId=NEXPO&detailed=true&_t=${timestamp}`);
+    
+
+    
     let events = response.data.events || response.data || [];
     
     // Ensure events is an array
@@ -170,16 +242,50 @@ export const eventApi = {
       events = [];
     }
     
-    // Process each event to ensure formFields consistency
+
+    
+    // Process each event to ensure formFields consistency and field mapping
     events = events.map((event: any) => {
+      // Map formFields (camelCase vs snake_case)
       if (!event.formFields && event.form_fields) {
         event.formFields = event.form_fields;
       }
       if (!Array.isArray(event.formFields)) {
         event.formFields = [];
       }
+      
+      // Map badge_printing field (check multiple possible names)
+      if (event.badge_printing === undefined) {
+        // Try different possible field names
+        if (event.badgePrinting !== undefined) {
+          event.badge_printing = event.badgePrinting;
+        } else if (event.badge_print !== undefined) {
+          event.badge_printing = event.badge_print;
+        } else if (event.badgeprint !== undefined) {
+          event.badge_printing = event.badgeprint;
+        } else if (event.print_badge !== undefined) {
+          event.badge_printing = event.print_badge;
+        } else if (event.printBadge !== undefined) {
+          event.badge_printing = event.printBadge;
+        }
+      }
+      
+      // Ensure badge_printing is boolean
+      if (event.badge_printing !== undefined) {
+        // Convert string "true"/"false" to boolean
+        if (typeof event.badge_printing === 'string') {
+          event.badge_printing = event.badge_printing.toLowerCase() === 'true';
+        }
+        // Convert number 1/0 to boolean
+        else if (typeof event.badge_printing === 'number') {
+          event.badge_printing = event.badge_printing === 1;
+        }
+      }
+      
       return event;
     });
+    
+
     
     return { events };
   },

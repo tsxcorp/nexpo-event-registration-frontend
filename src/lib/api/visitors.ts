@@ -189,19 +189,35 @@ export const visitorApi = {
     console.log(JSON.stringify(payload, null, 2));
     
     try {
-      const response = await apiClient.post<CheckinResponse>('/api/visitors/checkin', payload);
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
       
+      const response = await apiClient.post<CheckinResponse>('/api/visitors/checkin', payload, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
       console.log('✅ Check-in submitted successfully:', response.data);
       return response.data;
     } catch (error: any) {
       console.error('❌ Error submitting check-in:', error);
-      console.error('❌ Error response data:', error.response?.data);
+      
+      // Handle timeout
+      if (error.name === 'AbortError') {
+        console.error('❌ Check-in submission timed out after 10 seconds');
+        throw new Error('Check-in submission timed out');
+      }
       
       // Handle different error types
       if (error.response?.status === 400) {
         throw new Error('Invalid visitor data');
+      } else if (error.response?.status === 404) {
+        throw new Error('Check-in API not found');
       } else if (error.response?.status === 500) {
         throw new Error('Server error: ' + (error.response?.data?.details || 'Failed to submit check-in'));
+      } else if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+        throw new Error('Check-in API not available');
       } else {
         throw new Error('Failed to submit check-in to Zoho');
       }

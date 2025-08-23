@@ -393,13 +393,13 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           // We still show success to user but log the error
         }
         
-        // Test company extraction immediately after getting visitor data
-        console.log('🔍 Testing company extraction for visitor:', response.visitor.id);
-        const testCompanyInfo = getCompanyInfo(response.visitor);
-        console.log('🏢 Company extraction test result:', {
-          found: !!testCompanyInfo,
-          company: testCompanyInfo,
-          willShowOnBadge: !!testCompanyInfo
+        // Test custom content extraction immediately after getting visitor data
+        console.log('🔍 Testing custom content extraction for visitor:', response.visitor.id);
+        const testCustomContent = getCustomContent(response.visitor);
+        console.log('🎨 Custom content extraction test result:', {
+          found: testCustomContent.length > 0,
+          customContent: testCustomContent,
+          willShowOnBadge: testCustomContent.length > 0
         });
         
         setVisitor(response.visitor);
@@ -799,10 +799,10 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   const generateBadgeContent = (visitorData: VisitorData) => {
     console.log('🎨 generateBadgeContent called with visitor:', visitorData);
     
-    const companyInfo = getCompanyInfo(visitorData);
-    console.log('🏢 Badge company extraction result:', {
-      hasCompany: !!companyInfo,
-      company: companyInfo
+    const customContent = getCustomContent(visitorData);
+    console.log('🎨 Badge custom content extraction result:', {
+      hasCustomContent: customContent.length > 0,
+      customContent: customContent
     });
     
     const badgeLayout = getBadgeLayout();
@@ -873,11 +873,9 @@ export default function CheckinPage({ params }: CheckinPageProps) {
             minWidth: 0, // Allow text to shrink
             marginTop: badgeLayout.isVerticalLayout ? '4mm' : 0
           }}>
-            {/* Visitor Name - with auto resize */}
+            {/* Visitor Name */}
             <div style={{
-              fontSize: badgeLayout.isVerticalLayout ? 
-                (visitorData.name.length > 20 ? '16px' : visitorData.name.length > 15 ? '18px' : '20px') :
-                (visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px'),
+              fontSize: '20px',
               fontWeight: 'bold',
               marginBottom: '2mm',
               color: '#1F2937',
@@ -887,20 +885,19 @@ export default function CheckinPage({ params }: CheckinPageProps) {
               {visitorData.name}
             </div>
             
-            {/* Company (if available) */}
-            {companyInfo && (
-              <div style={{
-                fontSize: badgeLayout.isVerticalLayout ?
-                  (companyInfo.length > 30 ? '12px' : '14px') :
-                  (companyInfo.length > 30 ? '10px' : '12px'),
-                fontWeight: '600',
-                color: '#4B5563',
+            {/* Custom Content (if available) */}
+            {customContent.map((content, index) => (
+              <div key={index} style={{
+                fontSize: '15px',
+                fontWeight: '400',
+                color: '#000000',
                 wordWrap: 'break-word',
-                lineHeight: '1.1'
+                lineHeight: '1.1',
+                marginBottom: '1mm'
               }}>
-                {companyInfo}
+                {content}
               </div>
-            )}
+            ))}
           </div>
         </div>
 
@@ -921,57 +918,55 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     );
   };
 
-  // Extract company information from custom_fields or company field
-  const getCompanyInfo = (visitorData: VisitorData): string => {
-    console.log('🏢 Extracting company info for visitor:', visitorData.name);
-    console.log('🏢 Raw custom_fields:', visitorData.custom_fields);
-    
-    // Try company field first
-    if (visitorData.company && visitorData.company.trim()) {
-      console.log('✅ Found company in company field:', visitorData.company);
-      return visitorData.company.trim();
+  // Extract custom content from visitor data based on event's badge_custom_content
+  const getCustomContent = (visitorData: VisitorData): string[] => {
+    const customContentField = (eventData as any)?.badge_custom_content;
+    if (!customContentField || typeof customContentField !== 'string') {
+      return [];
     }
+
+    console.log('🎨 Extracting custom content for fields:', customContentField);
     
-    // Try custom_fields
-    try {
-      const customFields = typeof visitorData.custom_fields === 'string' 
-        ? JSON.parse(visitorData.custom_fields) 
-        : visitorData.custom_fields;
-        
-      console.log('🏢 Parsed custom_fields:', customFields);
-        
-      // Check various possible field names for company
-      const companyFieldNames = [
-        'cng_company',          // For current event
-        'Tên Công Ty', 
-        'Company', 
-        'Công ty', 
-        'company',
-        'ten_cong_ty',
-        'company_name',
-        'CompanyName',
-        'Công ty làm việc',
-        'Nơi làm việc',
-        'Đơn vị công tác',
-        'don_vi_cong_tac'
-      ];
+    // Split by comma to handle multiple fields
+    const fieldNames = customContentField.split(',').map(field => field.trim());
+    const results: string[] = [];
+    
+    for (const fieldName of fieldNames) {
+      console.log('🎨 Processing field:', fieldName);
       
-      for (const fieldName of companyFieldNames) {
-        if (customFields[fieldName] && customFields[fieldName].trim()) {
-          console.log(`✅ Found company in field "${fieldName}":`, customFields[fieldName]);
-          return customFields[fieldName].trim();
+      // Try direct field first
+      if (visitorData[fieldName as keyof VisitorData]) {
+        const value = visitorData[fieldName as keyof VisitorData];
+        if (value && String(value).trim()) {
+          console.log('✅ Found custom content in direct field:', fieldName, value);
+          results.push(String(value).trim());
+          continue;
         }
       }
       
-      // Log all available field names for debugging
-      console.log('📋 Available custom field names:', Object.keys(customFields));
-    } catch (error) {
-      console.log('⚠️ Error parsing custom_fields:', error);
+      // Try custom_fields
+      try {
+        const customFields = typeof visitorData.custom_fields === 'string' 
+          ? JSON.parse(visitorData.custom_fields) 
+          : visitorData.custom_fields;
+          
+        if (customFields[fieldName] && customFields[fieldName].trim()) {
+          console.log('✅ Found custom content in custom_fields:', fieldName, customFields[fieldName]);
+          results.push(customFields[fieldName].trim());
+          continue;
+        }
+      } catch (error) {
+        console.log('⚠️ Error parsing custom_fields for field:', fieldName, error);
+      }
+      
+      console.log('❌ No content found for field:', fieldName);
     }
     
-    console.log('❌ No company information found');
-    return '';
+    console.log('🎨 Final custom content results:', results);
+    return results;
   };
+
+
 
   // Generate QR fallback using Canvas (for mobile reliability)
   const generateQRFallback = (qrData: string): string => {
@@ -1014,7 +1009,6 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   const printBadgeWithProgressiveLoading = (visitorData: VisitorData) => {
     console.log('📱 Using progressive loading for mobile print');
     
-    const companyInfo = getCompanyInfo(visitorData);
     const badgeSize = getBadgeSize();
     const contentHeight = badgeSize.height - 30;
     const qrData = (visitorData as any)?.badge_qr || visitorData.id || '';
@@ -1107,12 +1101,12 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     
     const printWithQRImage = (qrUrl: string) => {
       // ... existing print logic with working QR URL
-      printBadgeWithQR(visitorData, companyInfo, qrUrl);
+      printBadgeWithQR(visitorData, qrUrl);
     };
     
     const printWithTextQR = () => {
       // Direct print with text QR
-      printBadgeWithTextQR(visitorData, companyInfo, qrData);
+      printBadgeWithTextQR(visitorData, qrData);
     };
     
     // Start trying QR sources
@@ -1120,20 +1114,18 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   };
 
   // Helper function to print with working QR URL
-  const printBadgeWithQR = (visitorData: VisitorData, companyInfo: string, qrUrl: string) => {
+  const printBadgeWithQR = (visitorData: VisitorData, qrUrl: string) => {
     const badgeLayout = getBadgeLayout();
     const contentHeight = badgeLayout.height - 30;
+    
+    // Extract custom content
+    const customContent = getCustomContent(visitorData);
     
     // QR size for print - larger for vertical layout
     const printQrContainerSize = badgeLayout.isVerticalLayout ? '28mm' : '20mm';
     const printQrImageSize = badgeLayout.isVerticalLayout ? '26mm' : '18mm';
     
-    const nameSize = badgeLayout.isVerticalLayout ? 
-      (visitorData.name.length > 20 ? '16px' : visitorData.name.length > 15 ? '18px' : '20px') :
-      (visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px');
-    const companySize = badgeLayout.isVerticalLayout ?
-      (companyInfo && companyInfo.length > 30 ? '12px' : '14px') :
-      (companyInfo && companyInfo.length > 30 ? '10px' : '12px');
+    const customContentSize = '15px';
     
     // Create print window with better popup handling
     let printWindow: Window | null = null;
@@ -1198,8 +1190,8 @@ export default function CheckinPage({ params }: CheckinPageProps) {
             margin-top: ${badgeLayout.isVerticalLayout ? '4mm' : '0'};
             order: ${badgeLayout.isVerticalLayout ? '2' : '1'};
           }
-          .name { font-size: ${nameSize}; font-weight: bold; margin-bottom: 2mm; color: #1F2937; word-wrap: break-word; line-height: 1.2; }
-          .company { font-size: ${companySize}; font-weight: 600; color: #4B5563; word-wrap: break-word; line-height: 1.1; }
+          .name { font-size: 20px; font-weight: bold; margin-bottom: 2mm; color: #1F2937; word-wrap: break-word; line-height: 1.2; }
+          .custom-content { font-size: ${customContentSize}; color: #000000; word-wrap: break-word; line-height: 1.1; margin-bottom: 1mm; }
         </style>
       </head>
       <body>
@@ -1209,7 +1201,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           </div>
           <div class="info">
             <div class="name">${visitorData.name}</div>
-            ${companyInfo ? `<div class="company">${companyInfo}</div>` : ''}
+            ${customContent.map(content => `<div class="custom-content">${content}</div>`).join('')}
           </div>
         </div>
       </body>
@@ -1240,7 +1232,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   };
 
   // Helper function to print with text QR fallback
-  const printBadgeWithTextQR = (visitorData: VisitorData, companyInfo: string, qrData: string) => {
+  const printBadgeWithTextQR = (visitorData: VisitorData, qrData: string) => {
     console.log('📝 Printing with text QR fallback');
     
     const badgeLayout = getBadgeLayout();
@@ -1253,9 +1245,6 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     const nameSize = badgeLayout.isVerticalLayout ? 
       (visitorData.name.length > 20 ? '16px' : visitorData.name.length > 15 ? '18px' : '20px') :
       (visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px');
-    const companySize = badgeLayout.isVerticalLayout ?
-      (companyInfo && companyInfo.length > 30 ? '12px' : '14px') :
-      (companyInfo && companyInfo.length > 30 ? '10px' : '12px');
     
     // Create print window with better popup handling
     let printWindow: Window | null = null;
@@ -1321,8 +1310,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
             margin-top: ${badgeLayout.isVerticalLayout ? '4mm' : '0'};
             order: ${badgeLayout.isVerticalLayout ? '2' : '1'};
           }
-          .name { font-size: ${nameSize}; font-weight: bold; margin-bottom: 2mm; color: #1F2937; word-wrap: break-word; line-height: 1.2; }
-          .company { font-size: ${companySize}; font-weight: 600; color: #4B5563; word-wrap: break-word; line-height: 1.1; }
+                      .name { font-size: ${nameSize}; font-weight: bold; margin-bottom: 2mm; color: #1F2937; word-wrap: break-word; line-height: 1.2; }
         </style>
       </head>
       <body>
@@ -1335,7 +1323,6 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           </div>
           <div class="info">
             <div class="name">${visitorData.name}</div>
-            ${companyInfo ? `<div class="company">${companyInfo}</div>` : ''}
           </div>
         </div>
       </body>
@@ -1391,11 +1378,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     
     // Original desktop approach for backward compatibility
     try {
-      const companyInfo = getCompanyInfo(visitorData);
-      console.log('🏢 Print company extraction result:', {
-        hasCompany: !!companyInfo,
-        company: companyInfo
-      });
+      console.log('🎨 Print badge for visitor:', visitorData.name);
       
       const badgeLayout = getBadgeLayout();
       const contentHeight = badgeLayout.height - 30; // Reserve space for header/footer
@@ -1426,9 +1409,6 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       const nameSize = badgeLayout.isVerticalLayout ? 
         (visitorData.name.length > 20 ? '16px' : visitorData.name.length > 15 ? '18px' : '20px') :
         (visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px');
-      const companySize = badgeLayout.isVerticalLayout ?
-        (companyInfo && companyInfo.length > 30 ? '12px' : '14px') :
-        (companyInfo && companyInfo.length > 30 ? '10px' : '12px');
       
       // Generate QR code URL with mobile-friendly settings
       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}&format=png&ecc=M`;
@@ -1466,11 +1446,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
             ${visitorData.name}
           </div>
           
-          ${companyInfo ? `
-            <div style="font-size: ${companySize}; font-weight: 600; color: #4B5563; word-wrap: break-word; line-height: 1.1;">
-              ${companyInfo}
-            </div>
-          ` : ''}
+
         </div>
       `;
       
@@ -1740,7 +1716,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         custom_fields: testCase.custom_fields
       } as unknown as VisitorData;
       
-      const result = getCompanyInfo(mockVisitor);
+      const result = getCustomContent(mockVisitor);
       console.log(`📋 ${testCase.name}:`, result || '(no company found)');
     });
     
@@ -2240,10 +2216,10 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                   {visitor.name}
                 </p>
                 {(() => {
-                  const companyInfo = getCompanyInfo(visitor);
-                  return companyInfo ? (
+                  const customContent = getCustomContent(visitor);
+                  return customContent.length > 0 ? (
                     <p className="text-sm text-gray-600">
-                      {companyInfo}
+                      {customContent[0]}
                     </p>
                   ) : null;
                 })()}

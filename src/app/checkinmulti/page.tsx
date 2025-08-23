@@ -140,6 +140,8 @@ export default function CheckinMultiPage() {
         const response = await eventApi.getAllEvents();
         console.log('📋 Available events loaded:', response.events);
         
+
+        
         // Filter active events or events that support check-in
         const activeEvents = response.events.filter(event => {
           // You can add more filtering logic here based on your needs
@@ -419,7 +421,7 @@ export default function CheckinMultiPage() {
         // Set the matched event for badge printing and display
         setMatchedEvent(matchingEvent);
         
-        // Submit check-in to Zoho Creator
+        // Submit check-in to Zoho Creator (if API exists)
         try {
           console.log('📝 Submitting multi-event check-in history to Zoho...');
           const checkinResult = await visitorApi.submitCheckin(response.visitor);
@@ -427,6 +429,7 @@ export default function CheckinMultiPage() {
         } catch (submitError: any) {
           console.error('⚠️ Failed to submit multi-event check-in history:', submitError.message);
           // Don't fail the whole process if check-in submission fails
+          // This is expected if the check-in API doesn't exist yet
         }
         
         setVisitor(response.visitor);
@@ -632,6 +635,99 @@ export default function CheckinMultiPage() {
     }, cameraEnabled ? 100 : 50);
   };
 
+  // Parse badge size from event data
+  const getBadgeSize = (eventData: EventData) => {
+    const badgeSize = eventData?.badge_size;
+    if (!badgeSize) return { width: 85, height: 54 };
+
+    console.log('🎫 Badge size from backend:', badgeSize);
+
+    // Handle different formats: "W106mm x H72mm" or "W106 x H72 mm" 
+    const match = badgeSize.match(/W(\d+)mm?\s*x\s*H(\d+)mm?/i);
+    if (match) {
+      const size = {
+        width: parseInt(match[1]),
+        height: parseInt(match[2])
+      };
+      console.log('🎫 Parsed badge size:', size);
+      return size;
+    }
+    
+    console.log('🎫 Using default badge size');
+    return { width: 85, height: 54 };
+  };
+
+  // Determine badge layout based on dimensions
+  const getBadgeLayout = (eventData: EventData) => {
+    const badgeSize = getBadgeSize(eventData);
+    const aspectRatio = badgeSize.height / badgeSize.width;
+    
+    // If height is significantly more than width (aspect ratio > 1.2), use vertical layout
+    const isVerticalLayout = aspectRatio > 1.2;
+    
+    console.log('🎫 Badge layout decision:', {
+      width: badgeSize.width,
+      height: badgeSize.height,
+      aspectRatio: aspectRatio.toFixed(2),
+      layout: isVerticalLayout ? 'vertical' : 'horizontal'
+    });
+    
+    return {
+      ...badgeSize,
+      isVerticalLayout
+    };
+  };
+
+
+
+  // Extract custom content from visitor data based on event's badge_custom_content
+  const getCustomContent = (visitorData: VisitorData, eventToPrint: EventData): string[] => {
+    const customContentField = (eventToPrint as any)?.badge_custom_content;
+    if (!customContentField || typeof customContentField !== 'string') {
+      return [];
+    }
+
+    console.log('🎨 Extracting custom content for fields:', customContentField);
+    
+    // Split by comma to handle multiple fields
+    const fieldNames = customContentField.split(',').map(field => field.trim());
+    const results: string[] = [];
+    
+    for (const fieldName of fieldNames) {
+      console.log('🎨 Processing field:', fieldName);
+      
+      // Try direct field first
+      if (visitorData[fieldName as keyof VisitorData]) {
+        const value = visitorData[fieldName as keyof VisitorData];
+        if (value && String(value).trim()) {
+          console.log('✅ Found custom content in direct field:', fieldName, value);
+          results.push(String(value).trim());
+          continue;
+        }
+      }
+      
+      // Try custom_fields
+      try {
+        const customFields = typeof visitorData.custom_fields === 'string' 
+          ? JSON.parse(visitorData.custom_fields) 
+          : visitorData.custom_fields;
+          
+        if (customFields[fieldName] && customFields[fieldName].trim()) {
+          console.log('✅ Found custom content in custom_fields:', fieldName, customFields[fieldName]);
+          results.push(customFields[fieldName].trim());
+          continue;
+        }
+      } catch (error) {
+        console.log('⚠️ Error parsing custom_fields for field:', fieldName, error);
+      }
+      
+      console.log('❌ No content found for field:', fieldName);
+    }
+    
+    console.log('🎨 Final custom content results:', results);
+    return results;
+  };
+
   // Print badge function for matched event
   const printBadge = (visitorData: VisitorData, eventToPrint: EventData) => {
     console.log('🖨️ Multi-event printBadge called with visitor:', visitorData.name, 'for matched event:', eventToPrint.name);
@@ -639,7 +735,23 @@ export default function CheckinMultiPage() {
     // Show printing feedback
     setSuccess(`✅ Check-in thành công! 🖨️ Đang in thẻ cho sự kiện "${eventToPrint.name}"...`);
     
-    // Simple print implementation - you can use the same complex logic from the original checkin page
+    // Get badge layout from matched event
+    const badgeLayout = getBadgeLayout(eventToPrint);
+    const contentHeight = badgeLayout.height - 30; // Reserve space for header/footer
+    
+    // Extract custom content
+    const customContent = getCustomContent(visitorData, eventToPrint);
+    
+    // QR size for print - larger for vertical layout
+    const printQrContainerSize = badgeLayout.isVerticalLayout ? '28mm' : '20mm';
+    const printQrImageSize = badgeLayout.isVerticalLayout ? '26mm' : '18mm';
+    
+    const nameSize = badgeLayout.isVerticalLayout ? 
+      (visitorData.name.length > 20 ? '16px' : visitorData.name.length > 15 ? '18px' : '20px') :
+      (visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px');
+    
+    const customContentSize = '15px';
+    
     const qrData = (visitorData as any)?.badge_qr || visitorData.id || '';
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
     
@@ -657,21 +769,45 @@ export default function CheckinMultiPage() {
         <head>
           <title>Badge - ${visitorData.name} - ${eventToPrint.name}</title>
           <style>
-            @media print { @page { size: 85mm 54mm; margin: 0; } }
-            body { margin: 0; padding: 4mm; font-family: Arial, sans-serif; }
-            .badge { display: flex; align-items: center; gap: 4mm; height: 46mm; }
-            .qr { width: 20mm; height: 20mm; }
-            .info { flex: 1; }
-            .name { font-size: 16px; font-weight: bold; margin-bottom: 2mm; }
-            .event { font-size: 12px; color: #666; }
+            @media print {
+              @page { size: ${badgeLayout.width}mm ${contentHeight}mm; margin: 0; }
+              body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+            }
+            body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: white; }
+            .badge-content {
+              width: ${badgeLayout.width}mm; height: ${contentHeight}mm; padding: 4mm;
+              display: flex; 
+              flex-direction: ${badgeLayout.isVerticalLayout ? 'column' : 'row'};
+              align-items: center; 
+              justify-content: ${badgeLayout.isVerticalLayout ? 'center' : 'flex-start'};
+              gap: 4mm; box-sizing: border-box;
+            }
+            .qr-container { 
+              width: ${printQrContainerSize}; height: ${printQrContainerSize}; display: flex; align-items: center; justify-content: center; 
+              background: #fff; flex-shrink: 0; order: ${badgeLayout.isVerticalLayout ? '1' : '0'}; 
+            }
+            .qr-img { width: ${printQrImageSize}; height: ${printQrImageSize}; object-fit: contain; }
+            .info { 
+              flex: ${badgeLayout.isVerticalLayout ? '0' : '1'}; 
+              display: flex; flex-direction: column; justify-content: center; 
+              align-items: ${badgeLayout.isVerticalLayout ? 'center' : 'flex-start'};
+              text-align: ${badgeLayout.isVerticalLayout ? 'center' : 'left'};
+              min-width: 0;
+              margin-top: ${badgeLayout.isVerticalLayout ? '4mm' : '0'};
+              order: ${badgeLayout.isVerticalLayout ? '2' : '1'};
+            }
+            .name { font-size: 20px; font-weight: bold; margin-bottom: 2mm; color: #1F2937; word-wrap: break-word; line-height: 1.2; }
+            .custom-content { font-size: ${customContentSize}; color: #000000; word-wrap: break-word; line-height: 1.1; margin-bottom: 1mm; }
           </style>
         </head>
         <body>
-          <div class="badge">
-            <img src="${qrUrl}" alt="QR Code" class="qr" />
+          <div class="badge-content">
+            <div class="qr-container">
+              <img src="${qrUrl}" alt="QR Code" class="qr-img" />
+            </div>
             <div class="info">
               <div class="name">${visitorData.name}</div>
-              <div class="event">${eventToPrint.name}</div>
+              ${customContent.map(content => `<div class="custom-content">${content}</div>`).join('')}
             </div>
           </div>
         </body>
@@ -684,7 +820,7 @@ export default function CheckinMultiPage() {
         printWindow.focus();
         printWindow.print();
         printWindow.close();
-        console.log('🖨️ Multi-event badge print completed for event:', eventToPrint.name);
+        console.log('🖨️ Multi-event badge print completed for event:', eventToPrint.name, 'with size:', badgeLayout);
       }, 1000);
     } catch (error) {
       console.error('❌ Multi-event print error:', error);
@@ -793,6 +929,12 @@ export default function CheckinMultiPage() {
                         <Icon name="QrCodeIcon" className="w-3 h-3" />
                         <span>{selectedEvents.length} check-in</span>
                       </div>
+                      {selectedEvents.some(e => e.badge_printing) && (
+                        <div className="flex items-center gap-1 text-yellow-300">
+                          <Icon name="ExclamationTriangleIcon" className="w-3 h-3" />
+                          <span>{selectedEvents.filter(e => !e.badge_printing).length} không in thẻ</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -868,11 +1010,17 @@ export default function CheckinMultiPage() {
                             {selectedEvents.slice(0, 2).map((event) => (
                               <span 
                                 key={event.id}
-                                className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-md text-xs font-medium"
+                                className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${
+                                  event.badge_printing 
+                                    ? 'bg-green-100 text-green-700' 
+                                    : 'bg-orange-100 text-orange-700'
+                                }`}
                               >
                                 {event.name.length > 15 ? `${event.name.substring(0, 15)}...` : event.name}
-                                {event.badge_printing && (
+                                {event.badge_printing ? (
                                   <Icon name="PrinterIcon" className="w-3 h-3 text-green-600" />
+                                ) : (
+                                  <Icon name="ExclamationTriangleIcon" className="w-3 h-3 text-orange-600" />
                                 )}
                               </span>
                             ))}
@@ -965,13 +1113,20 @@ export default function CheckinMultiPage() {
                                       {event.name}
                                     </span>
                                     <div className="flex items-center gap-1">
-                                      {event.badge_printing && (
+                                      {event.badge_printing ? (
                                         <div className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
                                           <Icon name="PrinterIcon" className="w-3 h-3" />
+                                          <span>In thẻ</span>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-1 text-xs text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">
+                                          <Icon name="ExclamationTriangleIcon" className="w-3 h-3" />
+                                          <span>Không in</span>
                                         </div>
                                       )}
                                       <div className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
                                         <Icon name="QrCodeIcon" className="w-3 h-3" />
+                                        <span>Check-in</span>
                                       </div>
                                     </div>
                                   </div>
@@ -1013,6 +1168,22 @@ export default function CheckinMultiPage() {
                     <div className="font-semibold text-emerald-600 text-sm">
                       {selectedEvents.length} events
                     </div>
+                    
+                    {/* Auto-Print Status */}
+                    {selectedEvents.some(e => e.badge_printing) && (
+                      <div className="mt-1 flex items-center justify-end gap-1">
+                        <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                          autoPrintEnabled 
+                            ? 'bg-green-100 text-green-700 border border-green-200' 
+                            : 'bg-blue-100 text-blue-700 border border-blue-200'
+                        }`}>
+                          <Icon name="PrinterIcon" className="w-3 h-3" />
+                          <span>
+                            {autoPrintEnabled ? 'Auto-print: Bật' : 'Auto-print: Tắt'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1170,6 +1341,21 @@ export default function CheckinMultiPage() {
                     <Icon name="CheckCircleIcon" className="w-6 h-6 text-emerald-600" />
                     <div className="flex-1">
                       <span className="text-sm text-emerald-800 font-medium">{success}</span>
+                      
+                      {/* Show badge printing status */}
+                      {matchedEvent && (
+                        <div className="mt-1 text-xs text-emerald-700">
+                          {matchedEvent.badge_printing ? (
+                            autoPrintEnabled ? (
+                              <span>🖨️ Auto-print đã bật cho event "{matchedEvent.name}"</span>
+                            ) : (
+                              <span>ℹ️ Auto-print đã tắt cho event "{matchedEvent.name}"</span>
+                            )
+                          ) : (
+                            <span>⚠️ Event "{matchedEvent.name}" không hỗ trợ in thẻ đeo</span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1266,6 +1452,20 @@ export default function CheckinMultiPage() {
                   <div className="flex items-center justify-center gap-2 text-sm text-emerald-700">
                     <Icon name="PrinterIcon" className="w-4 h-4" />
                     <span>✓ Thẻ đeo đã được in tự động</span>
+                  </div>
+                )}
+                
+                {matchedEvent?.badge_printing && !autoPrintEnabled && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-blue-700">
+                    <Icon name="PrinterIcon" className="w-4 h-4" />
+                    <span>ℹ️ Auto-print đã tắt (chỉ check-in)</span>
+                  </div>
+                )}
+                
+                {!matchedEvent?.badge_printing && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-orange-700">
+                    <Icon name="ExclamationTriangleIcon" className="w-4 h-4" />
+                    <span>ℹ️ Event này không hỗ trợ in thẻ đeo</span>
                   </div>
                 )}
               </div>
