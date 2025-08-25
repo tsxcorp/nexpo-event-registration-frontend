@@ -754,7 +754,7 @@ export default function CheckinMultiPage() {
     return results;
   };
 
-  // Print badge function for matched event
+  // Print badge function for matched event with enhanced QR handling
   const printBadge = (visitorData: VisitorData, eventToPrint: EventData) => {
     console.log('🖨️ Multi-event printBadge called with visitor:', visitorData.name, 'for matched event:', eventToPrint.name);
     
@@ -779,79 +779,241 @@ export default function CheckinMultiPage() {
     const customContentSize = '15px';
     
     const qrData = (visitorData as any)?.badge_qr || visitorData.id || '';
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
     
-    try {
-      const printWindow = window.open('', '_blank', 'width=800,height=600');
-      
-      if (!printWindow) {
-        alert(i18n[currentLanguage]?.unable_to_print_automatically || 'Không thể in tự động. Vui lòng nhấn Ctrl+P để in thủ công.');
+    // Multiple QR sources with fallback (same as single event)
+    const qrSources = [
+      `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}&format=png&ecc=M`,
+      `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encodeURIComponent(qrData)}`,
+      `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`
+    ];
+    
+    let currentSourceIndex = 0;
+    
+    const tryNextQRSource = () => {
+      if (currentSourceIndex >= qrSources.length) {
+        console.error('❌ All QR sources failed, using text fallback');
+        printWithTextQR();
         return;
       }
       
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Badge - ${visitorData.name} - ${eventToPrint.name}</title>
-          <style>
-            @media print {
-              @page { size: ${badgeLayout.width}mm ${contentHeight}mm; margin: 0; }
-              body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-            }
-            body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: white; }
-            .badge-content {
-              width: ${badgeLayout.width}mm; height: ${contentHeight}mm; padding: 4mm;
-              display: flex; 
-              flex-direction: ${badgeLayout.isVerticalLayout ? 'column' : 'row'};
-              align-items: center; 
-              justify-content: ${badgeLayout.isVerticalLayout ? 'center' : 'flex-start'};
-              gap: 4mm; box-sizing: border-box;
-            }
-            .qr-container { 
-              width: ${printQrContainerSize}; height: ${printQrContainerSize}; display: flex; align-items: center; justify-content: center; 
-              background: #fff; flex-shrink: 0; order: ${badgeLayout.isVerticalLayout ? '1' : '0'}; 
-            }
-            .qr-img { width: ${printQrImageSize}; height: ${printQrImageSize}; object-fit: contain; }
-            .info { 
-              flex: ${badgeLayout.isVerticalLayout ? '0' : '1'}; 
-              display: flex; flex-direction: column; justify-content: center; 
-              align-items: ${badgeLayout.isVerticalLayout ? 'center' : 'flex-start'};
-              text-align: ${badgeLayout.isVerticalLayout ? 'center' : 'left'};
-              min-width: 0;
-              margin-top: ${badgeLayout.isVerticalLayout ? '4mm' : '0'};
-              order: ${badgeLayout.isVerticalLayout ? '2' : '1'};
-            }
-            .name { font-size: 20px; font-weight: bold; margin-bottom: 2mm; color: #1F2937; word-wrap: break-word; line-height: 1.2; }
-            .custom-content { font-size: ${customContentSize}; color: #000000; word-wrap: break-word; line-height: 1.1; margin-bottom: 1mm; }
-          </style>
-        </head>
-        <body>
-          <div class="badge-content">
-            <div class="qr-container">
-              <img src="${qrUrl}" alt="QR Code" class="qr-img" />
-            </div>
-            <div class="info">
-              <div class="name">${visitorData.name}</div>
-              ${customContent.map(content => `<div class="custom-content">${content}</div>`).join('')}
-            </div>
-          </div>
-        </body>
-        </html>
-      `);
+      const qrUrl = qrSources[currentSourceIndex];
+      console.log(`🔄 Trying QR source ${currentSourceIndex + 1}/${qrSources.length} for multi-event`);
       
-      printWindow.document.close();
+      const testImg = new Image();
+      testImg.crossOrigin = 'anonymous';
       
-      setTimeout(() => {
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
-        console.log('🖨️ Multi-event badge print completed for event:', eventToPrint.name, 'with size:', badgeLayout);
-      }, 1000);
-    } catch (error) {
-      console.error('❌ Multi-event print error:', error);
-      alert(i18n[currentLanguage]?.unable_to_print_automatically || 'Không thể in tự động. Vui lòng nhấn Ctrl+P để in thủ công.');
-    }
+      testImg.onload = () => {
+        if (testImg.complete && testImg.naturalWidth > 0) {
+          console.log(`✅ QR source ${currentSourceIndex + 1} loaded successfully for multi-event`);
+          printWithQRImage(qrUrl);
+        } else {
+          console.log(`⚠️ QR source ${currentSourceIndex + 1} onload fired but not fully loaded, retrying...`);
+          setTimeout(() => {
+            if (testImg.complete && testImg.naturalWidth > 0) {
+              console.log(`✅ QR source ${currentSourceIndex + 1} verified as loaded`);
+              printWithQRImage(qrUrl);
+            } else {
+              console.log(`❌ QR source ${currentSourceIndex + 1} failed verification`);
+              testImg.onerror = null;
+              testImg.onload = null;
+              currentSourceIndex++;
+              tryNextQRSource();
+            }
+          }, 1000);
+        }
+      };
+      
+      testImg.onerror = () => {
+        console.log(`❌ QR source ${currentSourceIndex + 1} failed, trying next...`);
+        testImg.onerror = null;
+        testImg.onload = null;
+        currentSourceIndex++;
+        setTimeout(tryNextQRSource, 500);
+      };
+      
+      testImg.src = qrUrl;
+      
+      // Timeout with retry logic
+      let retryCount = 0;
+      const maxRetries = 2;
+      const timeoutDuration = 4000;
+      
+      const timeoutHandler = () => {
+        if (!testImg.complete || testImg.naturalWidth === 0) {
+          retryCount++;
+          console.log(`⏰ QR source ${currentSourceIndex + 1} attempt ${retryCount}/${maxRetries} timeout`);
+          
+          if (retryCount >= maxRetries) {
+            console.log(`❌ QR source ${currentSourceIndex + 1} failed after ${maxRetries} attempts`);
+            testImg.onerror = null;
+            testImg.onload = null;
+            currentSourceIndex++;
+            tryNextQRSource();
+          } else {
+            console.log(`🔄 Retrying QR source ${currentSourceIndex + 1}...`);
+            testImg.src = qrUrl + '&t=' + Date.now() + '&retry=' + retryCount;
+            setTimeout(timeoutHandler, timeoutDuration);
+          }
+        }
+      };
+      
+      setTimeout(timeoutHandler, timeoutDuration);
+    };
+    
+    const printWithQRImage = (qrUrl: string) => {
+      try {
+        const printWindow = window.open('', '_blank', 'width=800,height=600');
+        
+        if (!printWindow) {
+          alert(i18n[currentLanguage]?.unable_to_print_automatically || 'Không thể in tự động. Vui lòng nhấn Ctrl+P để in thủ công.');
+          return;
+        }
+        
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Badge - ${visitorData.name} - ${eventToPrint.name}</title>
+            <style>
+              @media print {
+                @page { size: ${badgeLayout.width}mm ${contentHeight}mm; margin: 0; }
+                body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+              }
+              body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: white; }
+              .badge-content {
+                width: ${badgeLayout.width}mm; height: ${contentHeight}mm; padding: 4mm;
+                display: flex; 
+                flex-direction: ${badgeLayout.isVerticalLayout ? 'column' : 'row'};
+                align-items: center; 
+                justify-content: ${badgeLayout.isVerticalLayout ? 'center' : 'flex-start'};
+                gap: 4mm; box-sizing: border-box;
+              }
+              .qr-container { 
+                width: ${printQrContainerSize}; height: ${printQrContainerSize}; display: flex; align-items: center; justify-content: center; 
+                background: #fff; flex-shrink: 0; order: ${badgeLayout.isVerticalLayout ? '1' : '0'}; 
+              }
+              .qr-img { width: ${printQrImageSize}; height: ${printQrImageSize}; object-fit: contain; }
+              .info { 
+                flex: ${badgeLayout.isVerticalLayout ? '0' : '1'}; 
+                display: flex; flex-direction: column; justify-content: center; 
+                align-items: ${badgeLayout.isVerticalLayout ? 'center' : 'flex-start'};
+                text-align: ${badgeLayout.isVerticalLayout ? 'center' : 'left'};
+                min-width: 0;
+                margin-top: ${badgeLayout.isVerticalLayout ? '4mm' : '0'};
+                order: ${badgeLayout.isVerticalLayout ? '2' : '1'};
+              }
+              .name { font-size: 20px; font-weight: bold; margin-bottom: 2mm; color: #1F2937; word-wrap: break-word; line-height: 1.2; }
+              .custom-content { font-size: ${customContentSize}; color: #000000; word-wrap: break-word; line-height: 1.1; margin-bottom: 1mm; }
+            </style>
+          </head>
+          <body>
+            <div class="badge-content">
+              <div class="qr-container">
+                <img src="${qrUrl}" alt="QR Code" class="qr-img" />
+              </div>
+              <div class="info">
+                <div class="name">${visitorData.name}</div>
+                ${customContent.map(content => `<div class="custom-content">${content}</div>`).join('')}
+              </div>
+            </div>
+          </body>
+          </html>
+        `);
+        
+        printWindow.document.close();
+        
+        setTimeout(() => {
+          printWindow.focus();
+          printWindow.print();
+          printWindow.close();
+          console.log('🖨️ Multi-event badge print completed with QR for event:', eventToPrint.name);
+        }, 1000);
+      } catch (error) {
+        console.error('❌ Multi-event print error:', error);
+        alert(i18n[currentLanguage]?.unable_to_print_automatically || 'Không thể in tự động. Vui lòng nhấn Ctrl+P để in thủ công.');
+      }
+    };
+    
+    const printWithTextQR = () => {
+      try {
+        const printWindow = window.open('', '_blank', 'width=800,height=600');
+        
+        if (!printWindow) {
+          alert(i18n[currentLanguage]?.unable_to_print_automatically || 'Không thể in tự động. Vui lòng nhấn Ctrl+P để in thủ công.');
+          return;
+        }
+        
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Badge - ${visitorData.name} - ${eventToPrint.name}</title>
+            <style>
+              @media print {
+                @page { size: ${badgeLayout.width}mm ${contentHeight}mm; margin: 0; }
+                body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+              }
+              body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: white; }
+              .badge-content {
+                width: ${badgeLayout.width}mm; height: ${contentHeight}mm; padding: 4mm;
+                display: flex; 
+                flex-direction: ${badgeLayout.isVerticalLayout ? 'column' : 'row'};
+                align-items: center; 
+                justify-content: ${badgeLayout.isVerticalLayout ? 'center' : 'flex-start'};
+                gap: 4mm; box-sizing: border-box;
+              }
+              .qr-fallback {
+                width: ${printQrContainerSize}; height: ${printQrContainerSize}; border: 2px solid #000;
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                font-size: ${printQrImageSize === '26mm' ? '10px' : '8px'}; text-align: center; color: #000; background: #fff; font-weight: bold;
+                flex-shrink: 0; order: ${badgeLayout.isVerticalLayout ? '1' : '0'};
+              }
+              .info { 
+                flex: ${badgeLayout.isVerticalLayout ? '0' : '1'}; 
+                display: flex; flex-direction: column; justify-content: center; 
+                align-items: ${badgeLayout.isVerticalLayout ? 'center' : 'flex-start'};
+                text-align: ${badgeLayout.isVerticalLayout ? 'center' : 'left'};
+                min-width: 0;
+                margin-top: ${badgeLayout.isVerticalLayout ? '4mm' : '0'};
+                order: ${badgeLayout.isVerticalLayout ? '2' : '1'};
+              }
+              .name { font-size: ${nameSize}; font-weight: bold; margin-bottom: 2mm; color: #1F2937; word-wrap: break-word; line-height: 1.2; }
+              .custom-content { font-size: ${customContentSize}; color: #000000; word-wrap: break-word; line-height: 1.1; margin-bottom: 1mm; }
+            </style>
+          </head>
+          <body>
+            <div class="badge-content">
+              <div class="qr-fallback">
+                <div>QR CODE</div>
+                <div style="font-size: 6px; margin-top: 2px; word-break: break-all; line-height: 1.1;">
+                  ${qrData.slice(-16)}
+                </div>
+              </div>
+              <div class="info">
+                <div class="name">${visitorData.name}</div>
+                ${customContent.map(content => `<div class="custom-content">${content}</div>`).join('')}
+              </div>
+            </div>
+          </body>
+          </html>
+        `);
+        
+        printWindow.document.close();
+        
+        setTimeout(() => {
+          printWindow.focus();
+          printWindow.print();
+          printWindow.close();
+          console.log('🖨️ Multi-event badge print completed with text QR fallback for event:', eventToPrint.name);
+        }, 1000);
+      } catch (error) {
+        console.error('❌ Multi-event print error:', error);
+        alert(i18n[currentLanguage]?.unable_to_print_automatically || 'Không thể in tự động. Vui lòng nhấn Ctrl+P để in thủ công.');
+      }
+    };
+    
+    // Start trying QR sources
+    tryNextQRSource();
   };
 
   // Cleanup on unmount
