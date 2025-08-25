@@ -410,7 +410,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         
         // Auto-print badge only if backend allows AND user has toggle enabled
         if (eventData?.badge_printing && autoPrintEnabled) {
-          setTimeout(() => {
+          setTimeout(async () => {
             console.log('🖨️ Auto-printing badge for visitor (backend=true, user-toggle=true):', response.visitor);
             
             // Show printing status to user
@@ -418,7 +418,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
             
             // Track badge printing
             trackBadgePrint(eventId, eventData?.name || 'Unknown Event');
-            printBadge(response.visitor);
+            await printBadge(response.visitor);
           }, 500);
         } else if (eventData?.badge_printing && !autoPrintEnabled) {
           console.log('🚫 Badge printing disabled by user toggle (backend=true, user-toggle=false)');
@@ -1011,7 +1011,16 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     
     const badgeSize = getBadgeSize();
     const contentHeight = badgeSize.height - 30;
-    const qrData = (visitorData as any)?.badge_qr || visitorData.id || '';
+    const qrData = (visitorData as any)?.badge_qr || '';
+    
+    // Validate QR data for mobile printing
+    if (!qrData || qrData === '') {
+      console.error('❌ No valid QR data for mobile printing');
+      setSuccess(`✅ Check-in thành công cho ${visitorData.name}!`);
+      setError('🔄 Hệ thống đang xử lý thông tin QR code.\n\n💡 Hướng dẫn:\n• Chờ 1-2 phút để hệ thống xử lý\n• Thử scan lại QR code sau khi chờ\n• Hoặc liên hệ ban tổ chức để được hỗ trợ\n\n✅ Check-in đã thành công!');
+      setIsPrinting(false);
+      return;
+    }
     
     // Try multiple QR sources
     const qrSources = [
@@ -1352,8 +1361,8 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     }, 1000);
   };
 
-  // Print badge using pre-rendered approach
-  const printBadge = (visitorData: VisitorData) => {
+  // Print badge using pre-rendered approach with QR validation
+  const printBadge = async (visitorData: VisitorData) => {
     // Prevent multiple print calls
     if (isPrinting) {
       console.log('🚫 printBadge ignored - already printing');
@@ -1364,7 +1373,50 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     console.log('🖨️ printBadge called with visitor:', visitorData);
     
     // Update success message to show QR loading status
-    setSuccess(`✅ Check-in thành công! 🖨️ Đang tải QR code để in thẻ...`);
+    setSuccess(`✅ Check-in thành công! 🖨️ Đang kiểm tra QR code từ Zoho...`);
+    
+    // Check if badge_qr exists, if not fetch from Zoho
+    let finalQrData = (visitorData as any)?.badge_qr;
+    
+    if (!finalQrData || finalQrData === '') {
+      console.log('⚠️ badge_qr not found, fetching from Zoho...');
+      setSuccess(`✅ Check-in thành công! 🖨️ Đang fetch QR code từ Zoho cho "${visitorData.name}"...`);
+      
+      try {
+        // Fetch fresh visitor data from Zoho to get badge_qr
+        const freshVisitorResponse = await visitorApi.getVisitorInfo(visitorData.id);
+        
+        if (freshVisitorResponse.visitor && (freshVisitorResponse.visitor as any)?.badge_qr) {
+          finalQrData = (freshVisitorResponse.visitor as any).badge_qr;
+          console.log('✅ Successfully fetched badge_qr from Zoho:', finalQrData);
+          setSuccess(`✅ Check-in thành công! 🖨️ QR code đã sẵn sàng, đang in thẻ...`);
+        } else {
+          console.error('❌ badge_qr still not available from Zoho after fetch');
+          setSuccess(`✅ Check-in thành công cho ${visitorData.name}!`);
+          setError('🕐 QR code đang được tạo bởi hệ thống.\n\n💡 Hướng dẫn:\n• Chờ 2-3 phút để hệ thống tạo QR code\n• Thử scan lại QR code sau khi chờ\n• Hoặc liên hệ ban tổ chức để được hỗ trợ\n\n✅ Check-in đã thành công, chỉ cần chờ QR code!');
+          setIsPrinting(false);
+          return; // Don't print without proper QR code
+        }
+      } catch (fetchError) {
+        console.error('❌ Failed to fetch badge_qr from Zoho:', fetchError);
+        setSuccess(`✅ Check-in thành công cho ${visitorData.name}!`);
+        setError('🌐 Đang gặp vấn đề kết nối với hệ thống.\n\n💡 Hướng dẫn:\n• Kiểm tra kết nối mạng\n• Thử lại sau 1-2 phút\n• Hoặc liên hệ ban tổ chức nếu vấn đề vẫn tiếp tục\n\n✅ Check-in đã thành công!');
+        setIsPrinting(false);
+        return; // Don't print without proper QR code
+      }
+    } else {
+      console.log('✅ badge_qr already available:', finalQrData);
+      setSuccess(`✅ Check-in thành công! 🖨️ Đang tải QR code để in thẻ...`);
+    }
+    
+    // Validate QR data
+    if (!finalQrData || finalQrData === '') {
+      console.error('❌ No valid QR data available for printing');
+      setSuccess(`✅ Check-in thành công cho ${visitorData.name}!`);
+      setError('🔄 Hệ thống đang xử lý thông tin QR code.\n\n💡 Hướng dẫn:\n• Chờ 1-2 phút để hệ thống xử lý\n• Thử scan lại QR code sau khi chờ\n• Hoặc liên hệ ban tổ chức để được hỗ trợ\n\n✅ Check-in đã thành công!');
+      setIsPrinting(false);
+      return;
+    }
     
     // Detect mobile device
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -1372,7 +1424,12 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     
     // Use progressive loading for mobile devices
     if (isMobile) {
-      printBadgeWithProgressiveLoading(visitorData);
+      // Update visitor data with final QR data for mobile printing
+      const updatedVisitorData = {
+        ...visitorData,
+        badge_qr: finalQrData
+      };
+      printBadgeWithProgressiveLoading(updatedVisitorData);
       return;
     }
     
@@ -1382,9 +1439,8 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       
       const badgeLayout = getBadgeLayout();
       const contentHeight = badgeLayout.height - 30; // Reserve space for header/footer
-      const qrData = (visitorData as any)?.badge_qr || visitorData.id || '';
       
-      console.log('🖨️ Print QR data:', qrData);
+      console.log('🖨️ Print QR data:', finalQrData);
       
       // Create hidden staging area to pre-render badge
       const stagingDiv = document.createElement('div');
@@ -1411,7 +1467,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         (visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px');
       
       // Generate QR code URL with mobile-friendly settings
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}&format=png&ecc=M`;
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(finalQrData)}&format=png&ecc=M`;
       console.log('🔗 Print QR URL:', qrUrl);
       
       // QR size for print - larger for vertical layout
@@ -1424,7 +1480,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           <img 
             id="print-qr-img"
             src="${qrUrl}" 
-            alt="QR Code: ${qrData}"
+            alt="QR Code: ${finalQrData}"
             style="width: ${printQrImageSize}; height: ${printQrImageSize}; object-fit: contain;"
             crossorigin="anonymous"
           />
@@ -1618,7 +1674,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
               font-weight: bold;
             ">
               QR<br/>
-              <small style="word-break: break-all; line-height: 1.1;">${qrData.slice(-12)}</small>
+              <small style="word-break: break-all; line-height: 1.1;">${finalQrData.slice(-12)}</small>
             </div>
           `;
         }

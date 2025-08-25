@@ -466,7 +466,7 @@ export default function CheckinMultiPage() {
         
         // Auto-print badge based on the MATCHED event's settings
         if (matchingEvent.badge_printing && autoPrintEnabled) {
-          setTimeout(() => {
+          setTimeout(async () => {
             console.log('🖨️ Auto-printing badge for matched event:', matchingEvent.name, 'visitor:', response.visitor.name);
             
             // Show printing status to user
@@ -474,7 +474,7 @@ export default function CheckinMultiPage() {
             
             // Track badge printing
             trackBadgePrint(matchingEvent.id, matchingEvent.name);
-            printBadge(response.visitor, matchingEvent);
+            await printBadge(response.visitor, matchingEvent);
           }, 500);
         } else if (matchingEvent.badge_printing && !autoPrintEnabled) {
           console.log('🚫 Badge printing disabled by user toggle for event:', matchingEvent.name);
@@ -755,11 +755,51 @@ export default function CheckinMultiPage() {
   };
 
   // Print badge function for matched event with enhanced QR handling
-  const printBadge = (visitorData: VisitorData, eventToPrint: EventData) => {
+  const printBadge = async (visitorData: VisitorData, eventToPrint: EventData) => {
     console.log('🖨️ Multi-event printBadge called with visitor:', visitorData.name, 'for matched event:', eventToPrint.name);
     
     // Show printing feedback
-    setSuccess(`✅ Check-in thành công! 🖨️ Đang in thẻ cho sự kiện "${eventToPrint.name}"...`);
+    setSuccess(`✅ Check-in thành công! 🖨️ Đang kiểm tra QR code từ Zoho...`);
+    
+    // Check if badge_qr exists, if not fetch from Zoho
+    let finalQrData = (visitorData as any)?.badge_qr;
+    
+    if (!finalQrData || finalQrData === '') {
+      console.log('⚠️ badge_qr not found, fetching from Zoho...');
+      setSuccess(`✅ Check-in thành công! 🖨️ Đang fetch QR code từ Zoho cho "${visitorData.name}"...`);
+      
+      try {
+        // Fetch fresh visitor data from Zoho to get badge_qr
+        const freshVisitorResponse = await visitorApi.getVisitorInfo(visitorData.id);
+        
+        if (freshVisitorResponse.visitor && (freshVisitorResponse.visitor as any)?.badge_qr) {
+          finalQrData = (freshVisitorResponse.visitor as any).badge_qr;
+          console.log('✅ Successfully fetched badge_qr from Zoho:', finalQrData);
+          setSuccess(`✅ Check-in thành công! 🖨️ QR code đã sẵn sàng, đang in thẻ...`);
+        } else {
+          console.error('❌ badge_qr still not available from Zoho after fetch');
+          setSuccess(`✅ Check-in thành công cho ${visitorData.name}!`);
+          setError('🕐 QR code đang được tạo bởi hệ thống.\n\n💡 Hướng dẫn:\n• Chờ 2-3 phút để hệ thống tạo QR code\n• Thử scan lại QR code sau khi chờ\n• Hoặc liên hệ ban tổ chức để được hỗ trợ\n\n✅ Check-in đã thành công, chỉ cần chờ QR code!');
+          return; // Don't print without proper QR code
+        }
+      } catch (fetchError) {
+        console.error('❌ Failed to fetch badge_qr from Zoho:', fetchError);
+        setSuccess(`✅ Check-in thành công cho ${visitorData.name}!`);
+                  setError('🌐 Đang gặp vấn đề kết nối với hệ thống.\n\n💡 Hướng dẫn:\n• Kiểm tra kết nối mạng\n• Thử lại sau 1-2 phút\n• Hoặc liên hệ ban tổ chức nếu vấn đề vẫn tiếp tục\n\n✅ Check-in đã thành công!');
+        return; // Don't print without proper QR code
+      }
+    } else {
+      console.log('✅ badge_qr already available:', finalQrData);
+      setSuccess(`✅ Check-in thành công! 🖨️ Đang in thẻ cho sự kiện "${eventToPrint.name}"...`);
+    }
+    
+    // Validate QR data
+    if (!finalQrData || finalQrData === '') {
+      console.error('❌ No valid QR data available for printing');
+      setSuccess(`✅ Check-in thành công cho ${visitorData.name}!`);
+                setError('🔄 Hệ thống đang xử lý thông tin QR code.\n\n💡 Hướng dẫn:\n• Chờ 1-2 phút để hệ thống xử lý\n• Thử scan lại QR code sau khi chờ\n• Hoặc liên hệ ban tổ chức để được hỗ trợ\n\n✅ Check-in đã thành công!');
+      return;
+    }
     
     // Get badge layout from matched event
     const badgeLayout = getBadgeLayout(eventToPrint);
@@ -778,13 +818,11 @@ export default function CheckinMultiPage() {
     
     const customContentSize = '15px';
     
-    const qrData = (visitorData as any)?.badge_qr || visitorData.id || '';
-    
     // Multiple QR sources with fallback (same as single event)
     const qrSources = [
-      `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}&format=png&ecc=M`,
-      `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encodeURIComponent(qrData)}`,
-      `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`
+      `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(finalQrData)}&format=png&ecc=M`,
+      `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encodeURIComponent(finalQrData)}`,
+      `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(finalQrData)}`
     ];
     
     let currentSourceIndex = 0;
@@ -986,7 +1024,7 @@ export default function CheckinMultiPage() {
               <div class="qr-fallback">
                 <div>QR CODE</div>
                 <div style="font-size: 6px; margin-top: 2px; word-break: break-all; line-height: 1.1;">
-                  ${qrData.slice(-16)}
+                  ${finalQrData.slice(-16)}
                 </div>
               </div>
               <div class="info">
