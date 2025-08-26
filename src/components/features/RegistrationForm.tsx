@@ -421,6 +421,27 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
           
           window.parent.postMessage(redirectData, '*');
           console.log('📤 Sent registration complete message to parent window:', redirectData);
+          
+          // Fallback: If parent doesn't handle the message, redirect after 3 seconds
+          setTimeout(() => {
+            console.log('⏰ Fallback redirect after 3 seconds...');
+            if (eventData?.ticket_mode) {
+              const paymentQueryParams = new URLSearchParams({
+                eventId: eventId,
+                registrationData: encodeURIComponent(JSON.stringify(registrationData)),
+                lang: currentLanguage
+              });
+              const paymentUrl = `/payment?${paymentQueryParams.toString()}`;
+              window.location.href = paymentUrl;
+            } else {
+              const queryParams = new URLSearchParams({
+                data: JSON.stringify(registrationData),
+                lang: currentLanguage
+              });
+              const thankyouUrl = `/thankyou?${queryParams.toString()}`;
+              window.location.href = thankyouUrl;
+            }
+          }, 3000);
         } else {
           // For non-embedded forms, use normal redirect
           if (eventData?.ticket_mode) {
