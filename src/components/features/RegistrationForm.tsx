@@ -60,11 +60,16 @@ interface Props {
 export default function RegistrationForm({ fields, eventId, eventData, currentLanguage = 'vi', onRegisterFormMigration, isEmbedded = false, embedConfig }: Props) {
   // Function to detect if we're actually in an iframe
   const isActuallyEmbedded = () => {
-    return isEmbedded && 
-           window.parent && 
-           window.parent !== window && 
-           window.parent.location.href !== window.location.href &&
-           window.parent.location.origin !== window.location.origin;
+    try {
+      return isEmbedded && 
+             window.parent && 
+             window.parent !== window && 
+             window.parent.location.origin !== window.location.origin;
+    } catch (error) {
+      // If we can't access parent.location due to CORS, assume we're embedded
+      console.log('🔒 CORS blocked access to parent.location, assuming embedded mode');
+      return isEmbedded && window.parent && window.parent !== window;
+    }
   };
   const router = useRouter();
   const searchParams = useSearchParams();
