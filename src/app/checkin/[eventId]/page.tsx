@@ -897,6 +897,8 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     );
   };
 
+
+
   // Generate badge content
   const generateBadgeContent = (visitorData: VisitorData) => {
     console.log('🎨 generateBadgeContent called with visitor:', visitorData);
@@ -1024,10 +1026,12 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   const getCustomContent = (visitorData: VisitorData): string[] => {
     const customContentField = (eventData as any)?.badge_custom_content;
     if (!customContentField || typeof customContentField !== 'string') {
+      console.log('🎨 No badge_custom_content configured for event');
       return [];
     }
 
     console.log('🎨 Extracting custom content for fields:', customContentField);
+    console.log('🎨 Visitor data custom_fields:', visitorData.custom_fields);
     
     // Split by comma to handle multiple fields
     const fieldNames = customContentField.split(',').map(field => field.trim());
@@ -1039,11 +1043,11 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       // Try direct field first
       if (visitorData[fieldName as keyof VisitorData]) {
         const value = visitorData[fieldName as keyof VisitorData];
-                 if (value && String(value).trim()) {
-           console.log('✅ Found custom content in direct field:', fieldName, value);
-           results.push(String(value).trim().toUpperCase());
-           continue;
-         }
+        if (value && String(value).trim()) {
+          console.log('✅ Found custom content in direct field:', fieldName, value);
+          results.push(String(value).trim().toUpperCase());
+          continue;
+        }
       }
       
       // Try custom_fields
@@ -1052,16 +1056,46 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           ? JSON.parse(visitorData.custom_fields) 
           : visitorData.custom_fields;
           
-                 if (customFields[fieldName] && customFields[fieldName].trim()) {
-           console.log('✅ Found custom content in custom_fields:', fieldName, customFields[fieldName]);
-           results.push(customFields[fieldName].trim().toUpperCase());
-           continue;
-         }
+        console.log('🎨 Looking for field:', fieldName, 'in custom_fields');
+        console.log('🎨 Available keys:', Object.keys(customFields));
+        
+        // Check exact match first
+        if (customFields[fieldName] && String(customFields[fieldName]).trim()) {
+          console.log('✅ Found custom content in custom_fields (exact match):', fieldName, customFields[fieldName]);
+          results.push(String(customFields[fieldName]).trim().toUpperCase());
+          continue;
+        }
+        
+        // Check with space prefix
+        const spacePrefixedKey = ` ${fieldName}`;
+        if (customFields[spacePrefixedKey] && String(customFields[spacePrefixedKey]).trim()) {
+          console.log('✅ Found custom content in custom_fields (space prefix):', spacePrefixedKey, customFields[spacePrefixedKey]);
+          results.push(String(customFields[spacePrefixedKey]).trim().toUpperCase());
+          continue;
+        }
+        
+        // Check with space suffix
+        const spaceSuffixedKey = `${fieldName} `;
+        if (customFields[spaceSuffixedKey] && String(customFields[spaceSuffixedKey]).trim()) {
+          console.log('✅ Found custom content in custom_fields (space suffix):', spaceSuffixedKey, customFields[spaceSuffixedKey]);
+          results.push(String(customFields[spaceSuffixedKey]).trim().toUpperCase());
+          continue;
+        }
+        
+        // Check case insensitive match
+        const lowerFieldName = fieldName.toLowerCase();
+        for (const key of Object.keys(customFields)) {
+          if (key.toLowerCase() === lowerFieldName && String(customFields[key]).trim()) {
+            console.log('✅ Found custom content in custom_fields (case insensitive):', key, customFields[key]);
+            results.push(String(customFields[key]).trim().toUpperCase());
+            break;
+          }
+        }
+        
+        console.log('❌ Field not found or empty in custom_fields:', fieldName);
       } catch (error) {
         console.log('⚠️ Error parsing custom_fields for field:', fieldName, error);
       }
-      
-      console.log('❌ No content found for field:', fieldName);
     }
     
     console.log('🎨 Final custom content results:', results);
@@ -1357,6 +1391,10 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       (visitorData.name.length > 20 ? '16px' : visitorData.name.length > 15 ? '18px' : '20px') :
       (visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px');
     
+    // Extract custom content for text QR fallback
+    const customContent = getCustomContent(visitorData);
+    console.log('🎨 Text QR fallback custom content:', customContent);
+    
     // Create print window with better popup handling
     let printWindow: Window | null = null;
     
@@ -1434,6 +1472,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           </div>
           <div class="info">
             <div class="name">${visitorData.name}</div>
+            ${customContent.map(content => `<div style="font-size: 15px; font-weight: 400; color: #000000; word-wrap: break-word; line-height: 1.1; margin-bottom: 1mm;">${content}</div>`).join('')}
           </div>
         </div>
       </body>
@@ -1577,6 +1616,10 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       const printQrContainerSize = badgeLayout.isVerticalLayout ? '28mm' : '20mm';
       const printQrImageSize = badgeLayout.isVerticalLayout ? '26mm' : '18mm';
       
+      // Extract custom content for print
+      const customContent = getCustomContent(visitorData);
+      console.log('🎨 Print custom content:', customContent);
+      
       stagingDiv.innerHTML = `
         <!-- QR Code -->
         <div style="width: ${printQrContainerSize}; height: ${printQrContainerSize}; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0; order: ${badgeLayout.isVerticalLayout ? '1' : '0'};">
@@ -1604,8 +1647,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           <div style="font-size: ${nameSize}; font-weight: bold; margin-bottom: 2mm; color: #1F2937; word-wrap: break-word; line-height: 1.2;">
             ${visitorData.name}
           </div>
-          
-
+          ${customContent.map(content => `<div style="font-size: 15px; font-weight: 400; color: #000000; word-wrap: break-word; line-height: 1.1; margin-bottom: 1mm;">${content}</div>`).join('')}
         </div>
       `;
       

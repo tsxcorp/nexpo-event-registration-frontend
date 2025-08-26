@@ -838,11 +838,43 @@ export default function CheckinMultiPage() {
           ? JSON.parse(visitorData.custom_fields) 
           : visitorData.custom_fields;
           
-                 if (customFields[fieldName] && customFields[fieldName].trim()) {
-           console.log('✅ Found custom content in custom_fields:', fieldName, customFields[fieldName]);
-           results.push(customFields[fieldName].trim().toUpperCase());
-           continue;
-         }
+        console.log('🎨 Looking for field:', fieldName, 'in custom_fields');
+        console.log('🎨 Available keys:', Object.keys(customFields));
+        
+        // Check exact match first
+        if (customFields[fieldName] && String(customFields[fieldName]).trim()) {
+          console.log('✅ Found custom content in custom_fields (exact match):', fieldName, customFields[fieldName]);
+          results.push(String(customFields[fieldName]).trim().toUpperCase());
+          continue;
+        }
+        
+        // Check with space prefix
+        const spacePrefixedKey = ` ${fieldName}`;
+        if (customFields[spacePrefixedKey] && String(customFields[spacePrefixedKey]).trim()) {
+          console.log('✅ Found custom content in custom_fields (space prefix):', spacePrefixedKey, customFields[spacePrefixedKey]);
+          results.push(String(customFields[spacePrefixedKey]).trim().toUpperCase());
+          continue;
+        }
+        
+        // Check with space suffix
+        const spaceSuffixedKey = `${fieldName} `;
+        if (customFields[spaceSuffixedKey] && String(customFields[spaceSuffixedKey]).trim()) {
+          console.log('✅ Found custom content in custom_fields (space suffix):', spaceSuffixedKey, customFields[spaceSuffixedKey]);
+          results.push(String(customFields[spaceSuffixedKey]).trim().toUpperCase());
+          continue;
+        }
+        
+        // Check case insensitive match
+        const lowerFieldName = fieldName.toLowerCase();
+        for (const key of Object.keys(customFields)) {
+          if (key.toLowerCase() === lowerFieldName && String(customFields[key]).trim()) {
+            console.log('✅ Found custom content in custom_fields (case insensitive):', key, customFields[key]);
+            results.push(String(customFields[key]).trim().toUpperCase());
+            break;
+          }
+        }
+        
+        console.log('❌ Field not found or empty in custom_fields:', fieldName);
       } catch (error) {
         console.log('⚠️ Error parsing custom_fields for field:', fieldName, error);
       }
