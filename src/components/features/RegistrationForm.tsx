@@ -5,7 +5,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, FormProvider, useFieldArray, useWatch } from 'react-hook-form';
-import { FormField } from '@/lib/api/events';
+import { FormField, EventData } from '@/lib/api/events';
 import { parseCondition, evaluateCondition, getReferencedFields } from '@/lib/utils/conditionalDisplay';
 import { normalizeFormValue, convertFormDataToFieldIds } from '@/lib/utils/fieldUtils';
 import CoreFormFields from './CoreFormFields';
@@ -43,6 +43,7 @@ const emptyMember = { Salutation: '', Full_Name: '', Email: '', Phone_Number: ''
 interface Props {
   fields: FormField[];
   eventId: string;
+  eventData?: EventData;
   currentLanguage?: string;
   onRegisterFormMigration?: (callback: (oldFields: FormField[], newFields: FormField[]) => void) => void;
   isEmbedded?: boolean;
@@ -56,7 +57,7 @@ interface Props {
   };
 }
 
-export default function RegistrationForm({ fields, eventId, currentLanguage = 'vi', onRegisterFormMigration, isEmbedded = false, embedConfig }: Props) {
+export default function RegistrationForm({ fields, eventId, eventData, currentLanguage = 'vi', onRegisterFormMigration, isEmbedded = false, embedConfig }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -391,16 +392,31 @@ export default function RegistrationForm({ fields, eventId, currentLanguage = 'v
           Event_Info: eventId
         };
         
+        console.log('📋 Registration data being sent to payment page:', registrationData);
+        
 
         
-        const queryParams = new URLSearchParams({
-          data: JSON.stringify(registrationData),
-          lang: currentLanguage // Pass current language to Thank You page
-        });
-        
-        const thankyouUrl = `/thankyou?${queryParams.toString()}`;
-        
-        router.push(thankyouUrl);
+        // Check if event has ticket_mode enabled
+        if (eventData?.ticket_mode) {
+          // Redirect to payment page for ticket mode events
+          const paymentQueryParams = new URLSearchParams({
+            eventId: eventId,
+            registrationData: encodeURIComponent(JSON.stringify(registrationData)),
+            lang: currentLanguage
+          });
+          
+          const paymentUrl = `/payment?${paymentQueryParams.toString()}`;
+          router.push(paymentUrl);
+        } else {
+          // Redirect to thank you page for non-ticket mode events
+          const queryParams = new URLSearchParams({
+            data: JSON.stringify(registrationData),
+            lang: currentLanguage // Pass current language to Thank You page
+          });
+          
+          const thankyouUrl = `/thankyou?${queryParams.toString()}`;
+          router.push(thankyouUrl);
+        }
       } else {
         alert('Submission failed.');
       }

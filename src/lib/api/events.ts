@@ -139,6 +139,7 @@ export interface EventData {
   created_date: string;
   badge_size: string;
   badge_printing: boolean;
+  ticket_mode?: boolean;
   floor_plan_pdf?: string;
   directory_url?: string;
 }
@@ -175,6 +176,7 @@ export const eventApi = {
         created_date: response.data.created_date || '',
         badge_size: response.data.badge_size || '',
         badge_printing: response.data.badge_printing || false,
+        ticket_mode: response.data.ticket_mode || false,
         floor_plan_pdf: response.data.floor_plan_pdf || '',
         directory_url: response.data.directory_url || ''
       };

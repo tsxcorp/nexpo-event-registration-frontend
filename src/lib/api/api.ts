@@ -57,7 +57,20 @@ export interface FormField {
   header?: string;
   footer?: string;
   email?: string;
+  location?: string;
+  start_date?: string;
+  end_date?: string;
   formFields: FormField[];
+  exhibitors?: any[];
+  sessions?: any[];
+  registration_form?: any[];
+  status?: string;
+  created_date?: string;
+  badge_size?: string;
+  badge_printing?: boolean;
+  ticket_mode?: boolean;
+  floor_plan_pdf?: string;
+  directory_url?: string;
 }
   
   export const fetchEventInfo = async (eventId: string): Promise<{ event: EventData }> => {

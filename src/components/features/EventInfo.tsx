@@ -346,6 +346,7 @@ const EventInfo: FC<EventInfoProps> = ({
               <RegistrationForm 
                 fields={eventData.formFields || []} 
                 eventId={eventId} 
+                eventData={eventData}
                 currentLanguage={currentLanguage}
                 onRegisterFormMigration={onRegisterFormMigration}
               />

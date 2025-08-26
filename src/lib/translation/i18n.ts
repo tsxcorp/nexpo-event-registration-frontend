@@ -97,6 +97,14 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     event_not_found: "Không tìm thấy sự kiện.",
     no_form_fields: "Không có trường biểu mẫu để hiển thị",
     
+    // Payment Page
+    registration_successful: "Đăng ký thành công!",
+    thank_you_for_registration: "Cảm ơn bạn đã đăng ký tham gia sự kiện của chúng tôi.",
+    registration_summary: "Thông tin đăng ký",
+    event_information: "Thông tin sự kiện",
+    payment_notice: "Thông báo thanh toán",
+    payment_notice_description: "Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất để hướng dẫn quy trình thanh toán và cung cấp thêm thông tin về sự kiện.",
+    
     // Buttons
     back: "Quay lại",
     continue: "Tiếp tục",
