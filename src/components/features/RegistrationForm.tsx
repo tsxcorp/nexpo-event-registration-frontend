@@ -394,28 +394,44 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
         
         console.log('📋 Registration data being sent to payment page:', registrationData);
         
-
-        
-        // Check if event has ticket_mode enabled
-        if (eventData?.ticket_mode) {
-          // Redirect to payment page for ticket mode events
-          const paymentQueryParams = new URLSearchParams({
-            eventId: eventId,
-            registrationData: encodeURIComponent(JSON.stringify(registrationData)),
-            lang: currentLanguage
-          });
-          
-          const paymentUrl = `/payment?${paymentQueryParams.toString()}`;
-          router.push(paymentUrl);
+        // Handle redirect based on embed mode and ticket_mode
+        if (isEmbedded) {
+          // For embedded forms, send message to parent window
+          if (window.parent && window.parent !== window) {
+            const redirectData = {
+              type: 'registration_complete',
+              source: 'nexpo-embed',
+              eventId: eventId,
+              ticket_mode: eventData?.ticket_mode || false,
+              registrationData: registrationData,
+              currentLanguage: currentLanguage
+            };
+            
+            window.parent.postMessage(redirectData, '*');
+            console.log('📤 Sent registration complete message to parent window:', redirectData);
+          }
         } else {
-          // Redirect to thank you page for non-ticket mode events
-          const queryParams = new URLSearchParams({
-            data: JSON.stringify(registrationData),
-            lang: currentLanguage // Pass current language to Thank You page
-          });
-          
-          const thankyouUrl = `/thankyou?${queryParams.toString()}`;
-          router.push(thankyouUrl);
+          // For non-embedded forms, use normal redirect
+          if (eventData?.ticket_mode) {
+            // Redirect to payment page for ticket mode events
+            const paymentQueryParams = new URLSearchParams({
+              eventId: eventId,
+              registrationData: encodeURIComponent(JSON.stringify(registrationData)),
+              lang: currentLanguage
+            });
+            
+            const paymentUrl = `/payment?${paymentQueryParams.toString()}`;
+            router.push(paymentUrl);
+          } else {
+            // Redirect to thank you page for non-ticket mode events
+            const queryParams = new URLSearchParams({
+              data: JSON.stringify(registrationData),
+              lang: currentLanguage // Pass current language to Thank You page
+            });
+            
+            const thankyouUrl = `/thankyou?${queryParams.toString()}`;
+            router.push(thankyouUrl);
+          }
         }
       } else {
         alert('Submission failed.');

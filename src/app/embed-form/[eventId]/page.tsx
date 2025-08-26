@@ -35,7 +35,7 @@ export default function EmbedFormPage() {
     isTranslating,
     translateEventData,
     registerFormValuesMigration,
-  } = useTranslation(originalEventData, embedConfig.language);
+  } = useTranslation(originalEventData);
 
   // Load event data
   useEffect(() => {
@@ -75,6 +75,12 @@ export default function EmbedFormPage() {
             start_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
             end_date: new Date(Date.now() + 32 * 24 * 60 * 60 * 1000).toISOString(),
             location: 'Convention Center - Hall A',
+            registration_form: [],
+            status: 'active',
+            created_date: new Date().toISOString(),
+            badge_size: 'W106mm x H146mm',
+            badge_printing: true,
+            ticket_mode: false,
             formFields: [
               {
                 sort: 1,
@@ -329,6 +335,7 @@ export default function EmbedFormPage() {
         <RegistrationForm
           fields={displayData.formFields || []}
           eventId={eventId}
+          eventData={displayData}
           currentLanguage={currentLanguage}
           onRegisterFormMigration={setFormMigrationCallback}
           isEmbedded={true}
