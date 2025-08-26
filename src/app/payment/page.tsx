@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { EventData, eventApi } from '@/lib/api/events';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -28,7 +28,7 @@ interface RegistrationData {
   [key: string]: any;
 }
 
-export default function PaymentPage() {
+function PaymentPageContent() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [eventData, setEventData] = useState<EventData | null>(null);
@@ -379,5 +379,21 @@ export default function PaymentPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <LoadingSpinner 
+          size="lg" 
+          showLogo={true} 
+          text="Đang tải trang thanh toán..."
+        />
+      </div>
+    }>
+      <PaymentPageContent />
+    </Suspense>
   );
 }

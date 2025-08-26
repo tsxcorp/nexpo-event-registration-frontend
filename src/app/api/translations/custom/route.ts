@@ -38,7 +38,8 @@ export async function GET() {
     return NextResponse.json(translations);
   } catch (error) {
     console.error('Error loading custom translations:', error);
-    return NextResponse.json({ error: 'Failed to load translations' }, { status: 500 });
+    // Return empty object instead of error for better UX
+    return NextResponse.json({});
   }
 }
 

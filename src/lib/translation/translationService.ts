@@ -34,19 +34,29 @@ class TranslationService {
   // Load custom translations from JSON file
   private async loadCustomTranslations() {
     try {
-      const response = await fetch('/api/translations/custom');
+      // Use absolute URL for production builds
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const url = `${baseUrl}/api/translations/custom`;
+      const response = await fetch(url);
       if (response.ok) {
         this.customTranslations = await response.json();
+      } else {
+        console.warn('Failed to load custom translations: HTTP', response.status);
       }
     } catch (error) {
       console.warn('Failed to load custom translations:', error);
+      // Fallback to empty object
+      this.customTranslations = {};
     }
   }
 
   // Save custom translations to JSON file
   private async saveCustomTranslations() {
     try {
-      await fetch('/api/translations/custom', {
+      // Use absolute URL for production builds
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const url = `${baseUrl}/api/translations/custom`;
+      await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(this.customTranslations),
