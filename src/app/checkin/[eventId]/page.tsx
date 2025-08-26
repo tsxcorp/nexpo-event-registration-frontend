@@ -353,6 +353,10 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         if (groupResponse.visitors && Array.isArray(groupResponse.visitors)) {
           console.log('✅ Group found with', groupResponse.count, 'visitors:', groupResponse.visitors);
           
+          // Initial delay after successful scan to ensure QR data is ready
+          setSuccess(`🔄 Đang chuẩn bị xử lý nhóm ${groupResponse.count} visitors cho sự kiện "${eventData?.name}"...`);
+          await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5s delay after scan
+          
           // Process each visitor in the group that belongs to current event
           let successCount = 0;
           let errorCount = 0;
@@ -400,8 +404,8 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                 printed: eventData?.badge_printing && autoPrintEnabled
               });
               
-              // Small delay between visitors
-              await new Promise(resolve => setTimeout(resolve, 500));
+              // Increased delay between visitors to ensure QR data is ready
+              await new Promise(resolve => setTimeout(resolve, 1000));
               
             } catch (error) {
               console.error(`❌ Error processing visitor ${i + 1}:`, error);
