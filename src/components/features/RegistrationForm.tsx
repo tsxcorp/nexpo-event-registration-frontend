@@ -443,7 +443,36 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
         alert('Submission failed.');
       }
     } catch (err) {
-      alert('Network error. Please try again.');
+      console.error('❌ Registration submission error:', err);
+      
+      // Type cast error for better handling
+      const error = err as any;
+      
+      // Enhanced error handling for embedded forms
+      if (isActuallyEmbedded()) {
+        // Send error message to parent window
+        const errorData = {
+          type: 'registration_error',
+          source: 'nexpo-embed',
+          eventId: eventId,
+          error: {
+            message: error.message || 'Network error',
+            code: error.code || 'UNKNOWN',
+            status: error.response?.status || 0,
+            url: error.config?.url || 'unknown'
+          }
+        };
+        
+        window.parent.postMessage(errorData, '*');
+        console.log('📤 Sent error message to parent window:', errorData);
+      }
+      
+      // Show user-friendly error message
+      const errorMessage = isActuallyEmbedded() 
+        ? 'Có lỗi xảy ra. Vui lòng thử lại hoặc liên hệ hỗ trợ.'
+        : 'Network error. Please try again.';
+      
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
