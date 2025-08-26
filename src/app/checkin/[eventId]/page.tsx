@@ -342,18 +342,100 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       const isGroupId = trimmedId.includes('GRP');
       console.log('🏷️ Processing type:', isGroupId ? 'Group' : 'Single Visitor');
       
-      // For single event check-in, we only support single visitors, not groups
-      if (isGroupId) {
-        setError('❌ Group check-in không được hỗ trợ trong single event mode. Vui lòng sử dụng Multi-Event Check-in để xử lý nhóm.');
-        setIsProcessing(false);
-        setManualInput('');
-        return;
-      }
+      // For single event check-in, we support both single visitors and groups
+      // But groups will only process visitors that belong to the current event
       
       const response = await visitorApi.getVisitorInfo(trimmedId);
       
-      // Type guard to ensure this is a single visitor response
-      if ('visitor' in response && response.visitor) {
+      if (isGroupId) {
+        // Handle group check-in for single event
+        const groupResponse = response as any;
+        if (groupResponse.visitors && Array.isArray(groupResponse.visitors)) {
+          console.log('✅ Group found with', groupResponse.count, 'visitors:', groupResponse.visitors);
+          
+          // Process each visitor in the group that belongs to current event
+          let successCount = 0;
+          let errorCount = 0;
+          const results = [];
+          
+          setSuccess(`🔄 Đang xử lý nhóm ${groupResponse.count} visitors cho sự kiện "${eventData?.name}"...`);
+          
+          for (let i = 0; i < groupResponse.visitors.length; i++) {
+            const visitorEntry = groupResponse.visitors[i];
+            const visitor = visitorEntry.visitor;
+            
+            console.log(`📋 Processing visitor ${i + 1}/${groupResponse.count}:`, visitor.name);
+            
+            // Check if visitor belongs to the current event
+            const visitorEventId = String(visitor.event_id);
+            if (visitorEventId !== eventId) {
+              console.log(`❌ Visitor ${visitor.name} not in current event`);
+              errorCount++;
+              results.push({
+                visitor: visitor.name,
+                status: 'error',
+                message: `Không thuộc sự kiện hiện tại (${visitor.event_name})`
+              });
+              continue;
+            }
+            
+            try {
+              // Submit check-in for this visitor
+              console.log(`📝 Submitting check-in for visitor ${i + 1}:`, visitor.name);
+              await visitorApi.submitCheckin(visitor);
+              
+              // Track successful checkin
+              trackCheckin(eventId, eventData?.name || 'Unknown Event', visitor.id);
+              
+              // Auto-print badge if enabled
+              if (eventData?.badge_printing && autoPrintEnabled) {
+                console.log(`🖨️ Auto-printing badge for visitor ${i + 1}:`, visitor.name);
+                await printBadge(visitor);
+              }
+              
+              successCount++;
+              results.push({
+                visitor: visitor.name,
+                status: 'success',
+                printed: eventData?.badge_printing && autoPrintEnabled
+              });
+              
+              // Small delay between visitors
+              await new Promise(resolve => setTimeout(resolve, 500));
+              
+            } catch (error) {
+              console.error(`❌ Error processing visitor ${i + 1}:`, error);
+              errorCount++;
+              results.push({
+                visitor: visitor.name,
+                status: 'error',
+                message: 'Lỗi khi submit check-in'
+              });
+            }
+          }
+          
+          // Show group results
+          const successMessage = `✅ Nhóm check-in hoàn thành cho sự kiện "${eventData?.name}"!\n\n📊 Kết quả:\n• Thành công: ${successCount}/${groupResponse.count}\n• Lỗi: ${errorCount}/${groupResponse.count}`;
+          
+          if (errorCount > 0) {
+            const errorDetails = results.filter(r => r.status === 'error')
+              .map(r => `• ${r.visitor}: ${r.message}`)
+              .join('\n');
+            setError(`${successMessage}\n\n❌ Chi tiết lỗi:\n${errorDetails}`);
+          } else {
+            setSuccess(successMessage);
+          }
+          
+          // Show success screen with group info
+          setTimeout(() => {
+            setShowSuccessScreen(true);
+            startAutoReturnCountdown();
+          }, 1000);
+          
+        } else {
+          setError('❌ Dữ liệu nhóm không hợp lệ. Vui lòng thử lại.');
+        }
+      } else if ('visitor' in response && response.visitor) {
         console.log('✅ Visitor found:', response.visitor);
         
         // CRITICAL: Validate that visitor belongs to current event
