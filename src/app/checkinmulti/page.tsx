@@ -6,7 +6,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { EventData, eventApi } from '@/lib/api/events';
-import { VisitorData, visitorApi } from '@/lib/api/visitors';
+import { VisitorData, visitorApi, VisitorResponse } from '@/lib/api/visitors';
 import { useEventMetadata } from '@/hooks/useEventMetadata';
 import { useGoogleAnalytics } from '@/hooks/useGoogleAnalytics';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -395,22 +395,118 @@ export default function CheckinMultiPage() {
     setMatchedEvent(null);
 
     try {
-      console.log('🔍 Processing visitor ID:', trimmedId, 'across', selectedEvents.length, 'events:', selectedEvents.map(e => e.name));
+      console.log('🔍 Processing visitor/group ID:', trimmedId, 'across', selectedEvents.length, 'events:', selectedEvents.map(e => e.name));
       
-      // Try to get visitor info - this will search across the database
+      // Check if this is a group ID
+      const isGroupId = trimmedId.includes('GRP');
+      console.log('🏷️ Processing type:', isGroupId ? 'Group' : 'Single Visitor');
+      
+      // Try to get visitor/group info - this will search across the database
       const response = await visitorApi.getVisitorInfo(trimmedId);
       
-      if (response.visitor) {
-        console.log('✅ Visitor found:', response.visitor);
+      if (isGroupId) {
+        // Handle group check-in
+        const groupResponse = response as any;
+        if (groupResponse.visitors && Array.isArray(groupResponse.visitors)) {
+          console.log('✅ Group found with', groupResponse.count, 'visitors:', groupResponse.visitors);
+          
+          // Process each visitor in the group
+          let successCount = 0;
+          let errorCount = 0;
+          const results = [];
+          
+          setSuccess(`🔄 Đang xử lý nhóm ${groupResponse.count} visitors...`);
+          
+          for (let i = 0; i < groupResponse.visitors.length; i++) {
+            const visitorEntry = groupResponse.visitors[i];
+            const visitor = visitorEntry.visitor;
+            
+            console.log(`📋 Processing visitor ${i + 1}/${groupResponse.count}:`, visitor.name);
+            
+            // Check if visitor belongs to ANY of the selected events
+            const visitorEventId = String(visitor.event_id);
+            const matchingEvent = selectedEvents.find(event => String(event.id) === visitorEventId);
+            
+            if (!matchingEvent) {
+              console.log(`❌ Visitor ${visitor.name} not in selected events`);
+              errorCount++;
+              results.push({
+                visitor: visitor.name,
+                status: 'error',
+                message: `Không thuộc sự kiện đã chọn (${visitor.event_name})`
+              });
+              continue;
+            }
+            
+            try {
+              // Submit check-in for this visitor
+              console.log(`📝 Submitting check-in for visitor ${i + 1}:`, visitor.name);
+              await visitorApi.submitCheckin(visitor);
+              
+              // Track successful checkin
+              trackCheckin(matchingEvent.id, matchingEvent.name, visitor.id);
+              
+              // Auto-print badge if enabled
+              if (matchingEvent.badge_printing && autoPrintEnabled) {
+                console.log(`🖨️ Auto-printing badge for visitor ${i + 1}:`, visitor.name);
+                await printBadge(visitor, matchingEvent);
+              }
+              
+              successCount++;
+              results.push({
+                visitor: visitor.name,
+                status: 'success',
+                event: matchingEvent.name,
+                printed: matchingEvent.badge_printing && autoPrintEnabled
+              });
+              
+              // Small delay between visitors
+              await new Promise(resolve => setTimeout(resolve, 500));
+              
+            } catch (error) {
+              console.error(`❌ Error processing visitor ${i + 1}:`, error);
+              errorCount++;
+              results.push({
+                visitor: visitor.name,
+                status: 'error',
+                message: 'Lỗi khi submit check-in'
+              });
+            }
+          }
+          
+          // Show group results
+          const successMessage = `✅ Nhóm check-in hoàn thành!\n\n📊 Kết quả:\n• Thành công: ${successCount}/${groupResponse.count}\n• Lỗi: ${errorCount}/${groupResponse.count}`;
+          
+          if (errorCount > 0) {
+            const errorDetails = results.filter(r => r.status === 'error')
+              .map(r => `• ${r.visitor}: ${r.message}`)
+              .join('\n');
+            setError(`${successMessage}\n\n❌ Chi tiết lỗi:\n${errorDetails}`);
+          } else {
+            setSuccess(successMessage);
+          }
+          
+          // Show success screen with group info
+          setTimeout(() => {
+            setShowSuccessScreen(true);
+            startAutoReturnCountdown();
+          }, 1000);
+          
+        } else {
+          setError('❌ Dữ liệu nhóm không hợp lệ. Vui lòng thử lại.');
+        }
+      } else if ('visitor' in response && response.visitor) {
+        const visitorResponse = response as VisitorResponse;
+        console.log('✅ Visitor found:', visitorResponse.visitor);
         
         // CRITICAL: Check if visitor belongs to ANY of the selected events
-        const visitorEventId = String(response.visitor.event_id);
+        const visitorEventId = String(visitorResponse.visitor.event_id);
         const matchingEvent = selectedEvents.find(event => String(event.id) === visitorEventId);
         
         console.log('🔒 Multi-event cross-query validation:', {
           visitorEventId,
-          visitorName: response.visitor.name,
-          visitorEventName: response.visitor.event_name,
+          visitorName: visitorResponse.visitor.name,
+          visitorEventName: visitorResponse.visitor.event_name,
           selectedEventIds: selectedEvents.map(e => e.id),
           selectedEventNames: selectedEvents.map(e => e.name),
           matchingEvent: matchingEvent ? matchingEvent.name : null,
@@ -419,15 +515,15 @@ export default function CheckinMultiPage() {
         
         if (!matchingEvent) {
           console.error('🚫 Event ID mismatch - Visitor not in any selected events:', {
-            visitor: response.visitor.name,
+            visitor: visitorResponse.visitor.name,
             visitorEventId,
-            visitorEventName: response.visitor.event_name,
+            visitorEventName: visitorResponse.visitor.event_name,
             selectedEvents: selectedEvents.map(e => ({ id: e.id, name: e.name })),
             securityAction: 'MULTI_QUERY_DENIED'
           });
           
           const selectedEventNames = selectedEvents.map(e => e.name).join(', ');
-          setError(`❌ Visitor không thuộc các sự kiện đã chọn.\n\n• Visitor: ${response.visitor.name}\n• Thuộc sự kiện: ${response.visitor.event_name}\n• Các sự kiện đã chọn: ${selectedEventNames}\n\n💡 Vui lòng chọn đúng sự kiện hoặc kiểm tra lại QR code.`);
+          setError(`❌ Visitor không thuộc các sự kiện đã chọn.\n\n• Visitor: ${visitorResponse.visitor.name}\n• Thuộc sự kiện: ${visitorResponse.visitor.event_name}\n• Các sự kiện đã chọn: ${selectedEventNames}\n\n💡 Vui lòng chọn đúng sự kiện hoặc kiểm tra lại QR code.`);
           setIsProcessing(false);
           
           // Reset input immediately for security violations
@@ -450,7 +546,7 @@ export default function CheckinMultiPage() {
         // Submit check-in to Zoho Creator (if API exists)
         try {
           console.log('📝 Submitting multi-event check-in history to Zoho...');
-          const checkinResult = await visitorApi.submitCheckin(response.visitor);
+          const checkinResult = await visitorApi.submitCheckin(visitorResponse.visitor);
           console.log('✅ Multi-event check-in history submitted successfully:', checkinResult);
         } catch (submitError: any) {
           console.error('⚠️ Failed to submit multi-event check-in history:', submitError.message);
@@ -458,30 +554,30 @@ export default function CheckinMultiPage() {
           // This is expected if the check-in API doesn't exist yet
         }
         
-        setVisitor(response.visitor);
-        setSuccess(`✅ Check-in thành công cho ${response.visitor.name} vào sự kiện "${matchingEvent.name}"!`);
+        setVisitor(visitorResponse.visitor);
+        setSuccess(`✅ Check-in thành công cho ${visitorResponse.visitor.name} vào sự kiện "${matchingEvent.name}"!`);
         
         // Track successful checkin with event info
-        trackCheckin(matchingEvent.id, matchingEvent.name, response.visitor.id);
+        trackCheckin(matchingEvent.id, matchingEvent.name, visitorResponse.visitor.id);
         
         // Auto-print badge based on the MATCHED event's settings
         if (matchingEvent.badge_printing && autoPrintEnabled) {
           setTimeout(async () => {
-            console.log('🖨️ Auto-printing badge for matched event:', matchingEvent.name, 'visitor:', response.visitor.name);
+            console.log('🖨️ Auto-printing badge for matched event:', matchingEvent.name, 'visitor:', visitorResponse.visitor.name);
             
             // Show printing status to user
-            setSuccess(`✅ Check-in thành công cho ${response.visitor.name}! 🖨️ Đang chuẩn bị in thẻ cho sự kiện "${matchingEvent.name}"...`);
+            setSuccess(`✅ Check-in thành công cho ${visitorResponse.visitor.name}! 🖨️ Đang chuẩn bị in thẻ cho sự kiện "${matchingEvent.name}"...`);
             
             // Track badge printing
             trackBadgePrint(matchingEvent.id, matchingEvent.name);
-            await printBadge(response.visitor, matchingEvent);
+            await printBadge(visitorResponse.visitor, matchingEvent);
           }, 500);
         } else if (matchingEvent.badge_printing && !autoPrintEnabled) {
           console.log('🚫 Badge printing disabled by user toggle for event:', matchingEvent.name);
-          setSuccess(`✅ Check-in thành công cho ${response.visitor.name} vào "${matchingEvent.name}"! (Auto-print đã tắt)`);
+          setSuccess(`✅ Check-in thành công cho ${visitorResponse.visitor.name} vào "${matchingEvent.name}"! (Auto-print đã tắt)`);
         } else {
           console.log('🚫 Badge printing disabled by backend for event:', matchingEvent.name, '(badge_printing=false)');
-          setSuccess(`✅ Check-in thành công cho ${response.visitor.name} vào "${matchingEvent.name}"! (Event không hỗ trợ in thẻ)`);
+          setSuccess(`✅ Check-in thành công cho ${visitorResponse.visitor.name} vào "${matchingEvent.name}"! (Event không hỗ trợ in thẻ)`);
         }
         
         // Show success screen
@@ -507,8 +603,8 @@ export default function CheckinMultiPage() {
       // Handle specific error types
       let errorMessage = `❌ ${i18n[currentLanguage]?.error_during_checkin || 'Có lỗi xảy ra khi check-in. Vui lòng thử lại.'}`;
       
-      if (error.message === 'Visitor not found') {
-        errorMessage = `❌ ${i18n[currentLanguage]?.visitor_with_id_not_found || 'Không tìm thấy visitor với ID này trong các sự kiện đã chọn.'}`;
+      if (error.message === 'Visitor not found' || error.message === 'Group not found') {
+        errorMessage = `❌ ${i18n[currentLanguage]?.visitor_with_id_not_found || 'Không tìm thấy visitor/nhóm với ID này trong các sự kiện đã chọn.'}`;
       } else if (error.message === 'Visitor ID is required') {
         errorMessage = `❌ ${i18n[currentLanguage]?.please_enter_visitor_id || 'Vui lòng nhập ID visitor.'}`;
       } else if (error.message.includes('Server error')) {
@@ -772,8 +868,9 @@ export default function CheckinMultiPage() {
         // Fetch fresh visitor data from Zoho to get badge_qr
         const freshVisitorResponse = await visitorApi.getVisitorInfo(visitorData.id);
         
-        if (freshVisitorResponse.visitor && (freshVisitorResponse.visitor as any)?.badge_qr) {
-          finalQrData = (freshVisitorResponse.visitor as any).badge_qr;
+        const freshResponse = freshVisitorResponse as VisitorResponse;
+        if (freshResponse.visitor && (freshResponse.visitor as any)?.badge_qr) {
+          finalQrData = (freshResponse.visitor as any).badge_qr;
           console.log('✅ Successfully fetched badge_qr from Zoho:', finalQrData);
           setSuccess(`✅ Check-in thành công! 🖨️ QR code đã sẵn sàng, đang in thẻ...`);
         } else {

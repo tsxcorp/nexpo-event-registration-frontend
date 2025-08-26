@@ -52,6 +52,11 @@ export interface VisitorResponse {
   visitor: VisitorData;
 }
 
+export interface GroupVisitorsResponse {
+  visitors: Array<{ visitor: VisitorData }>;
+  count: number;
+}
+
 export interface CheckinResponse {
   success: boolean;
   message: string;
@@ -89,52 +94,82 @@ export const visitorApi = {
   },
 
   /**
-   * Fetch visitor details by visitor ID
-   * @param visitorId - The visitor ID from Zoho Creator
-   * @returns Promise<VisitorResponse>
+   * Fetch visitor details by visitor ID or group ID
+   * @param visitorId - The visitor ID or group ID from Zoho Creator
+   * @returns Promise<VisitorResponse | GroupVisitorsResponse>
    */
-  async getVisitorInfo(visitorId: string): Promise<VisitorResponse> {
-    console.log('🔍 Fetching visitor data for ID:', visitorId);
+  async getVisitorInfo(visitorId: string): Promise<VisitorResponse | GroupVisitorsResponse> {
+    console.log('🔍 Fetching visitor/group data for ID:', visitorId);
     console.log('🌐 API Base URL:', apiClient.defaults.baseURL);
     console.log('🌐 Full request URL:', `${apiClient.defaults.baseURL}/api/visitors?visid=${visitorId}`);
     
+    // Check if this is a group ID (contains "GRP")
+    const isGroupId = visitorId.includes('GRP');
+    console.log('🏷️ ID Type:', isGroupId ? 'Group ID' : 'Single Visitor ID');
+    
     try {
-      const response = await apiClient.get<VisitorResponse>('/api/visitors', {
+      const response = await apiClient.get<VisitorResponse | GroupVisitorsResponse>('/api/visitors', {
         params: { visid: visitorId }
       });
       
-      console.log('📥 Visitor data response status:', response.status);
-      console.log('📥 Visitor data response:', response.data);
+      console.log('📥 Response status:', response.status);
+      console.log('📥 Response data:', response.data);
       console.log('📥 Response data type:', typeof response.data);
-      console.log('📥 Response data visitor:', response.data?.visitor);
       
-      // Validate response data structure
-      if (!response.data || !response.data.visitor) {
-        console.log('⚠️ Invalid response structure - no visitor data');
-        throw new Error('Visitor not found');
+      if (isGroupId) {
+        // Handle group response
+        const groupResponse = response.data as GroupVisitorsResponse;
+        console.log('📥 Group response visitors:', groupResponse.visitors);
+        console.log('📥 Group count:', groupResponse.count);
+        
+        // Validate group response structure
+        if (!groupResponse || !groupResponse.visitors || !Array.isArray(groupResponse.visitors)) {
+          console.log('⚠️ Invalid group response structure');
+          throw new Error('Group not found');
+        }
+        
+        // Validate each visitor in group
+        for (const visitorEntry of groupResponse.visitors) {
+          const visitor = visitorEntry.visitor;
+          if (!visitor.id || visitor.id === 'undefined' || !visitor.name || visitor.name === '' || !visitor.email || visitor.email === '') {
+            console.log('⚠️ Invalid visitor in group:', visitor);
+            throw new Error('Invalid visitor data in group');
+          }
+        }
+        
+        return groupResponse;
+      } else {
+        // Handle single visitor response
+        const visitorResponse = response.data as VisitorResponse;
+        console.log('📥 Single visitor response:', visitorResponse.visitor);
+        
+        // Validate response data structure
+        if (!visitorResponse || !visitorResponse.visitor) {
+          console.log('⚠️ Invalid response structure - no visitor data');
+          throw new Error('Visitor not found');
+        }
+        
+        const visitor = visitorResponse.visitor;
+        
+        // Validate essential visitor fields
+        if (!visitor.id || visitor.id === 'undefined' || !visitor.name || visitor.name === '' || !visitor.email || visitor.email === '') {
+          console.log('⚠️ Visitor not found - backend returned empty/undefined fields:', {
+            id: visitor.id,
+            name: visitor.name, 
+            email: visitor.email
+          });
+          throw new Error('Visitor not found');
+        }
+        
+        // Log visitor ID mapping (QR code -> Visitor ID)
+        if (visitor.id !== visitorId) {
+          console.log('📋 QR Code to Visitor ID mapping - QR:', visitorId, 'Visitor ID:', visitor.id);
+        }
+        
+        return visitorResponse;
       }
-      
-      const visitor = response.data.visitor;
-      
-      // Validate essential visitor fields
-      // Handle backend's way of returning "not found" - empty/undefined fields
-      if (!visitor.id || visitor.id === 'undefined' || !visitor.name || visitor.name === '' || !visitor.email || visitor.email === '') {
-        console.log('⚠️ Visitor not found - backend returned empty/undefined fields:', {
-          id: visitor.id,
-          name: visitor.name, 
-          email: visitor.email
-        });
-        throw new Error('Visitor not found');
-      }
-      
-      // Log visitor ID mapping (QR code -> Visitor ID)
-      if (visitor.id !== visitorId) {
-        console.log('📋 QR Code to Visitor ID mapping - QR:', visitorId, 'Visitor ID:', visitor.id);
-      }
-      
-      return response.data;
     } catch (error: any) {
-      console.log('❌ Error fetching visitor data:', error.message || error);
+      console.log('❌ Error fetching visitor/group data:', error.message || error);
       
       // Safe logging without triggering Next.js console error interceptor
       if (error.response) {
@@ -147,16 +182,16 @@ export const visitorApi = {
       
       // Handle different error types
       if (error.response?.status === 400) {
-        throw new Error('Visitor ID is required');
+        throw new Error('Visitor/Group ID is required');
       } else if (error.response?.status === 404) {
-        throw new Error('Visitor not found');
+        throw new Error(isGroupId ? 'Group not found' : 'Visitor not found');
       } else if (error.response?.status === 500) {
         throw new Error('Server error: ' + (error.response?.data?.details || 'Unknown error'));
-      } else if (error.message === 'Visitor not found') {
+      } else if (error.message === 'Visitor not found' || error.message === 'Group not found') {
         // Re-throw our custom validation errors
         throw error;
       } else {
-        throw new Error('Failed to fetch visitor data');
+        throw new Error('Failed to fetch visitor/group data');
       }
     }
   },

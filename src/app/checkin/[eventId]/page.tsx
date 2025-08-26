@@ -7,7 +7,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { EventData, eventApi } from '@/lib/api/events';
-import { VisitorData, visitorApi } from '@/lib/api/visitors';
+import { VisitorData, visitorApi, VisitorResponse } from '@/lib/api/visitors';
 import { useEventMetadata } from '@/hooks/useEventMetadata';
 import { useGoogleAnalytics } from '@/hooks/useGoogleAnalytics';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -312,7 +312,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     }, 100);
   };
 
-  // Process check-in (unified for both manual and scanner)
+  // Process check-in (unified for both manual and scanner) with Group Support
   const processCheckin = async (visitorId: string) => {
     if (!visitorId.trim() || isProcessing) {
       console.log('🚫 processCheckin ignored - empty ID or already processing');
@@ -336,11 +336,24 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     setVisitor(null);
 
     try {
-      console.log('🔍 Processing visitor ID:', trimmedId);
+      console.log('🔍 Processing visitor/group ID:', trimmedId);
+      
+      // Check if this is a group ID
+      const isGroupId = trimmedId.includes('GRP');
+      console.log('🏷️ Processing type:', isGroupId ? 'Group' : 'Single Visitor');
+      
+      // For single event check-in, we only support single visitors, not groups
+      if (isGroupId) {
+        setError('❌ Group check-in không được hỗ trợ trong single event mode. Vui lòng sử dụng Multi-Event Check-in để xử lý nhóm.');
+        setIsProcessing(false);
+        setManualInput('');
+        return;
+      }
       
       const response = await visitorApi.getVisitorInfo(trimmedId);
       
-      if (response.visitor) {
+      // Type guard to ensure this is a single visitor response
+      if ('visitor' in response && response.visitor) {
         console.log('✅ Visitor found:', response.visitor);
         
         // CRITICAL: Validate that visitor belongs to current event
@@ -382,10 +395,13 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         
         console.log('✅ Event validation passed in check-in - visitor belongs to current event');
         
+        // Type guard to ensure this is a single visitor response
+        const visitorResponse = response as VisitorResponse;
+        
         // Submit check-in to Zoho Creator
         try {
           console.log('📝 Submitting check-in history to Zoho...');
-          const checkinResult = await visitorApi.submitCheckin(response.visitor);
+          const checkinResult = await visitorApi.submitCheckin(visitorResponse.visitor);
           console.log('✅ Check-in history submitted successfully:', checkinResult);
         } catch (submitError: any) {
           console.error('⚠️ Failed to submit check-in history:', submitError.message);
@@ -394,35 +410,35 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         }
         
         // Test custom content extraction immediately after getting visitor data
-        console.log('🔍 Testing custom content extraction for visitor:', response.visitor.id);
-        const testCustomContent = getCustomContent(response.visitor);
+        console.log('🔍 Testing custom content extraction for visitor:', visitorResponse.visitor.id);
+        const testCustomContent = getCustomContent(visitorResponse.visitor);
         console.log('🎨 Custom content extraction test result:', {
           found: testCustomContent.length > 0,
           customContent: testCustomContent,
           willShowOnBadge: testCustomContent.length > 0
         });
         
-        setVisitor(response.visitor);
-        setSuccess(`✅ Check-in thành công cho ${response.visitor.name}!`);
+        setVisitor(visitorResponse.visitor);
+        setSuccess(`✅ Check-in thành công cho ${visitorResponse.visitor.name}!`);
         
         // Track successful checkin
-        trackCheckin(eventId, eventData?.name || 'Unknown Event', response.visitor.id);
+        trackCheckin(eventId, eventData?.name || 'Unknown Event', visitorResponse.visitor.id);
         
         // Auto-print badge only if backend allows AND user has toggle enabled
         if (eventData?.badge_printing && autoPrintEnabled) {
           setTimeout(async () => {
-            console.log('🖨️ Auto-printing badge for visitor (backend=true, user-toggle=true):', response.visitor);
+            console.log('🖨️ Auto-printing badge for visitor (backend=true, user-toggle=true):', visitorResponse.visitor);
             
             // Show printing status to user
-            setSuccess(`✅ Check-in thành công cho ${response.visitor.name}! 🖨️ Đang chuẩn bị in thẻ...`);
+            setSuccess(`✅ Check-in thành công cho ${visitorResponse.visitor.name}! 🖨️ Đang chuẩn bị in thẻ...`);
             
             // Track badge printing
             trackBadgePrint(eventId, eventData?.name || 'Unknown Event');
-            await printBadge(response.visitor);
+            await printBadge(visitorResponse.visitor);
           }, 500);
         } else if (eventData?.badge_printing && !autoPrintEnabled) {
           console.log('🚫 Badge printing disabled by user toggle (backend=true, user-toggle=false)');
-          setSuccess(`✅ Check-in thành công cho ${response.visitor.name}! (Auto-print đã tắt)`);
+          setSuccess(`✅ Check-in thành công cho ${visitorResponse.visitor.name}! (Auto-print đã tắt)`);
         } else {
           console.log('🚫 Badge printing disabled by backend (badge_printing=false)');
         }
@@ -1386,8 +1402,9 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         // Fetch fresh visitor data from Zoho to get badge_qr
         const freshVisitorResponse = await visitorApi.getVisitorInfo(visitorData.id);
         
-        if (freshVisitorResponse.visitor && (freshVisitorResponse.visitor as any)?.badge_qr) {
-          finalQrData = (freshVisitorResponse.visitor as any).badge_qr;
+        const freshResponse = freshVisitorResponse as VisitorResponse;
+        if (freshResponse.visitor && (freshResponse.visitor as any)?.badge_qr) {
+          finalQrData = (freshResponse.visitor as any).badge_qr;
           console.log('✅ Successfully fetched badge_qr from Zoho:', finalQrData);
           setSuccess(`✅ Check-in thành công! 🖨️ QR code đã sẵn sàng, đang in thẻ...`);
         } else {
