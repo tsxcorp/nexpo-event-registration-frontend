@@ -58,6 +58,14 @@ interface Props {
 }
 
 export default function RegistrationForm({ fields, eventId, eventData, currentLanguage = 'vi', onRegisterFormMigration, isEmbedded = false, embedConfig }: Props) {
+  // Function to detect if we're actually in an iframe
+  const isActuallyEmbedded = () => {
+    return isEmbedded && 
+           window.parent && 
+           window.parent !== window && 
+           window.parent.location.href !== window.location.href &&
+           window.parent.location.origin !== window.location.origin;
+  };
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -395,21 +403,19 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
         console.log('📋 Registration data being sent to payment page:', registrationData);
         
         // Handle redirect based on embed mode and ticket_mode
-        if (isEmbedded) {
+        if (isActuallyEmbedded()) {
           // For embedded forms, send message to parent window
-          if (window.parent && window.parent !== window) {
-            const redirectData = {
-              type: 'registration_complete',
-              source: 'nexpo-embed',
-              eventId: eventId,
-              ticket_mode: eventData?.ticket_mode || false,
-              registrationData: registrationData,
-              currentLanguage: currentLanguage
-            };
-            
-            window.parent.postMessage(redirectData, '*');
-            console.log('📤 Sent registration complete message to parent window:', redirectData);
-          }
+          const redirectData = {
+            type: 'registration_complete',
+            source: 'nexpo-embed',
+            eventId: eventId,
+            ticket_mode: eventData?.ticket_mode || false,
+            registrationData: registrationData,
+            currentLanguage: currentLanguage
+          };
+          
+          window.parent.postMessage(redirectData, '*');
+          console.log('📤 Sent registration complete message to parent window:', redirectData);
         } else {
           // For non-embedded forms, use normal redirect
           if (eventData?.ticket_mode) {
