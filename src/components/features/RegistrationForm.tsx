@@ -418,13 +418,13 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
           let redirectUrl = '';
           
           if (memberStatus === 'Không') {
-            // Redirect to Buy Ticket form via /ticket route
+            // Direct to Buy Ticket form
             redirectUrl = `/ticket?member_status=Không&Add_Event=4433256000014035047&Master_Registration=${zohoRecordId}&lang=${currentLanguage}`;
             console.log('🎫 Redirecting to Buy Ticket form via /ticket:', redirectUrl);
           } else if (memberStatus === 'Có') {
-            // Redirect to Member Check form via /ticket route
-            redirectUrl = `/ticket?member_status=Có&Add_Event=4433256000014035047&Master_Registration=${zohoRecordId}&lang=${currentLanguage}`;
-            console.log('✅ Redirecting to Member Check form via /ticket:', redirectUrl);
+            // Start with Member Check form, then will redirect to Buy Ticket
+            redirectUrl = `/ticket?member_status=Có&Add_Event=4433256000014035047&Master_Registration=${zohoRecordId}&lang=${currentLanguage}&flow=member_check`;
+            console.log('✅ Redirecting to Member Check form via /ticket (will redirect to Buy Ticket after):', redirectUrl);
           }
           
                       if (redirectUrl) {

@@ -223,6 +223,7 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     form_not_available: "Form không khả dụng",
     invalid_member_status: "Trạng thái thành viên không hợp lệ.",
     please_wait: "Vui lòng chờ trong giây lát...",
+    form_footer_note: "Cuộn xuống để xem toàn bộ form và bấm nút submit",
     page_not_found_description: "Trang bạn đang tìm kiếm không tồn tại. Vui lòng chọn một sự kiện bên dưới.",
     unable_to_initialize_camera: "Không thể khởi tạo camera. Vui lòng sử dụng manual input.",
     please_contact_organizers_for_details: "Vui lòng liên hệ ban tổ chức để biết thêm chi tiết",

@@ -18,6 +18,7 @@ function TicketPageContent() {
     const addEvent = searchParams?.get('Add_Event');
     const masterRegistration = searchParams?.get('Master_Registration');
     const lang = searchParams?.get('lang') || 'vi';
+    const flow = searchParams?.get('flow');
     
     setCurrentLanguage(lang);
 
@@ -25,17 +26,18 @@ function TicketPageContent() {
       memberStatus,
       addEvent,
       masterRegistration,
-      lang
+      lang,
+      flow
     });
 
-    // Determine Zoho Creator URL based on member_status
+    // Determine Zoho Creator URL based on member_status and flow
     let zohoUrl = '';
     
-    if (memberStatus === 'Không') {
+    if (memberStatus === 'Không' || flow === 'buy_ticket') {
       // Buy Ticket form embed URL
       zohoUrl = `https://creatorapp.zohopublic.com/tsxcorp/registration1/form-embed/Buy_Ticket/08DqzfT4X8YVHC481NzxQNPuYvPkEfX6P0fTJbkzGyyVQQ4uJrH6tU81VwDsKOtePJqmzmB46Jdj1Nvn7vDGPV07vgVnWFnpT8XR?Add_Event=${addEvent}&object=Public&Master_Registration=${masterRegistration}`;
       console.log('🎫 Buy Ticket form embed URL:', zohoUrl);
-    } else if (memberStatus === 'Có') {
+    } else if (memberStatus === 'Có' && flow === 'member_check') {
       // Member Check form embed URL
       zohoUrl = `https://creatorapp.zohopublic.com/tsxcorp/registration1/form-embed/Member_Check/KwS16QdS1X48XECRqsb1P2p9RKSwzzVfZB1GqgD1b9ACUDgh6OtSVF9gbSh8gwQZwEeHQxtR09pVqwF0v4aOxRqjrardvKh66O5n?Add_Event=${addEvent}&Master_Registration=${masterRegistration}`;
       console.log('✅ Member Check form embed URL:', zohoUrl);
@@ -49,15 +51,39 @@ function TicketPageContent() {
     setLoading(false);
   }, [searchParams]);
 
+  // Handle messages from iframe (for Member Check to Buy Ticket flow)
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Only handle messages from Zoho Creator
+      if (event.origin !== 'https://creatorapp.zohopublic.com') {
+        return;
+      }
+
+      console.log('📨 Received message from iframe:', event.data);
+
+      // Check if Member Check form was submitted successfully
+      if (event.data && typeof event.data === 'object' && event.data.type === 'form_submitted') {
+        console.log('✅ Member Check form submitted successfully, redirecting to Buy Ticket');
+        
+        // Redirect to Buy Ticket form
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('flow', 'buy_ticket');
+        currentUrl.searchParams.delete('member_status'); // Clear member_status to show Buy Ticket
+        
+        window.location.href = currentUrl.toString();
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   // Show loading state
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <LoadingSpinner size="lg" showLogo={true} />
-          <p className="mt-4 text-gray-600">
-            {i18n[currentLanguage]?.loading_ticket_form || 'Đang tải form vé...'}
-          </p>
         </div>
       </div>
     );
@@ -65,21 +91,26 @@ function TicketPageContent() {
 
   // Get parameters for display
   const memberStatus = searchParams?.get('member_status');
+  const flow = searchParams?.get('flow');
+
+  // Determine title based on flow
+  const isMemberCheckFlow = memberStatus === 'Có' && flow === 'member_check';
+  const isBuyTicketFlow = memberStatus === 'Không' || flow === 'buy_ticket';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+      <div className="bg-white shadow-sm border-b flex-shrink-0">
+        <div className="max-w-7xl mx-auto px-4 py-3 md:py-4">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900">
-              {memberStatus === 'Có' 
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900">
+              {isMemberCheckFlow
                 ? (i18n[currentLanguage]?.member_check_title || 'Kiểm tra thành viên')
                 : (i18n[currentLanguage]?.buy_ticket_title || 'Mua vé')
               }
             </h1>
-            <p className="text-gray-600 mt-1">
-              {memberStatus === 'Có'
+            <p className="text-sm md:text-base text-gray-600 mt-1">
+              {isMemberCheckFlow
                 ? (i18n[currentLanguage]?.member_check_subtitle || 'Xác minh thông tin thành viên')
                 : (i18n[currentLanguage]?.buy_ticket_subtitle || 'Hoàn tất mua vé cho sự kiện')
               }
@@ -104,23 +135,30 @@ function TicketPageContent() {
               </div>
             )}
             
-            <iframe
-              src={iframeUrl}
-              height="100%"
-              width="100%"
-              frameBorder={0}
-              scrolling="auto"
-              title={memberStatus === 'Có' ? 'Member Check Form' : 'Buy Ticket Form'}
-              className="w-full h-screen border-0"
-              onLoad={() => {
-                console.log('✅ Zoho Creator embed form loaded successfully');
-                setIframeLoading(false);
-              }}
-              onError={(e) => {
-                console.error('❌ Error loading Zoho Creator embed form:', e);
-                setIframeLoading(false);
-              }}
-            />
+            {/* Mobile-friendly iframe container with dynamic height */}
+            <div className="relative w-full flex-1 flex flex-col">
+              <iframe
+                src={iframeUrl}
+                width="100%"
+                frameBorder={0}
+                scrolling="auto"
+                title={isMemberCheckFlow ? 'Member Check Form' : 'Buy Ticket Form'}
+                className="w-full border-0 flex-1"
+                style={{
+                  minHeight: 'calc(100vh - 200px)', // Responsive height calculation
+                  maxHeight: 'calc(100vh - 200px)'
+                }}
+                onLoad={() => {
+                  console.log('✅ Zoho Creator embed form loaded successfully');
+                  setIframeLoading(false);
+                }}
+                onError={(e) => {
+                  console.error('❌ Error loading Zoho Creator embed form:', e);
+                  setIframeLoading(false);
+                }}
+              />
+              
+            </div>
           </>
         ) : (
           <div className="flex items-center justify-center h-screen">
