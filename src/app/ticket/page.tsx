@@ -32,10 +32,11 @@ function TicketPageContent() {
 
     // Determine Zoho Creator URL based on member_status and flow
     let zohoUrl = '';
+    const object = searchParams?.get('object') || 'Public';
     
     if (memberStatus === 'Không' || flow === 'buy_ticket') {
       // Buy Ticket form embed URL
-      zohoUrl = `https://creatorapp.zohopublic.com/tsxcorp/registration1/form-embed/Buy_Ticket/08DqzfT4X8YVHC481NzxQNPuYvPkEfX6P0fTJbkzGyyVQQ4uJrH6tU81VwDsKOtePJqmzmB46Jdj1Nvn7vDGPV07vgVnWFnpT8XR?Add_Event=${addEvent}&object=Public&Master_Registration=${masterRegistration}`;
+      zohoUrl = `https://creatorapp.zohopublic.com/tsxcorp/registration1/form-embed/Buy_Ticket/08DqzfT4X8YVHC481NzxQNPuYvPkEfX6P0fTJbkzGyyVQQ4uJrH6tU81VwDsKOtePJqmzmB46Jdj1Nvn7vDGPV07vgVnWFnpT8XR?Add_Event=${addEvent}&object=${object}&Master_Registration=${masterRegistration}`;
       console.log('🎫 Buy Ticket form embed URL:', zohoUrl);
     } else if (memberStatus === 'Có' && flow === 'member_check') {
       // Member Check form embed URL
@@ -50,6 +51,14 @@ function TicketPageContent() {
     // Set loading to false after URL is determined
     setLoading(false);
   }, [searchParams]);
+
+  // Get parameters for display
+  const memberStatus = searchParams?.get('member_status');
+  const flow = searchParams?.get('flow');
+
+  // Determine title based on flow
+  const isMemberCheckFlow = memberStatus === 'Có' && flow === 'member_check';
+  const isBuyTicketFlow = memberStatus === 'Không' || flow === 'buy_ticket';
 
   // Handle messages from iframe (for Member Check to Buy Ticket flow)
   useEffect(() => {
@@ -74,9 +83,58 @@ function TicketPageContent() {
       }
     };
 
+    // Also handle URL changes in iframe (for Zoho script redirects)
+    const handleIframeLoad = () => {
+      try {
+        const iframe = document.querySelector('iframe');
+        if (iframe && iframe.contentWindow) {
+          const iframeUrl = iframe.contentWindow.location.href;
+          console.log('🔍 Iframe URL changed:', iframeUrl);
+          
+          // Check if iframe URL contains Buy_Ticket form (indicating Member Check completed)
+          if (iframeUrl.includes('form-perma/Buy_Ticket') || iframeUrl.includes('form-embed/Buy_Ticket')) {
+            console.log('✅ Member Check completed, Buy Ticket form detected in iframe');
+            
+            // Extract parameters from iframe URL
+            const urlParams = new URLSearchParams(iframeUrl.split('?')[1] || '');
+            const addEvent = urlParams.get('Add_Event');
+            const masterRegistration = urlParams.get('Master_Registration');
+            const object = urlParams.get('object');
+            
+            console.log('📋 Extracted parameters:', { addEvent, masterRegistration, object });
+            
+            // Update our URL to show Buy Ticket form
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('flow', 'buy_ticket');
+            currentUrl.searchParams.set('Add_Event', addEvent || '');
+            currentUrl.searchParams.set('Master_Registration', masterRegistration || '');
+            currentUrl.searchParams.set('object', object || 'Member');
+            currentUrl.searchParams.delete('member_status'); // Clear member_status to show Buy Ticket
+            
+            console.log('🔄 Redirecting to Buy Ticket form with parameters:', currentUrl.toString());
+            window.location.href = currentUrl.toString();
+          }
+        }
+      } catch (error: any) {
+        // Cross-origin error - this is expected, but we can still check periodically
+        console.log('🔍 Cross-origin iframe check (expected):', error?.message || 'Unknown error');
+      }
+    };
+
+    // Check iframe URL periodically for Member Check completion
+    const checkInterval = setInterval(() => {
+      if (isMemberCheckFlow) {
+        handleIframeLoad();
+      }
+    }, 2000); // Check every 2 seconds
+
     window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
+    
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      clearInterval(checkInterval);
+    };
+  }, [isMemberCheckFlow]);
 
   // Show loading state
   if (loading) {
@@ -88,14 +146,6 @@ function TicketPageContent() {
       </div>
     );
   }
-
-  // Get parameters for display
-  const memberStatus = searchParams?.get('member_status');
-  const flow = searchParams?.get('flow');
-
-  // Determine title based on flow
-  const isMemberCheckFlow = memberStatus === 'Có' && flow === 'member_check';
-  const isBuyTicketFlow = memberStatus === 'Không' || flow === 'buy_ticket';
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
