@@ -407,7 +407,58 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
         
         console.log('📋 Registration data being sent to payment page:', registrationData);
         
-        // Handle redirect based on embed mode and ticket_mode
+        // Check for custom member_status redirect logic
+        const memberStatus = customDataWithFieldIds['member_status'] || customData['member_status'];
+        console.log('🔍 Checking member_status for custom redirect:', memberStatus);
+        
+        // Custom redirect logic for specific event with member_status
+        if (eventId === '4433256000013547003' && eventData?.ticket_mode === true && memberStatus) {
+          console.log('🎯 Custom redirect logic triggered for event 4433256000013547003');
+          
+          let redirectUrl = '';
+          
+          if (memberStatus === 'Không') {
+            // Redirect to Buy Ticket form via /ticket route
+            redirectUrl = `/ticket?member_status=Không&Add_Event=4433256000014035047&Master_Registration=${zohoRecordId}&lang=${currentLanguage}`;
+            console.log('🎫 Redirecting to Buy Ticket form via /ticket:', redirectUrl);
+          } else if (memberStatus === 'Có') {
+            // Redirect to Member Check form via /ticket route
+            redirectUrl = `/ticket?member_status=Có&Add_Event=4433256000014035047&Master_Registration=${zohoRecordId}&lang=${currentLanguage}`;
+            console.log('✅ Redirecting to Member Check form via /ticket:', redirectUrl);
+          }
+          
+                      if (redirectUrl) {
+              if (isActuallyEmbedded()) {
+                // For embedded forms, send custom redirect message to parent window
+                const customRedirectData = {
+                  type: 'custom_redirect',
+                  source: 'nexpo-embed',
+                  eventId: eventId,
+                  member_status: memberStatus,
+                  redirectUrl: redirectUrl,
+                  registrationData: registrationData,
+                  currentLanguage: currentLanguage
+                };
+                
+                window.parent.postMessage(customRedirectData, '*');
+                console.log('📤 Sent custom redirect message to parent window:', customRedirectData);
+                
+                // Fallback: If parent doesn't handle the message, redirect parent window after 3 seconds
+                setTimeout(() => {
+                  console.log('⏰ Fallback custom redirect parent window after 3 seconds...');
+                  const fullUrl = `${window.location.origin}${redirectUrl}`;
+                  window.parent.location.href = fullUrl;
+                }, 3000);
+              } else {
+                // For non-embedded forms, use router.push for better UX
+                console.log('🔄 Redirecting to ticket route:', redirectUrl);
+                router.push(redirectUrl);
+              }
+              return; // Exit early, don't continue with normal redirect logic
+            }
+        }
+        
+        // Handle normal redirect based on embed mode and ticket_mode
         if (isActuallyEmbedded()) {
           // For embedded forms, send message to parent window
           const redirectData = {
