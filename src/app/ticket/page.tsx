@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import PoweredByFooter from '@/components/common/PoweredByFooter';
 import { i18n } from '@/lib/translation/i18n';
 
 function TicketPageContent() {
@@ -77,18 +78,35 @@ function TicketPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b flex-shrink-0">
-        <div className="max-w-7xl mx-auto px-4 py-3 md:py-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-gray-50 flex flex-col">
+      {/* Enhanced Header with Beautiful Gradient */}
+      <div className="relative bg-gradient-to-br from-indigo-600 via-blue-600 to-purple-700 shadow-xl flex-shrink-0 overflow-hidden">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-0 left-1/4 w-32 h-32 bg-white/10 rounded-full blur-2xl animate-pulse"></div>
+          <div className="absolute -top-4 right-1/3 w-24 h-24 bg-purple-300/20 rounded-full blur-xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute bottom-0 left-2/3 w-20 h-20 bg-blue-300/15 rounded-full blur-lg animate-pulse" style={{ animationDelay: '2s' }}></div>
+          
+          {/* Geometric Pattern */}
+          <div className="absolute top-0 right-0 w-full h-full opacity-10">
+            <div className="absolute top-2 right-4 w-8 h-8 border border-white/30 rounded transform rotate-45"></div>
+            <div className="absolute top-6 right-12 w-4 h-4 bg-white/20 rounded-full"></div>
+            <div className="absolute bottom-3 right-8 w-6 h-6 border border-white/20 rounded-lg transform -rotate-12"></div>
+          </div>
+          
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 py-4 md:py-6">
           <div className="text-center">
-            <h1 className="text-xl md:text-2xl font-bold text-gray-900">
+            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-white mb-2 drop-shadow-lg">
               {isMemberCheckFlow
                 ? (i18n[currentLanguage]?.member_check_title || 'Kiểm tra thành viên')
                 : (i18n[currentLanguage]?.buy_ticket_title || 'Mua vé')
               }
             </h1>
-            <p className="text-sm md:text-base text-gray-600 mt-1">
+            <p className="text-sm md:text-base text-blue-100 drop-shadow-sm">
               {isMemberCheckFlow
                 ? (i18n[currentLanguage]?.member_check_subtitle || 'Xác minh thông tin thành viên')
                 : (i18n[currentLanguage]?.buy_ticket_subtitle || 'Hoàn tất mua vé cho sự kiện')
@@ -98,8 +116,8 @@ function TicketPageContent() {
         </div>
       </div>
 
-            {/* Iframe Container */}
-      <div className="flex-1 relative">
+            {/* Iframe Container - Natural scrolling */}
+      <div className="flex-1 relative overflow-hidden">
         {iframeUrl ? (
           <>
             {/* Loading Overlay */}
@@ -114,18 +132,19 @@ function TicketPageContent() {
               </div>
             )}
             
-            {/* Mobile-friendly iframe container with dynamic height */}
-            <div className="relative w-full flex-1 flex flex-col">
+            {/* Natural scrolling iframe container */}
+            <div className="relative w-full h-full">
               <iframe
                 src={iframeUrl}
                 width="100%"
+                height="100%"
                 frameBorder={0}
-                scrolling="auto"
+                scrolling="yes"
                 title={isMemberCheckFlow ? 'Member Check Form' : 'Buy Ticket Form'}
-                className="w-full border-0 flex-1"
+                className="w-full h-full border-0"
                 style={{
-                  minHeight: 'calc(100vh - 200px)', // Responsive height calculation
-                  maxHeight: 'calc(100vh - 200px)'
+                  minHeight: 'calc(100vh - 120px)', // Reduced from 200px to 120px for more natural feel
+                  height: '100%'
                 }}
                 onLoad={() => {
                   console.log('✅ Zoho Creator embed form loaded successfully');
@@ -141,7 +160,6 @@ function TicketPageContent() {
                   setIframeLoading(false);
                 }}
               />
-              
             </div>
           </>
         ) : (
@@ -158,6 +176,9 @@ function TicketPageContent() {
           </div>
         )}
       </div>
+      
+      {/* Powered by Nexpo Footer */}
+      <PoweredByFooter variant="minimal" className="border-t-0" />
     </div>
   );
 }

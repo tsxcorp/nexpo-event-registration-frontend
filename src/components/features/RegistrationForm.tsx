@@ -58,6 +58,8 @@ interface Props {
 }
 
 export default function RegistrationForm({ fields, eventId, eventData, currentLanguage = 'vi', onRegisterFormMigration, isEmbedded = false, embedConfig }: Props) {
+  // Check if this is the specific event that needs special handling
+  const isSpecialEvent = eventId === '4433256000013547003';
   // Function to detect if we're actually in an iframe
   const isActuallyEmbedded = () => {
     try {
@@ -76,6 +78,9 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
   const [loading, setLoading] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [isNew, setIsNew] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+
   
   // Use useRef for userIntentToSubmit to persist across re-mounts
   const userIntentToSubmitRef = useRef(false);
@@ -298,6 +303,14 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
     if (!userIntentToSubmitRef.current) {
       return;
     }
+
+    // Set loading state for all events
+    setLoading(true);
+    
+    // Set processing state for all events except special event
+    if (!isSpecialEvent) {
+      setIsProcessing(true);
+    }
     const coreData: Record<string, any> = {};
     const customData: Record<string, any> = {};
 
@@ -369,7 +382,14 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
     };
 
     try {
-      setLoading(true);
+      // Check if backend API URL is configured
+      if (!process.env.NEXT_PUBLIC_BACKEND_API_URL) {
+        throw new Error('Backend API URL is not configured. Please check your environment variables.');
+      }
+
+      console.log('🌐 Making API request to:', `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/registrations`);
+      console.log('📦 Request payload:', payload);
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/registrations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -552,6 +572,7 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
       alert(errorMessage);
     } finally {
       setLoading(false);
+      setIsProcessing(false);
     }
   };
 
@@ -857,11 +878,6 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
                   })}
                 </div>
                 
-                {/* Add new member button */}
-                <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-orange-200">
-                  <Button
-                    type="button"
-                    onClick={handleAddMember}
                     className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 py-3 sm:px-6 sm:py-4 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
                   >
                     <span className="flex items-center justify-center gap-2">
@@ -872,6 +888,13 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
                     </span>
                   </Button>
                 </div>
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        {i18n[currentLanguage]?.["Thêm thành viên mới"] || "Thêm thành viên mới"}
+                      </span>
+                    </Button>
+                  </div>
               </div>
             </Card>
           </div>
@@ -889,10 +912,12 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
             >
               ← {i18n[currentLanguage]?.back || 'Quay lại'}
             </Button>
+            
+
 
             {/* Center content for mobile - Add member button */}
             <div className="flex flex-col sm:flex-row w-full sm:w-auto space-y-3 sm:space-y-0 sm:space-x-4 order-3 sm:order-none">
-              {groupMembers.length === 0 && (
+              {groupMembers.length === 0 && !isSpecialEvent && (
                 <Button
                   type="button"
                   onClick={handleAddMember}
@@ -913,14 +938,13 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
                 >
                   {loading ? (
                     <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-4 w-4 sm:h-5 sm:w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
+                      <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-2 border-white border-t-transparent mr-3"></div>
                       {i18n[currentLanguage]?.submitting || 'Đang gửi...'}
                     </span>
                   ) : (
-                    `✓ ${i18n[currentLanguage]?.complete_registration || 'Hoàn tất đăng ký'}`
+                    isSpecialEvent 
+                      ? `✓ ${i18n[currentLanguage]?.buy_ticket || 'Mua vé'}`
+                      : `✓ ${i18n[currentLanguage]?.complete_registration || 'Hoàn tất đăng ký'}`
                   )}
                 </Button>
               ) : (
@@ -1030,6 +1054,8 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
             </div>
           </div>
         )}
+
+
       </form>
     </FormProvider>
   );
