@@ -60,6 +60,40 @@ function TicketPageContent() {
   const isMemberCheckFlow = memberStatus === 'Có' && flow === 'member_check';
   const isBuyTicketFlow = memberStatus === 'Không' || flow === 'buy_ticket';
 
+  // Alternative approach: Listen for form submission events
+  const handleFormSubmission = () => {
+    console.log('✅ Member Check form submitted, preparing Buy Ticket transition');
+    
+    // Extract current parameters
+    const addEvent = searchParams?.get('Add_Event');
+    const masterRegistration = searchParams?.get('Master_Registration');
+    
+    // Update our URL to show Buy Ticket form with Member object
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('flow', 'buy_ticket');
+    currentUrl.searchParams.set('Add_Event', addEvent || '');
+    currentUrl.searchParams.set('Master_Registration', masterRegistration || '');
+    currentUrl.searchParams.set('object', 'Member'); // Set Member object for Buy Ticket
+    currentUrl.searchParams.delete('member_status'); // Clear member_status to show Buy Ticket
+    
+    console.log('🔄 Redirecting to Buy Ticket form with Member parameters:', currentUrl.toString());
+    window.location.href = currentUrl.toString();
+  };
+
+  // Listen for iframe load events to detect form submission
+  const handleIframeLoad = () => {
+    console.log('✅ Iframe loaded, monitoring for form submission...');
+    
+    // Set a timeout to check for form submission completion
+    setTimeout(() => {
+      if (isMemberCheckFlow) {
+        console.log('⏰ Checking for Member Check completion...');
+        // If we're still in Member Check flow after timeout, assume form was submitted
+        handleFormSubmission();
+      }
+    }, 10000); // Wait 10 seconds for form submission
+  };
+
   // Handle messages from iframe (for Member Check to Buy Ticket flow)
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -83,56 +117,10 @@ function TicketPageContent() {
       }
     };
 
-    // Also handle URL changes in iframe (for Zoho script redirects)
-    const handleIframeLoad = () => {
-      try {
-        const iframe = document.querySelector('iframe');
-        if (iframe && iframe.contentWindow) {
-          const iframeUrl = iframe.contentWindow.location.href;
-          console.log('🔍 Iframe URL changed:', iframeUrl);
-          
-          // Check if iframe URL contains Buy_Ticket form (indicating Member Check completed)
-          if (iframeUrl.includes('form-perma/Buy_Ticket') || iframeUrl.includes('form-embed/Buy_Ticket')) {
-            console.log('✅ Member Check completed, Buy Ticket form detected in iframe');
-            
-            // Extract parameters from iframe URL
-            const urlParams = new URLSearchParams(iframeUrl.split('?')[1] || '');
-            const addEvent = urlParams.get('Add_Event');
-            const masterRegistration = urlParams.get('Master_Registration');
-            const object = urlParams.get('object');
-            
-            console.log('📋 Extracted parameters:', { addEvent, masterRegistration, object });
-            
-            // Update our URL to show Buy Ticket form
-            const currentUrl = new URL(window.location.href);
-            currentUrl.searchParams.set('flow', 'buy_ticket');
-            currentUrl.searchParams.set('Add_Event', addEvent || '');
-            currentUrl.searchParams.set('Master_Registration', masterRegistration || '');
-            currentUrl.searchParams.set('object', object || 'Member');
-            currentUrl.searchParams.delete('member_status'); // Clear member_status to show Buy Ticket
-            
-            console.log('🔄 Redirecting to Buy Ticket form with parameters:', currentUrl.toString());
-            window.location.href = currentUrl.toString();
-          }
-        }
-      } catch (error: any) {
-        // Cross-origin error - this is expected, but we can still check periodically
-        console.log('🔍 Cross-origin iframe check (expected):', error?.message || 'Unknown error');
-      }
-    };
-
-    // Check iframe URL periodically for Member Check completion
-    const checkInterval = setInterval(() => {
-      if (isMemberCheckFlow) {
-        handleIframeLoad();
-      }
-    }, 2000); // Check every 2 seconds
-
     window.addEventListener('message', handleMessage);
     
     return () => {
       window.removeEventListener('message', handleMessage);
-      clearInterval(checkInterval);
     };
   }, [isMemberCheckFlow]);
 
@@ -201,6 +189,11 @@ function TicketPageContent() {
                 onLoad={() => {
                   console.log('✅ Zoho Creator embed form loaded successfully');
                   setIframeLoading(false);
+                  
+                  // Trigger iframe load handler for Member Check flow
+                  if (isMemberCheckFlow) {
+                    handleIframeLoad();
+                  }
                 }}
                 onError={(e) => {
                   console.error('❌ Error loading Zoho Creator embed form:', e);
