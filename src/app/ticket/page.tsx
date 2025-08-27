@@ -97,9 +97,6 @@ function TicketPageContent() {
               <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-10">
                 <div className="text-center">
                   <LoadingSpinner size="lg" showLogo={true} />
-                  <p className="mt-4 text-gray-600">
-                    {i18n[currentLanguage]?.loading_zoho_form || 'Đang tải dữ liệu Vé...'}
-                  </p>
                   <p className="mt-2 text-sm text-gray-500">
                     {i18n[currentLanguage]?.please_wait || 'Vui lòng chờ trong giây lát...'}
                   </p>

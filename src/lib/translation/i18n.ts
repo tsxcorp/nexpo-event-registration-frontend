@@ -199,7 +199,6 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     page_not_found: "Trang không tồn tại",
     
     // Ticket page translations
-    loading_ticket_form: "Đang tải form vé...",
     member_check_title: "Kiểm tra thành viên",
     buy_ticket_title: "Mua vé",
     member_check_subtitle: "Xác minh thông tin thành viên",
