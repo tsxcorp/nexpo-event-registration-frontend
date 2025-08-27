@@ -68,30 +68,37 @@ function TicketPageContent() {
     const addEvent = searchParams?.get('Add_Event');
     const masterRegistration = searchParams?.get('Master_Registration');
     
-    // Update our URL to show Buy Ticket form with Member object
+    // Use the same Buy Ticket URL as member_status = "Không" but with object=Member
+    const buyTicketUrl = `https://creatorapp.zohopublic.com/tsxcorp/registration1/form-embed/Buy_Ticket/08DqzfT4X8YVHC481NzxQNPuYvPkEfX6P0fTJbkzGyyVQQ4uJrH6tU81VwDsKOtePJqmzmB46Jdj1Nvn7vDGPV07vgVnWFnpT8XR?Add_Event=${addEvent}&object=Member&Master_Registration=${masterRegistration}`;
+    
+    console.log('🔄 Redirecting to Buy Ticket form with Member parameters:', buyTicketUrl);
+    
+    // Update iframe URL directly to Buy Ticket form
+    setIframeUrl(buyTicketUrl);
+    
+    // Update URL parameters to reflect Buy Ticket flow
     const currentUrl = new URL(window.location.href);
     currentUrl.searchParams.set('flow', 'buy_ticket');
     currentUrl.searchParams.set('Add_Event', addEvent || '');
     currentUrl.searchParams.set('Master_Registration', masterRegistration || '');
-    currentUrl.searchParams.set('object', 'Member'); // Set Member object for Buy Ticket
-    currentUrl.searchParams.delete('member_status'); // Clear member_status to show Buy Ticket
+    currentUrl.searchParams.set('object', 'Member');
+    currentUrl.searchParams.delete('member_status');
     
-    console.log('🔄 Redirecting to Buy Ticket form with Member parameters:', currentUrl.toString());
-    window.location.href = currentUrl.toString();
+    // Update browser URL without page reload
+    window.history.replaceState({}, '', currentUrl.toString());
   };
 
   // Listen for iframe load events to detect form submission
   const handleIframeLoad = () => {
     console.log('✅ Iframe loaded, monitoring for form submission...');
     
-    // Set a timeout to check for form submission completion
-    setTimeout(() => {
-      if (isMemberCheckFlow) {
-        console.log('⏰ Checking for Member Check completion...');
-        // If we're still in Member Check flow after timeout, assume form was submitted
-        handleFormSubmission();
-      }
-    }, 10000); // Wait 10 seconds for form submission
+    // Don't auto-redirect - let user complete OTP verification first
+    console.log('⏳ Waiting for user to complete OTP verification in Member Check form...');
+    
+    // Set a flag to track if this is a form submission reload
+    if (isMemberCheckFlow) {
+      console.log('🔍 Monitoring for Member Check form submission completion...');
+    }
   };
 
   // Handle messages from iframe (for Member Check to Buy Ticket flow)
@@ -107,20 +114,78 @@ function TicketPageContent() {
       // Check if Member Check form was submitted successfully
       if (event.data && typeof event.data === 'object' && event.data.type === 'form_submitted') {
         console.log('✅ Member Check form submitted successfully, redirecting to Buy Ticket');
-        
-        // Redirect to Buy Ticket form
-        const currentUrl = new URL(window.location.href);
-        currentUrl.searchParams.set('flow', 'buy_ticket');
-        currentUrl.searchParams.delete('member_status'); // Clear member_status to show Buy Ticket
-        
-        window.location.href = currentUrl.toString();
+        handleFormSubmission();
       }
     };
+
+    // Alternative: Monitor iframe URL changes for successful submission
+    const checkIframeSubmission = () => {
+      try {
+        const iframe = document.querySelector('iframe');
+        if (iframe && iframe.contentWindow) {
+          const iframeUrl = iframe.contentWindow.location.href;
+          
+          console.log('🔍 Checking iframe URL:', iframeUrl);
+          
+          // Check if iframe URL contains success indicators
+          if (iframeUrl.includes('success') || 
+              iframeUrl.includes('thank') || 
+              iframeUrl.includes('Buy_Ticket') ||
+              iframeUrl.includes('form-perma/Buy_Ticket') ||
+              iframeUrl.includes('form-embed/Buy_Ticket') ||
+              iframeUrl.includes('object=Member')) {
+            
+            console.log('✅ Member Check completed successfully, redirecting to Buy Ticket');
+            handleFormSubmission();
+            return true; // Stop checking
+          }
+          
+          // Also check for form submission completion indicators
+          if (iframeUrl.includes('submitted') || 
+              iframeUrl.includes('completed') ||
+              iframeUrl.includes('verified')) {
+            
+            console.log('✅ Member Check form submitted/verified, redirecting to Buy Ticket');
+            handleFormSubmission();
+            return true; // Stop checking
+          }
+        }
+      } catch (error: any) {
+        // Cross-origin error - expected, continue checking
+        if (error?.message?.includes('cross-origin')) {
+          // This is expected, continue monitoring
+        } else {
+          console.log('🔍 Iframe check error:', error?.message || 'Unknown error');
+        }
+      }
+      return false; // Continue checking
+    };
+
+    // Start monitoring iframe for successful submission
+    let checkInterval: NodeJS.Timeout | null = null;
+    
+    if (isMemberCheckFlow) {
+      console.log('🔍 Starting iframe submission monitoring for Member Check...');
+      
+      // Check every 3 seconds for successful submission
+      checkInterval = setInterval(() => {
+        const completed = checkIframeSubmission();
+        if (completed) {
+          if (checkInterval) {
+            clearInterval(checkInterval);
+            checkInterval = null;
+          }
+        }
+      }, 3000);
+    }
 
     window.addEventListener('message', handleMessage);
     
     return () => {
       window.removeEventListener('message', handleMessage);
+      if (checkInterval) {
+        clearInterval(checkInterval);
+      }
     };
   }, [isMemberCheckFlow]);
 
@@ -190,7 +255,7 @@ function TicketPageContent() {
                   console.log('✅ Zoho Creator embed form loaded successfully');
                   setIframeLoading(false);
                   
-                  // Trigger iframe load handler for Member Check flow
+                  // For Member Check flow, we'll monitor for submission completion
                   if (isMemberCheckFlow) {
                     handleIframeLoad();
                   }
