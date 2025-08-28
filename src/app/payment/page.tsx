@@ -197,14 +197,106 @@ function PaymentPageContent() {
                   <img 
                     src={qrCodeUrl} 
                     alt="QR Code thanh toán" 
-                    className="w-48 h-48 mx-auto rounded-lg shadow-sm"
+                    className="w-56 h-56 mx-auto rounded-lg shadow-sm"
                   />
                 </div>
               </div>
             )}
 
+            {/* Compact Bank Transfer Information */}
+            <div className="bg-white border border-gray-200 rounded-lg p-3 mb-3">
+              <div className="flex items-center mb-2">
+                <svg className="h-4 w-4 text-green-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+                <h4 className="text-sm font-medium text-gray-900">
+                  {i18n[currentLanguage]?.bank_transfer_info || 'Thông tin chuyển khoản'}
+                </h4>
+              </div>
+              <div className="space-y-2 text-xs">
+                <div>
+                  <label className="block text-gray-600 mb-0.5">
+                    {i18n[currentLanguage]?.bank_name || 'Ngân hàng'}
+                  </label>
+                  <p className="text-gray-900 font-medium">BIDV</p>
+                </div>
+                <div>
+                  <label className="block text-gray-600 mb-0.5">
+                    {i18n[currentLanguage]?.account_number || 'Số tài khoản'}
+                  </label>
+                  <div className="flex items-center justify-between">
+                    <p className="text-gray-900 font-medium">8618208888</p>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText('8618208888');
+                        // Show temporary success feedback
+                        const button = event?.currentTarget as HTMLButtonElement;
+                        if (button) {
+                          const originalHTML = button.innerHTML;
+                          button.innerHTML = `
+                            <svg class="h-3 w-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                          `;
+                          setTimeout(() => {
+                            button.innerHTML = originalHTML;
+                          }, 1000);
+                        }
+                      }}
+                      className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                      title="Copy số tài khoản"
+                    >
+                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                {addInfo && (
+                  <div>
+                    <label className="block text-gray-600 mb-0.5">
+                      {i18n[currentLanguage]?.payment_content || 'Nội dung thanh toán'}
+                    </label>
+                    <div className="flex items-center justify-between">
+                      <p className="text-gray-900 font-medium break-all">{addInfo}</p>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(addInfo);
+                          // Show temporary success feedback
+                          const button = event?.currentTarget as HTMLButtonElement;
+                          if (button) {
+                            const originalHTML = button.innerHTML;
+                            button.innerHTML = `
+                              <svg class="h-3 w-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                              </svg>
+                            `;
+                            setTimeout(() => {
+                              button.innerHTML = originalHTML;
+                            }, 1000);
+                          }
+                        }}
+                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                        title="Copy nội dung thanh toán"
+                      >
+                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <label className="block text-gray-600 mb-0.5">
+                    {i18n[currentLanguage]?.account_holder || 'Chủ tài khoản'}
+                  </label>
+                  <p className="text-gray-900 font-medium text-xs">Hội Doanh Nhân Trẻ TP.HCM</p>
+                </div>
+              </div>
+            </div>
+
             {/* Compact Payment Instructions */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
               <div className="flex items-start">
                 <div className="flex-shrink-0">
                   <svg className="h-4 w-4 text-yellow-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -221,38 +313,6 @@ function PaymentPageContent() {
                     <li>{i18n[currentLanguage]?.step_3_scan_qr || 'Quét mã QR bên trên'}</li>
                     <li>{i18n[currentLanguage]?.step_4_confirm_payment || 'Xác nhận và thanh toán'}</li>
                   </ol>
-                </div>
-              </div>
-            </div>
-
-            {/* Compact Bank Transfer Information */}
-            <div className="bg-white border border-gray-200 rounded-lg p-3">
-              <div className="flex items-center mb-2">
-                <svg className="h-4 w-4 text-green-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                </svg>
-                <h4 className="text-sm font-medium text-gray-900">
-                  {i18n[currentLanguage]?.bank_transfer_info || 'Thông tin chuyển khoản'}
-                </h4>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div>
-                  <label className="block text-gray-600 mb-0.5">
-                    {i18n[currentLanguage]?.bank_name || 'Ngân hàng'}
-                  </label>
-                  <p className="text-gray-900 font-medium">BIDV</p>
-                </div>
-                <div>
-                  <label className="block text-gray-600 mb-0.5">
-                    {i18n[currentLanguage]?.account_number || 'Số tài khoản'}
-                  </label>
-                  <p className="text-gray-900 font-medium">8618208888</p>
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-gray-600 mb-0.5">
-                    {i18n[currentLanguage]?.account_holder || 'Chủ tài khoản'}
-                  </label>
-                  <p className="text-gray-900 font-medium text-xs">Hội Doanh Nhân Trẻ TP.HCM</p>
                 </div>
               </div>
             </div>
