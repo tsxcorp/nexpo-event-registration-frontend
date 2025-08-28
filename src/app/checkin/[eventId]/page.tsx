@@ -11,6 +11,7 @@ import { VisitorData, visitorApi, VisitorResponse } from '@/lib/api/visitors';
 import { useEventMetadata } from '@/hooks/useEventMetadata';
 import { useGoogleAnalytics } from '@/hooks/useGoogleAnalytics';
 import { Html5Qrcode } from 'html5-qrcode';
+import QRCode from 'qrcode';
 import { i18n } from '@/lib/translation/i18n';
 
 interface CheckinPageProps {
@@ -1104,39 +1105,32 @@ export default function CheckinPage({ params }: CheckinPageProps) {
 
 
 
-  // Generate QR fallback using Canvas (for mobile reliability)
-  const generateQRFallback = (qrData: string): string => {
+  // Generate QR using Canvas with qrcode library (fast and reliable)
+  const generateQRFallback = async (qrData: string): Promise<string> => {
     try {
-      console.log('🎨 Generating Canvas QR fallback for:', qrData);
+      console.log('🎨 Generating Canvas QR with qrcode library for:', qrData);
       
       const canvas = document.createElement('canvas');
       const size = 200;
       canvas.width = size;
       canvas.height = size;
-      const ctx = canvas.getContext('2d');
       
-      if (!ctx) {
-        throw new Error('Canvas context not available');
-      }
-      
-      // Simple QR-like pattern (placeholder)
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, size, size);
-      
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(10, 10, size - 20, size - 20);
-      
-      ctx.fillStyle = '#000';
-      ctx.font = '12px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('QR CODE', size / 2, size / 2 - 10);
-      ctx.fillText(qrData.slice(-12), size / 2, size / 2 + 10);
+      // Generate QR code using qrcode library
+      await QRCode.toCanvas(canvas, qrData, {
+        width: size,
+        margin: 0,
+        color: {
+          dark: '#000000',
+          light: '#ffffff'
+        },
+        errorCorrectionLevel: 'M'
+      });
       
       const dataUrl = canvas.toDataURL('image/png');
-      console.log('✅ Canvas QR fallback generated');
+      console.log('✅ Canvas QR generated successfully with qrcode library');
       return dataUrl;
     } catch (error) {
-      console.error('❌ Canvas QR fallback failed:', error);
+      console.error('❌ Canvas QR generation failed:', error);
       return '';
     }
   };
@@ -1158,91 +1152,105 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       return;
     }
     
-    // Try multiple QR sources
-    const qrSources = [
-      `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}&format=png&ecc=M`,
-      `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encodeURIComponent(qrData)}`,
-      generateQRFallback(qrData) // Canvas fallback
-    ].filter(Boolean);
-    
-    let currentSourceIndex = 0;
-    
-    const tryNextQRSource = () => {
-      if (currentSourceIndex >= qrSources.length) {
-        console.error('❌ All QR sources failed, using text fallback');
-        printWithTextQR();
-        return;
+    // Try multiple QR sources with Canvas as primary
+    const tryQRGeneration = async () => {
+      try {
+        // Try Canvas QR first (fastest)
+        console.log('🚀 Trying Canvas QR generation first...');
+        const canvasQR = await generateQRFallback(qrData);
+        if (canvasQR) {
+          console.log('✅ Canvas QR generated successfully, using it immediately');
+          printWithQRImage(canvasQR);
+          return;
+        }
+      } catch (error) {
+        console.log('⚠️ Canvas QR failed, trying external APIs...');
       }
       
-      const qrUrl = qrSources[currentSourceIndex];
-      console.log(`🔄 Trying QR source ${currentSourceIndex + 1}/${qrSources.length}`);
+      // Fallback to external APIs
+      const externalQRSources = [
+        `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}&format=png&ecc=M`,
+        `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encodeURIComponent(qrData)}`
+      ];
       
-      const testImg = new Image();
-      testImg.crossOrigin = 'anonymous';
+      let currentSourceIndex = 0;
       
-      testImg.onload = () => {
-        // Additional verification: ensure image is actually loaded
-        if (testImg.complete && testImg.naturalWidth > 0) {
-          console.log(`✅ QR source ${currentSourceIndex + 1} loaded successfully:`, {
-            complete: testImg.complete,
-            naturalWidth: testImg.naturalWidth,
-            naturalHeight: testImg.naturalHeight
-          });
-          printWithQRImage(qrUrl);
-        } else {
-          console.log(`⚠️ QR source ${currentSourceIndex + 1} onload fired but not fully loaded, retrying...`);
-          setTimeout(() => {
-            if (testImg.complete && testImg.naturalWidth > 0) {
-              console.log(`✅ QR source ${currentSourceIndex + 1} verified as loaded`);
-              printWithQRImage(qrUrl);
-            } else {
-              console.log(`❌ QR source ${currentSourceIndex + 1} failed verification`);
+      const tryNextExternalSource = () => {
+        if (currentSourceIndex >= externalQRSources.length) {
+          console.error('❌ All QR sources failed, using text fallback');
+          printWithTextQR();
+          return;
+        }
+        
+        const qrUrl = externalQRSources[currentSourceIndex];
+        console.log(`🔄 Trying external QR source ${currentSourceIndex + 1}/${externalQRSources.length}`);
+        
+        const testImg = new Image();
+        testImg.crossOrigin = 'anonymous';
+        
+        testImg.onload = () => {
+          if (testImg.complete && testImg.naturalWidth > 0) {
+            console.log(`✅ External QR source ${currentSourceIndex + 1} loaded successfully`);
+            printWithQRImage(qrUrl);
+          } else {
+            console.log(`⚠️ External QR source ${currentSourceIndex + 1} onload fired but not fully loaded, retrying...`);
+            setTimeout(() => {
+              if (testImg.complete && testImg.naturalWidth > 0) {
+                console.log(`✅ External QR source ${currentSourceIndex + 1} verified as loaded`);
+                printWithQRImage(qrUrl);
+              } else {
+                console.log(`❌ External QR source ${currentSourceIndex + 1} failed verification`);
+                testImg.onerror = null;
+                testImg.onload = null;
+                currentSourceIndex++;
+                tryNextExternalSource();
+              }
+            }, 1000);
+          }
+        };
+        
+        testImg.onerror = () => {
+          console.log(`❌ External QR source ${currentSourceIndex + 1} failed, trying next...`);
+          testImg.onerror = null;
+          testImg.onload = null;
+          currentSourceIndex++;
+          setTimeout(tryNextExternalSource, 500);
+        };
+        
+        testImg.src = qrUrl;
+        
+        // Reduced timeout for external APIs
+        let retryCount = 0;
+        const maxRetries = 1;
+        const timeoutDuration = 2000;
+        
+        const timeoutHandler = () => {
+          if (!testImg.complete || testImg.naturalWidth === 0) {
+            retryCount++;
+            console.log(`⏰ External QR source ${currentSourceIndex + 1} attempt ${retryCount}/${maxRetries} timeout`);
+            
+            if (retryCount >= maxRetries) {
+              console.log(`❌ External QR source ${currentSourceIndex + 1} failed after ${maxRetries} attempts`);
               testImg.onerror = null;
               testImg.onload = null;
               currentSourceIndex++;
-              tryNextQRSource();
+              tryNextExternalSource();
+            } else {
+              console.log(`🔄 Retrying external QR source ${currentSourceIndex + 1}...`);
+              testImg.src = qrUrl + '&t=' + Date.now() + '&retry=' + retryCount;
+              setTimeout(timeoutHandler, timeoutDuration);
             }
-          }, 1000);
-        }
-      };
-      
-      testImg.onerror = () => {
-        console.log(`❌ QR source ${currentSourceIndex + 1} failed, trying next...`);
-        testImg.onerror = null;
-        testImg.onload = null;
-        currentSourceIndex++;
-        setTimeout(tryNextQRSource, 500);
-      };
-      
-      testImg.src = qrUrl;
-      
-      // Enhanced timeout with retry logic
-      let retryCount = 0;
-      const maxRetries = 2;
-      const timeoutDuration = 4000;
-      
-      const timeoutHandler = () => {
-        if (!testImg.complete || testImg.naturalWidth === 0) {
-          retryCount++;
-          console.log(`⏰ QR source ${currentSourceIndex + 1} attempt ${retryCount}/${maxRetries} timeout`);
-          
-          if (retryCount >= maxRetries) {
-            console.log(`❌ QR source ${currentSourceIndex + 1} failed after ${maxRetries} attempts`);
-            testImg.onerror = null;
-            testImg.onload = null;
-            currentSourceIndex++;
-            tryNextQRSource();
-          } else {
-            // Retry with new timestamp
-            console.log(`🔄 Retrying QR source ${currentSourceIndex + 1}...`);
-            testImg.src = qrUrl + '&t=' + Date.now() + '&retry=' + retryCount;
-            setTimeout(timeoutHandler, timeoutDuration);
           }
-        }
+        };
+        
+        setTimeout(timeoutHandler, timeoutDuration);
       };
       
-      setTimeout(timeoutHandler, timeoutDuration);
+      tryNextExternalSource();
     };
+    
+    // Start QR generation process
+    tryQRGeneration();
     
     const printWithQRImage = (qrUrl: string) => {
       // ... existing print logic with working QR URL
@@ -1253,9 +1261,6 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       // Direct print with text QR
       printBadgeWithTextQR(visitorData, qrData);
     };
-    
-    // Start trying QR sources
-    tryNextQRSource();
   };
 
   // Helper function to print with working QR URL
