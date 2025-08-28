@@ -427,20 +427,89 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
         
         console.log('📋 Registration data being sent to payment page:', registrationData);
         
-        // Check for custom member_status redirect logic
-        const memberStatus = customDataWithFieldIds['member_status'] || customData['member_status'];
+        // Debug: Check form data before conversion
+        console.log('🔍 Form data before conversion:', data);
+        console.log('🔍 All form data keys:', Object.keys(data));
+        
+        // Check both versions of the field label (with and without period)
+        const fieldLabelWithPeriod = 'Nếu bạn là hội viên YBA hoặc Hawee, vui lòng xác nhận để nhận ưu đãi đặc biệt.';
+        const fieldLabelWithoutPeriod = 'Nếu bạn là hội viên YBA hoặc Hawee, vui lòng xác nhận để nhận ưu đãi đặc biệt';
+        
+        console.log('🔍 Member status field (with period) in form data:', data[fieldLabelWithPeriod]);
+        console.log('🔍 Member status field (without period) in form data:', data[fieldLabelWithoutPeriod]);
+        console.log('🔍 Member status field (with period) value type:', typeof data[fieldLabelWithPeriod]);
+        console.log('🔍 Member status field (without period) value type:', typeof data[fieldLabelWithoutPeriod]);
+        console.log('🔍 Member status field (with period) value length:', data[fieldLabelWithPeriod]?.length);
+        console.log('🔍 Member status field (without period) value length:', data[fieldLabelWithoutPeriod]?.length);
+        
+        // Get the actual value from either field
+        const memberStatusValue = data[fieldLabelWithPeriod] || data[fieldLabelWithoutPeriod];
+        console.log('🔍 Actual member status value:', memberStatusValue);
+        
+        // Check for custom member_status redirect logic (use actual value from form data)
+        const memberStatus = memberStatusValue || customDataWithFieldIds['member_status'];
         console.log('🔍 Checking member_status for custom redirect:', memberStatus);
+        console.log('🔍 Event ID:', eventId);
+        console.log('🔍 Ticket mode:', eventData?.ticket_mode);
+        console.log('🔍 Custom data with field IDs:', customDataWithFieldIds);
+        console.log('🔍 Custom data:', customData);
+        
+        // Debug: Check all possible field mappings
+        console.log('🔍 All field labels in customData:', Object.keys(customData));
+        console.log('🔍 All field IDs in customDataWithFieldIds:', Object.keys(customDataWithFieldIds));
+        
+        // Check if member_status field exists in form fields
+        const memberStatusField = allVisibleFields.find(field => 
+          field.field_id === 'member_status' || 
+          field.label === 'Nếu bạn là hội viên YBA hoặc Hawee, vui lòng xác nhận để nhận ưu đãi đặc biệt.'
+        );
+        console.log('🔍 Member status field found:', memberStatusField);
+        
+        // Debug: Check event data structure
+        console.log('🔍 Event data structure:', {
+          eventId: eventData?.id,
+          ticket_mode: eventData?.ticket_mode,
+          formFields: eventData?.formFields?.map(f => ({ field_id: f.field_id, label: f.label, type: f.type }))
+        });
+        
+        // Debug: Check allVisibleFields structure
+        console.log('🔍 All visible fields structure:', allVisibleFields.map(f => ({ field_id: f.field_id, label: f.label, type: f.type, required: f.required })));
+        
+        // Debug: Check member_status field details
+        console.log('🔍 Member status field details:', {
+          field_id: memberStatusField?.field_id,
+          label: memberStatusField?.label,
+          type: memberStatusField?.type,
+          required: memberStatusField?.required,
+          values: memberStatusField?.values,
+          isVisible: !!memberStatusField
+        });
+        
+        // Debug: Check if field is in allVisibleFields
+        const fieldInVisibleFields = allVisibleFields.find(f => f.field_id === 'member_status');
+        console.log('🔍 Field in allVisibleFields:', {
+          found: !!fieldInVisibleFields,
+          field: fieldInVisibleFields,
+          allVisibleFieldsCount: allVisibleFields.length,
+          allVisibleFieldIds: allVisibleFields.map(f => f.field_id)
+        });
+        
+        // Debug: Check form validation
+        console.log('🔍 Form validation state:', {
+          isValid: Object.keys(errors).length === 0,
+          errors: errors
+        });
         
         // Custom redirect logic for specific event with member_status
-        if (eventId === '4433256000013547003' && eventData?.ticket_mode === true && memberStatus) {
+        if (eventId === '4433256000013547003' && eventData?.ticket_mode === true) {
           console.log('🎯 Custom redirect logic triggered for event 4433256000013547003');
           
           let redirectUrl = '';
           
-          if (memberStatus === 'Không') {
-            // Direct to Buy Ticket form
+          if (memberStatus === 'Không' || memberStatus === '' || !memberStatus) {
+            // Direct to Buy Ticket form (for "Không", empty, or undefined)
             redirectUrl = `/ticket?member_status=Không&Add_Event=4433256000014035047&Master_Registration=${zohoRecordId}&lang=${currentLanguage}`;
-            console.log('🎫 Redirecting to Buy Ticket form via /ticket:', redirectUrl);
+            console.log('🎫 Redirecting to Buy Ticket form via /ticket (member_status: Không/empty):', redirectUrl);
           } else if (memberStatus === 'Có') {
             // Start with Member Check form, then will redirect to Buy Ticket
             redirectUrl = `/ticket?member_status=Có&Add_Event=4433256000014035047&Master_Registration=${zohoRecordId}&lang=${currentLanguage}&flow=member_check`;
