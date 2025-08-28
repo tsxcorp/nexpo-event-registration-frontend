@@ -119,7 +119,7 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     submitting: "Đang gửi...",
     
     // Section names
-    personal_info: "THÔNG TIN CÁ NHÂN",
+    personal_info: "THÔNG TIN ĐĂNG KÝ",
     agreement_section: "ĐIỀU KHOẢN",
     other_section: "KHÁC",
     

@@ -271,7 +271,7 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
     ...visibleAgreementSections,
     // 2. Core fields step
     {
-      name: i18n[currentLanguage]?.personal_info || 'THÔNG TIN CÁ NHÂN',
+      name: i18n[currentLanguage]?.personal_info || 'THÔNG TIN ĐĂNG KÝ',
       sort: -1,
       fields: [],
       type: 'core',
