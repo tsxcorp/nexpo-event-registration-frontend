@@ -7,6 +7,21 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { i18n } from '@/lib/translation/i18n';
 import PoweredByFooter from '@/components/common/PoweredByFooter';
 
+// Types for bank apps
+interface BankApp {
+  appId: string;
+  appLogo: string;
+  appName: string;
+  bankName: string;
+  monthlyInstall: number;
+  deeplink: string;
+  autofill?: number;
+}
+
+interface BankAppsResponse {
+  apps: BankApp[];
+}
+
 interface GroupMember {
   Salutation: string;
   Full_Name: string;
@@ -29,6 +44,92 @@ interface RegistrationData {
   [key: string]: any;
 }
 
+// Mobile detection hook
+const useMobileDetection = () => {
+  const [isMobile, setIsMobile] = useState(false);
+  const [os, setOs] = useState<'android' | 'ios' | 'unknown'>('unknown');
+
+  useEffect(() => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    
+    setIsMobile(isMobileDevice);
+    
+    if (userAgent.includes('android')) {
+      setOs('android');
+    } else if (userAgent.includes('iphone') || userAgent.includes('ipad') || userAgent.includes('ipod')) {
+      setOs('ios');
+    }
+  }, []);
+
+  return { isMobile, os };
+};
+
+// Hook to fetch bank apps
+const useBankApps = (os: 'android' | 'ios' | 'unknown') => {
+  const [bankApps, setBankApps] = useState<BankApp[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (os === 'unknown') return;
+
+    const fetchBankApps = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const apiUrl = os === 'android' 
+          ? 'https://api.vietqr.io/v2/android-app-deeplinks'
+          : 'https://api.vietqr.io/v2/ios-app-deeplinks';
+        
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          throw new Error('Failed to fetch bank apps');
+        }
+        
+        const data: BankAppsResponse = await response.json();
+        
+        // Sort by monthly installs (most popular first) and filter out apps with 0 installs
+        const sortedApps = data.apps
+          .filter(app => app.monthlyInstall > 0)
+          .sort((a, b) => b.monthlyInstall - a.monthlyInstall)
+          .slice(0, 12); // Limit to top 12 apps
+        
+        setBankApps(sortedApps);
+      } catch (err) {
+        console.error('Error fetching bank apps:', err);
+        setError('Không thể tải danh sách ngân hàng');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBankApps();
+  }, [os]);
+
+  return { bankApps, loading, error };
+};
+
+// Function to generate deeplink with payment info
+const generateDeeplink = (baseDeeplink: string, amount: string, addInfo?: string) => {
+  const url = new URL(baseDeeplink);
+  
+  // Add payment parameters if available
+  if (amount) {
+    url.searchParams.set('am', amount);
+  }
+  
+  if (addInfo) {
+    url.searchParams.set('tn', addInfo);
+  }
+  
+  // Add bank account info for BIDV
+  url.searchParams.set('ba', '8618208888@bidv');
+  
+  return url.toString();
+};
+
 function PaymentPageContent() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
@@ -36,6 +137,10 @@ function PaymentPageContent() {
   const [registrationData, setRegistrationData] = useState<RegistrationData | null>(null);
   const [currentLanguage, setCurrentLanguage] = useState('vi');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
+  
+  // Mobile detection and bank apps
+  const { isMobile, os } = useMobileDetection();
+  const { bankApps, loading: bankAppsLoading, error: bankAppsError } = useBankApps(os);
 
   // Debug: Log registrationData changes
   useEffect(() => {
@@ -200,6 +305,63 @@ function PaymentPageContent() {
                     className="w-56 h-56 mx-auto rounded-lg shadow-sm"
                   />
                 </div>
+              </div>
+            )}
+
+            {/* Mobile Bank Apps Section */}
+            {isMobile && (
+              <div className="mt-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-3 text-center">
+                  {i18n[currentLanguage]?.pay_with_bank_app || 'Thanh toán bằng app ngân hàng'}
+                </h4>
+                
+                {bankAppsLoading && (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-600">Đang tải danh sách ngân hàng...</p>
+                  </div>
+                )}
+                
+                {bankAppsError && (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-red-600">{bankAppsError}</p>
+                  </div>
+                )}
+                
+                {!bankAppsLoading && !bankAppsError && bankApps.length > 0 && (
+                  <div className="grid grid-cols-3 gap-3">
+                    {bankApps.map((app) => (
+                      <button
+                        key={app.appId}
+                        onClick={() => {
+                          const deeplink = generateDeeplink(app.deeplink, amount || '', addInfo || undefined);
+                          window.location.href = deeplink;
+                        }}
+                        className="flex flex-col items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
+                        title={`Thanh toán bằng ${app.appName}`}
+                      >
+                        <img 
+                          src={app.appLogo} 
+                          alt={app.appName}
+                          className="w-10 h-10 rounded-lg mb-2 object-contain"
+                          onError={(e) => {
+                            // Fallback to a generic bank icon if logo fails to load
+                            (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0iI0YzRjRGNiIvPgo8cGF0aCBkPSJNMTIgMTZIMjhNMTYgMjBIMjRNMTIgMjRIMjgiIHN0cm9rZT0iIzM3NDE1MSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+';
+                          }}
+                        />
+                        <p className="text-xs text-gray-700 text-center font-medium leading-tight">
+                          {app.appName}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                
+                {!bankAppsLoading && !bankAppsError && bankApps.length === 0 && (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-gray-600">Không tìm thấy app ngân hàng phù hợp</p>
+                  </div>
+                )}
               </div>
             )}
 
