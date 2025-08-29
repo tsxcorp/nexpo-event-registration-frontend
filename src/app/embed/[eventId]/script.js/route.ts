@@ -20,6 +20,8 @@ export async function GET(
   const containerId = url.searchParams.get('container') || `nexpo-registration-${eventId}`;
   const borderRadius = url.searchParams.get('borderRadius') || '12px';
   const shadow = url.searchParams.get('shadow') || '0 4px 20px rgba(0, 0, 0, 0.1)';
+  const mobileOptimized = url.searchParams.get('mobileOptimized') !== 'false';
+  const maxWidth = url.searchParams.get('maxWidth') || '800px';
   
   // Generate the enhanced embed script
   const scriptContent = `
@@ -40,16 +42,21 @@ export async function GET(
     borderRadius: '${borderRadius}',
     shadow: '${shadow}',
     containerId: '${containerId}',
-    baseUrl: '${baseUrl}'
+    baseUrl: '${baseUrl}',
+    mobileOptimized: ${mobileOptimized},
+    maxWidth: '${maxWidth}'
   };
   
-  // CSS Styles for better UI/UX
+  // CSS Styles for better UI/UX with mobile optimization
   const styles = \`
     .nexpo-embed-container {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       max-width: 100%;
       margin: 0 auto;
       position: relative;
+      /* Mobile-first responsive design */
+      width: 100%;
+      min-height: 400px;
     }
     
     .nexpo-embed-loading {
@@ -104,17 +111,24 @@ export async function GET(
     }
     
     .nexpo-embed-iframe {
-      width: 100%;
-      border: none;
-      border-radius: \${config.borderRadius};
-      box-shadow: \${config.shadow};
-      background: white;
-      transition: all 0.3s ease;
+      width: 100% !important;
+      max-width: 100% !important;
+      border: none !important;
+      border-radius: \${config.borderRadius} !important;
+      box-shadow: \${config.shadow} !important;
+      background: white !important;
+      transition: all 0.3s ease !important;
+      /* Mobile optimization */
+      min-height: 400px;
+      height: auto !important;
+      /* Prevent parent CSS from affecting iframe */
+      font-size: 16px !important;
+      line-height: 1.5 !important;
     }
     
     .nexpo-embed-iframe:hover {
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15) !important;
+      transform: translateY(-2px) !important;
     }
     
     .nexpo-embed-error {
@@ -189,14 +203,75 @@ export async function GET(
       text-decoration: underline;
     }
     
+    /* Mobile-first responsive design */
     @media (max-width: 768px) {
       .nexpo-embed-container {
-        margin: 0;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
       }
       
       .nexpo-embed-iframe {
-        border-radius: 8px;
+        border-radius: 8px !important;
+        min-height: 500px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        /* Mobile-specific optimizations */
+        font-size: 16px !important;
+        -webkit-text-size-adjust: 100% !important;
+        -webkit-tap-highlight-color: transparent !important;
       }
+      
+      .nexpo-embed-loading {
+        border-radius: 8px !important;
+        min-height: 300px !important;
+      }
+      
+      .nexpo-embed-error {
+        border-radius: 8px !important;
+        padding: 16px !important;
+      }
+    }
+    
+    /* Tablet optimizations */
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .nexpo-embed-container {
+        max-width: 90% !important;
+        margin: 0 auto !important;
+      }
+      
+      .nexpo-embed-iframe {
+        min-height: 450px !important;
+      }
+    }
+    
+    /* Desktop optimizations */
+    @media (min-width: 1025px) {
+      .nexpo-embed-container {
+        max-width: \${config.maxWidth} !important;
+        margin: 0 auto !important;
+      }
+      
+      .nexpo-embed-iframe {
+        min-height: 400px !important;
+      }
+    }
+    
+    /* Prevent parent CSS conflicts */
+    .nexpo-embed-container * {
+      box-sizing: border-box !important;
+    }
+    
+    .nexpo-embed-iframe {
+      /* Reset any inherited styles */
+      all: initial !important;
+      display: block !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      border: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
     }
   \`;
   
@@ -267,13 +342,47 @@ export async function GET(
     const iframe = document.createElement('iframe');
     iframe.src = buildIframeUrl();
     iframe.className = 'nexpo-embed-iframe';
-    iframe.style.height = config.height;
     iframe.title = 'Registration Form - ' + config.eventId;
     iframe.loading = 'lazy';
+    
+    // Set responsive height based on screen size
+    const setResponsiveHeight = () => {
+      const width = window.innerWidth;
+      if (width <= 768) {
+        // Mobile: taller for better UX
+        iframe.style.height = '600px';
+      } else if (width <= 1024) {
+        // Tablet: medium height
+        iframe.style.height = '550px';
+      } else {
+        // Desktop: use config height or default
+        iframe.style.height = config.height;
+      }
+    };
+    
+    // Set initial height
+    setResponsiveHeight();
+    
+    // Update height on window resize
+    window.addEventListener('resize', setResponsiveHeight);
     
     // Handle iframe load events
     iframe.onload = function() {
       console.log('Nexpo Registration: Form loaded successfully for event ' + config.eventId);
+      
+      // Try to get iframe content height for better sizing
+      try {
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+        if (iframeDoc && iframeDoc.body) {
+          const contentHeight = iframeDoc.body.scrollHeight;
+          if (contentHeight > 400) {
+            iframe.style.height = (contentHeight + 50) + 'px';
+          }
+        }
+      } catch (e) {
+        // Cross-origin restrictions, use default sizing
+        console.log('Nexpo Registration: Using default iframe sizing');
+      }
     };
     
     iframe.onerror = function() {
