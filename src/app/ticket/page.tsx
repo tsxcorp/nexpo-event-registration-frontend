@@ -31,17 +31,25 @@ function TicketPageContent() {
       flow
     });
 
-    // Determine Zoho Creator URL based on member_status, flow, and object
+    // Determine Zoho Creator URL - always use Buy_Ticket form for special event
     let zohoUrl = '';
     
-    if (memberStatus === 'Không' || flow === 'buy_ticket' || object === 'Member') {
-      // Buy Ticket form embed URL (for both Public and Member objects)
-      zohoUrl = `https://creatorapp.zohopublic.com/tsxcorp/registration1/form-embed/Buy_Ticket/08DqzfT4X8YVHC481NzxQNPuYvPkEfX6P0fTJbkzGyyVQQ4uJrH6tU81VwDsKOtePJqmzmB46Jdj1Nvn7vDGPV07vgVnWFnpT8XR?Add_Event=${addEvent}&object=${object}&Master_Registration=${masterRegistration}`;
-      console.log('🎫 Buy Ticket form embed URL:', zohoUrl);
-    } else if (memberStatus === 'Có' && flow === 'member_check') {
-      // Member Check form embed URL
-      zohoUrl = `https://creatorapp.zohopublic.com/tsxcorp/registration1/form-embed/Member_Check/KwS16QdS1X48XECRqsb1P2p9RKSwzzVfZB1GqgD1b9ACUDgh6OtSVF9gbSh8gwQZwEeHQxtR09pVqwF0v4aOxRqjrardvKh66O5n?Add_Event=${addEvent}&Master_Registration=${masterRegistration}`;
-      console.log('✅ Member Check form embed URL:', zohoUrl);
+    // For special event 4433256000013547003, always use Buy_Ticket form
+    if (addEvent === '4433256000014035047') {
+      // Buy Ticket form embed URL (always for special event)
+      zohoUrl = `https://creatorapp.zohopublic.com/tsxcorp/registration1/form-embed/Buy_Ticket/08DqzfT4X8YVHC481NzxQNPuYvPkEfX6P0fTJbkzGyyVQQ4uJrH6tU81VwDsKOtePJqmzmB46Jdj1Nvn7vDGPV07vgVnWFnpT8XR?Add_Event=${addEvent}&object=Public&Master_Registration=${masterRegistration}`;
+      console.log('🎫 Buy Ticket form embed URL (special event):', zohoUrl);
+    } else {
+      // For other events, use original logic
+      if (memberStatus === 'Không' || flow === 'buy_ticket' || object === 'Member') {
+        // Buy Ticket form embed URL (for both Public and Member objects)
+        zohoUrl = `https://creatorapp.zohopublic.com/tsxcorp/registration1/form-embed/Buy_Ticket/08DqzfT4X8YVHC481NzxQNPuYvPkEfX6P0fTJbkzGyyVQQ4uJrH6tU81VwDsKOtePJqmzmB46Jdj1Nvn7vDGPV07vgVnWFnpT8XR?Add_Event=${addEvent}&object=${object}&Master_Registration=${masterRegistration}`;
+        console.log('🎫 Buy Ticket form embed URL:', zohoUrl);
+      } else if (memberStatus === 'Có' && flow === 'member_check') {
+        // Member Check form embed URL
+        zohoUrl = `https://creatorapp.zohopublic.com/tsxcorp/registration1/form-embed/Member_Check/KwS16QdS1X48XECRqsb1P2p9RKSwzzVfZB1GqgD1b9ACUDgh6OtSVF9gbSh8gwQZwEeHQxtR09pVqwF0v4aOxRqjrardvKh66O5n?Add_Event=${addEvent}&Master_Registration=${masterRegistration}`;
+        console.log('✅ Member Check form embed URL:', zohoUrl);
+      }
     }
 
     if (zohoUrl) {
@@ -56,10 +64,12 @@ function TicketPageContent() {
   const memberStatus = searchParams?.get('member_status');
   const flow = searchParams?.get('flow');
   const object = searchParams?.get('object') || 'Public';
+  const addEvent = searchParams?.get('Add_Event');
 
   // Determine title based on flow and object
-  const isMemberCheckFlow = memberStatus === 'Có' && flow === 'member_check';
-  const isBuyTicketFlow = memberStatus === 'Không' || flow === 'buy_ticket' || object === 'Member';
+  const isSpecialEvent = addEvent === '4433256000014035047';
+  const isMemberCheckFlow = !isSpecialEvent && memberStatus === 'Có' && flow === 'member_check';
+  const isBuyTicketFlow = isSpecialEvent || memberStatus === 'Không' || flow === 'buy_ticket' || object === 'Member';
 
   // Simple iframe load handler
   const handleIframeLoad = () => {
