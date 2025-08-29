@@ -214,7 +214,7 @@ export async function GET(
       
       .nexpo-embed-iframe {
         border-radius: 8px !important;
-        min-height: 500px !important;
+        min-height: 700px !important;
         width: 100% !important;
         max-width: 100% !important;
         /* Mobile-specific optimizations */
@@ -225,7 +225,7 @@ export async function GET(
       
       .nexpo-embed-loading {
         border-radius: 8px !important;
-        min-height: 300px !important;
+        min-height: 500px !important;
       }
       
       .nexpo-embed-error {
@@ -349,14 +349,14 @@ export async function GET(
     const setResponsiveHeight = () => {
       const width = window.innerWidth;
       if (width <= 768) {
-        // Mobile: taller for better UX
-        iframe.style.height = '600px';
+        // Mobile: much taller for better UX
+        iframe.style.height = '800px';
       } else if (width <= 1024) {
         // Tablet: medium height
-        iframe.style.height = '550px';
+        iframe.style.height = '700px';
       } else {
         // Desktop: use config height or default
-        iframe.style.height = config.height;
+        iframe.style.height = config.height || '650px';
       }
     };
     
@@ -376,7 +376,9 @@ export async function GET(
         if (iframeDoc && iframeDoc.body) {
           const contentHeight = iframeDoc.body.scrollHeight;
           if (contentHeight > 400) {
-            iframe.style.height = (contentHeight + 50) + 'px';
+            // Set height with more padding for better UX
+            const newHeight = Math.max(contentHeight + 100, 700);
+            iframe.style.height = newHeight + 'px';
           }
         }
       } catch (e) {
