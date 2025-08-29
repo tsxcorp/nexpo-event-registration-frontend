@@ -115,7 +115,11 @@ const useBankApps = (os: 'android' | 'ios' | 'unknown') => {
 const generateDeeplink = (baseDeeplink: string, amount: string, addInfo?: string) => {
   const url = new URL(baseDeeplink);
   
-  // Add payment parameters if available
+  // According to VietQR.io documentation, current deeplink can only open the app
+  // but cannot auto-fill payment information yet
+  // Future enhancement: when banks support vietqr:// scheme with parameters
+  
+  // For now, we can only add basic parameters that some banks might support
   if (amount) {
     url.searchParams.set('am', amount);
   }
@@ -124,7 +128,7 @@ const generateDeeplink = (baseDeeplink: string, amount: string, addInfo?: string
     url.searchParams.set('tn', addInfo);
   }
   
-  // Add bank account info for BIDV
+  // Add bank account info for BIDV (some banks might support this)
   url.searchParams.set('ba', '8618208888@bidv');
   
   return url.toString();
@@ -315,6 +319,22 @@ function PaymentPageContent() {
                   {i18n[currentLanguage]?.pay_with_bank_app || 'Thanh toán bằng app ngân hàng'}
                 </h4>
                 
+                {/* Info notice about deeplink limitations */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <svg className="h-4 w-4 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="ml-2">
+                      <p className="text-xs text-blue-800">
+                        <strong>Lưu ý:</strong> Click vào app ngân hàng sẽ mở ứng dụng. Bạn cần tự nhập thông tin thanh toán theo hướng dẫn bên dưới.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
                 {bankAppsLoading && (
                   <div className="text-center py-4">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
@@ -343,13 +363,13 @@ function PaymentPageContent() {
                         <img 
                           src={app.appLogo} 
                           alt={app.appName}
-                          className="w-10 h-10 rounded-lg mb-2 object-contain"
+                          className="w-16 h-16 rounded-xl mb-3 object-contain shadow-sm"
                           onError={(e) => {
                             // Fallback to a generic bank icon if logo fails to load
-                            (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0iI0YzRjRGNiIvPgo8cGF0aCBkPSJNMTIgMTZIMjhNMTYgMjBIMjRNMTIgMjRIMjgiIHN0cm9rZT0iIzM3NDE1MSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+';
+                            (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTIiIGZpbGw9IiNGM0Y0RjYiLz4KPHBhdGggZD0iTTE5IDI2SDQ1TTI2IDMySDM4TTE5IDM4SDQ1IiBzdHJva2U9IiMzNzQxNTEiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+Cjwvc3ZnPg==';
                           }}
                         />
-                        <p className="text-xs text-gray-700 text-center font-medium leading-tight">
+                        <p className="text-sm text-gray-700 text-center font-medium leading-tight">
                           {app.appName}
                         </p>
                       </button>
