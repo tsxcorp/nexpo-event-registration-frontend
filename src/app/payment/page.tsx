@@ -314,7 +314,7 @@ function PaymentPageContent() {
 
             {/* Mobile Bank Apps Section */}
             {isMobile && (
-              <div className="mt-6">
+              <div className="mt-6 mb-8">
                 <h4 className="text-lg font-semibold text-gray-900 mb-3 text-center">
                   {i18n[currentLanguage]?.pay_with_bank_app || 'Thanh toán bằng app ngân hàng'}
                 </h4>
@@ -329,7 +329,7 @@ function PaymentPageContent() {
                     </div>
                     <div className="ml-2">
                       <p className="text-xs text-blue-800">
-                        <strong>Lưu ý:</strong> Click vào app ngân hàng sẽ mở ứng dụng. Bạn cần tự nhập thông tin thanh toán theo hướng dẫn bên dưới.
+                        <strong>Lưu ý:</strong> Click vào app ngân hàng sẽ mở ứng dụng. Bạn có thể sao chép thông tin thanh toán bên dưới.
                       </p>
                     </div>
                   </div>

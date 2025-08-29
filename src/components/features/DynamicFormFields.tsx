@@ -225,69 +225,67 @@ export default function DynamicFormFields({ fields, prefix, currentLanguage = 'v
         const cleanUrl = extractUrl(linkUrl);
         
         return (
-          <>
-            <div className={`bg-gradient-to-br from-blue-50 to-gray-50 border border-blue-200 sm:border-2 rounded-lg sm:rounded-xl p-4 sm:p-6 shadow-sm ${fieldError ? 'border-red-500 bg-red-50' : ''}`}>
-              {/* Title */}
-              {title && (
-                <h4 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4 border-b border-gray-200 pb-2">
-                  {title}
-                  {field.required && <span className="text-red-500 ml-1 text-base sm:text-lg">*</span>}
-                </h4>
-              )}
-              
-              {/* Content */}
-              {content && (
-                <div className="mb-4 sm:mb-6">
-                  <div 
-                    {...renderHtmlContent(content, 'text-gray-700 leading-relaxed bg-white p-3 sm:p-4 rounded-lg border border-gray-200 text-sm sm:text-base')}
-                  />
-                </div>
-              )}
-              
-              {/* Link */}
-              {linkText && cleanUrl && (
-                <div className="mb-4 sm:mb-6">
-                  <a
-                    href={cleanUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center text-blue-600 hover:text-blue-800 underline font-medium text-sm sm:text-base"
-                  >
-                    <span className="mr-1">🔗</span>
-                    {linkText}
-                  </a>
-                </div>
-              )}
-              
-              {/* Checkbox */}
-              <div className={`bg-white border border-gray-300 sm:border-2 rounded-lg p-3 sm:p-4 ${fieldError ? 'border-red-300' : ''}`}>
-                <label className="flex items-start space-x-3 sm:space-x-4 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    {...register(fieldName, { 
-                      required: isRequired ? t.agreement_required : false,
-                      validate: (value) => {
-                        if (isRequired && !value) {
-                          return t.agreement_required;
-                        }
-                        return true;
-                      }
-                    })}
-                    className="mt-1 w-4 h-4 sm:w-5 sm:h-5 text-blue-600 focus:ring-blue-500 border-2 border-gray-400 rounded transition-all"
-                  />
-                  <span className="text-gray-800 font-medium leading-relaxed text-sm sm:text-base">{checkboxLabel}</span>
-                </label>
+          <div className={`border border-gray-200 rounded-lg p-4 sm:p-6 ${fieldError ? 'border-red-300' : ''}`}>
+            {/* Title */}
+            {title && (
+              <h4 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">
+                {title}
+                {field.required && <span className="text-red-500 ml-1 text-base sm:text-lg">*</span>}
+              </h4>
+            )}
+            
+            {/* Content */}
+            {content && (
+              <div className="mb-4 sm:mb-6">
+                <div 
+                  {...renderHtmlContent(content, 'text-gray-700 leading-relaxed text-sm sm:text-base')}
+                />
               </div>
-              
-              {/* Error message */}
-              {fieldError && (
-                <p className="text-red-600 text-xs sm:text-sm mt-2 sm:mt-3 font-medium flex items-center bg-red-100 p-2 sm:p-3 rounded-lg">
-                  <span className="mr-2">⚠️</span>
-                  {getErrorMessage(fieldError)}
-                </p>
-              )}
+            )}
+            
+            {/* Link */}
+            {linkText && cleanUrl && (
+              <div className="mb-4 sm:mb-6">
+                <a
+                  href={cleanUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center text-blue-600 hover:text-blue-800 underline font-medium text-sm sm:text-base"
+                >
+                  <span className="mr-1">🔗</span>
+                  {linkText}
+                </a>
+              </div>
+            )}
+            
+            {/* Checkbox */}
+            <div>
+              <label className="flex items-start space-x-3 sm:space-x-4 cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...register(fieldName, { 
+                    required: isRequired ? t.agreement_required : false,
+                    validate: (value) => {
+                      if (isRequired && !value) {
+                        return t.agreement_required;
+                      }
+                      return true;
+                    }
+                  })}
+                  className="mt-1 w-4 h-4 sm:w-5 sm:h-5 text-blue-600 focus:ring-blue-500 border-2 border-gray-400 rounded transition-all"
+                />
+                <span className="text-gray-800 font-medium leading-relaxed text-sm sm:text-base">{checkboxLabel}</span>
+              </label>
             </div>
-          </>
+            
+            {/* Error message */}
+            {fieldError && (
+              <p className="text-red-600 text-xs sm:text-sm mt-2 sm:mt-3 font-medium flex items-center">
+                <span className="mr-2">⚠️</span>
+                {getErrorMessage(fieldError)}
+              </p>
+            )}
+          </div>
         );
       }
 
