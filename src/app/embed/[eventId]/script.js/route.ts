@@ -52,7 +52,7 @@ export async function GET(
     .nexpo-embed-container {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       max-width: 100%;
-      margin: 0 auto;
+      margin: 0;
       position: relative;
       /* Mobile-first responsive design */
       width: 100%;
@@ -208,15 +208,20 @@ export async function GET(
       .nexpo-embed-container {
         margin: 0 !important;
         padding: 0 !important;
-        width: 100% !important;
-        max-width: 100% !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        position: relative !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
       }
       
       .nexpo-embed-iframe {
-        border-radius: 8px !important;
+        border-radius: 0 !important;
         min-height: 700px !important;
-        width: 100% !important;
-        max-width: 100% !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        margin: 0 !important;
+        padding: 0 !important;
         /* Mobile-specific optimizations */
         font-size: 16px !important;
         -webkit-text-size-adjust: 100% !important;
@@ -224,13 +229,20 @@ export async function GET(
       }
       
       .nexpo-embed-loading {
-        border-radius: 8px !important;
+        border-radius: 0 !important;
         min-height: 500px !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        margin: 0 !important;
+        padding: 0 !important;
       }
       
       .nexpo-embed-error {
-        border-radius: 8px !important;
+        border-radius: 0 !important;
         padding: 16px !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        margin: 0 !important;
       }
     }
     
@@ -272,6 +284,7 @@ export async function GET(
       border: none !important;
       margin: 0 !important;
       padding: 0 !important;
+      box-sizing: border-box !important;
     }
   \`;
   
