@@ -228,7 +228,7 @@ export default function DynamicFormFields({ fields, prefix, currentLanguage = 'v
           <div className={`border border-gray-200 rounded-lg p-4 sm:p-6 ${fieldError ? 'border-red-300' : ''}`}>
             {/* Title */}
             {title && (
-              <h4 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">
+              <h4 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4 pb-2 border-b border-gray-200">
                 {title}
                 {field.required && <span className="text-red-500 ml-1 text-base sm:text-lg">*</span>}
               </h4>
