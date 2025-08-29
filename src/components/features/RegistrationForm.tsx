@@ -667,6 +667,49 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
 
   return (
     <FormProvider {...methods}>
+      {/* Mobile optimization CSS for embedded forms */}
+      {isActuallyEmbedded() && (
+        <style jsx>{`
+          @media (max-width: 768px) {
+            .embed-container-mobile {
+              padding: 0 !important;
+              margin: 0 !important;
+              width: 100vw !important;
+              max-width: 100vw !important;
+            }
+            
+            .embed-mobile-optimized {
+              border-radius: 0 !important;
+              margin: 0 !important;
+              padding: 16px !important;
+              width: 100vw !important;
+              max-width: 100vw !important;
+              box-shadow: none !important;
+            }
+            
+            .embed-mobile-optimized .p-3 {
+              padding: 16px !important;
+            }
+            
+            .embed-mobile-optimized .sm\\:p-6 {
+              padding: 16px !important;
+            }
+            
+            .embed-mobile-optimized .lg\\:p-8 {
+              padding: 16px !important;
+            }
+            
+            .embed-mobile-optimized .pb-6 {
+              padding-bottom: 16px !important;
+            }
+            
+            .embed-mobile-optimized .sm\\:pb-8 {
+              padding-bottom: 16px !important;
+            }
+          }
+        `}</style>
+      )}
+      
       <form 
         onSubmit={handleSubmit(handleFormSubmit)} 
         onKeyDown={(e) => {
@@ -708,8 +751,8 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
         </div> */}
 
         {/* Current Step Content */}
-        <div className="w-full max-w-4xl mx-auto px-2 sm:px-4 mb-6 sm:mb-8">
-          <Card className="border border-blue-100 sm:border-2 shadow-lg sm:shadow-xl bg-white">
+        <div className={`w-full max-w-4xl mx-auto px-2 sm:px-4 mb-6 sm:mb-8 ${isActuallyEmbedded() ? 'embed-container-mobile' : ''}`}>
+          <Card className={`border border-blue-100 sm:border-2 shadow-lg sm:shadow-xl bg-white ${isActuallyEmbedded() ? 'embed-mobile-optimized' : ''}`}>
             <div className="p-3 sm:p-6 lg:p-8 pb-6 sm:pb-8">
               <h2 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-4 sm:mb-8 text-center">
                 {currentSection.name}
@@ -752,8 +795,8 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
 
         {/* Group Members Management (shown when there are group members) */}
         {groupMembers.length > 0 && (
-          <div className="w-full max-w-4xl mx-auto mt-3 sm:mt-6 px-2 sm:px-4">
-            <Card className="border border-orange-100 sm:border-2 shadow-md sm:shadow-lg bg-gradient-to-br from-orange-50 to-white">
+          <div className={`w-full max-w-4xl mx-auto mt-3 sm:mt-6 px-2 sm:px-4 ${isActuallyEmbedded() ? 'embed-container-mobile' : ''}`}>
+            <Card className={`border border-orange-100 sm:border-2 shadow-md sm:shadow-lg bg-gradient-to-br from-orange-50 to-white ${isActuallyEmbedded() ? 'embed-mobile-optimized' : ''}`}>
               <div className="p-3 sm:p-6">
                 <div className="flex items-center justify-center mb-3 sm:mb-4">
                   <span className="bg-orange-100 text-orange-800 text-xs sm:text-sm font-bold px-3 py-1 sm:px-4 sm:py-2 rounded-full">

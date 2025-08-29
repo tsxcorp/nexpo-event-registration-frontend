@@ -265,7 +265,25 @@ export default function EmbedFormPage() {
         .embed-form-container {
           max-width: none !important;
           margin: 0 !important;
-          padding: ${embedConfig.theme === 'minimal' ? '20px' : '40px 20px'} !important;
+          padding: 0 !important;
+        }
+        
+        /* Mobile optimization - full width */
+        @media (max-width: 768px) {
+          .embed-form-container {
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100vw !important;
+            max-width: 100vw !important;
+          }
+          
+          .embed-form-container .card {
+            border-radius: 0 !important;
+            margin: 0 !important;
+            padding: 16px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+          }
         }
         
         .embed-form-container .hero-section {
