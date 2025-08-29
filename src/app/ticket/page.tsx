@@ -89,6 +89,8 @@ function TicketPageContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-gray-50 flex flex-col">
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col">
       {/* Enhanced Header with Beautiful Gradient */}
       <div className="relative bg-gradient-to-br from-indigo-600 via-blue-600 to-purple-700 shadow-xl flex-shrink-0 overflow-hidden">
         {/* Animated Background Elements */}
@@ -127,7 +129,7 @@ function TicketPageContent() {
       </div>
 
             {/* Iframe Container - Natural scrolling */}
-      <div className="flex-1 relative overflow-hidden">
+      <div className="flex-1 relative">
         {iframeUrl ? (
           <>
             {/* Loading Overlay */}
@@ -143,18 +145,17 @@ function TicketPageContent() {
             )}
             
             {/* Natural scrolling iframe container */}
-            <div className="relative w-full h-full">
+            <div className="relative w-full">
               <iframe
                 src={iframeUrl}
                 width="100%"
-                height="100%"
                 frameBorder={0}
-                scrolling="yes"
+                scrolling="auto"
                 title={isMemberCheckFlow ? 'Member Check Form' : 'Buy Ticket Form'}
-                className="w-full h-full border-0"
+                className="w-full border-0"
                 style={{
-                  minHeight: 'calc(100vh - 120px)', // Reduced from 200px to 120px for more natural feel
-                  height: '100%'
+                  minHeight: 'calc(100vh - 200px)', // Account for header and footer
+                  height: 'auto'
                 }}
                 onLoad={() => {
                   console.log('✅ Zoho Creator embed form loaded successfully');
@@ -189,6 +190,7 @@ function TicketPageContent() {
       
       {/* Powered by Nexpo Footer */}
       <PoweredByFooter variant="minimal" className="border-t-0" />
+      </div>
     </div>
   );
 }
