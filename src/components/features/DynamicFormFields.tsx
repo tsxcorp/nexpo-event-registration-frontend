@@ -289,6 +289,58 @@ export default function DynamicFormFields({ fields, prefix, currentLanguage = 'v
         );
       }
 
+      case 'Date':
+        return (
+          <>
+            <input
+              type="date"
+              placeholder={field.placeholder || `${currentLanguage === 'vi' ? 'Chọn ngày' : 'Select date'}`}
+              {...register(fieldName, {
+                required: isRequired ? t.field_required : false,
+                validate: (value) => {
+                  if (isRequired && !value) {
+                    return currentLanguage === 'vi' ? 'Vui lòng chọn ngày.' : 'Please select a date.';
+                  }
+                  return true;
+                }
+              })}
+              className={`${baseClass} ${fieldError ? 'border-red-500 focus:ring-red-500' : ''}`}
+            />
+            {fieldError && (
+              <p className="text-red-600 text-xs sm:text-sm mt-1 sm:mt-2 font-medium flex items-center">
+                <span className="mr-1">⚠️</span>
+                {getErrorMessage(fieldError)}
+              </p>
+            )}
+          </>
+        );
+
+      case 'Date Time':
+        return (
+          <>
+            <input
+              type="datetime-local"
+              placeholder={field.placeholder || `${currentLanguage === 'vi' ? 'Chọn ngày và giờ' : 'Select date and time'}`}
+              {...register(fieldName, {
+                required: isRequired ? t.field_required : false,
+                validate: (value) => {
+                  if (isRequired && !value) {
+                    return currentLanguage === 'vi' ? 'Vui lòng chọn ngày và giờ.' : 'Please select date and time.';
+                  }
+                  return true;
+                }
+              })}
+              className={`${baseClass} ${fieldError ? 'border-red-500 focus:ring-red-500' : ''}`}
+            />
+            {fieldError && (
+              <p className="text-red-600 text-xs sm:text-sm mt-1 sm:mt-2 font-medium flex items-center">
+                <span className="mr-1">⚠️</span>
+                {getErrorMessage(fieldError)}
+              </p>
+            )}
+          </>
+        );
+
       case 'File':
       case 'Image':
         return (
