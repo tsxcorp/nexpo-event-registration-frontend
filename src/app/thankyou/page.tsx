@@ -12,6 +12,7 @@ import { i18n } from '@/lib/translation/i18n';
 import { eventApi } from '@/lib/api/events';
 import translationService from '@/lib/translation/translationService';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { formatFieldLabel as formatFieldLabelUtil } from '@/lib/utils/fieldUtils';
 
 import StructuredData from '@/components/seo/StructuredData';
 
@@ -108,9 +109,9 @@ function ThankYouContent() {
     currentLanguage 
   });
 
-  // Helper function to translate field labels
-  const translateFieldLabel = (key: string) => {
-    // Check if we have a dynamic translation for this label
+  // Helper function to format field labels with proper capitalization
+  const formatFieldLabel = (key: string) => {
+    // First try to get translation
     if (translatedLabels[key]) {
       return translatedLabels[key];
     }
@@ -132,8 +133,8 @@ function ThankYouContent() {
     const specialCharsRemoved = normalizedKey.replace(/[^a-z0-9\s]/g, '');
     if (t[specialCharsRemoved]) return t[specialCharsRemoved];
     
-    // Fallback to formatted key
-    return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    // Fallback: Use utility function for proper capitalization
+    return formatFieldLabelUtil(key);
   };
 
   // Translate field values when language or registration data changes
@@ -588,9 +589,9 @@ function ThankYouContent() {
                       .filter(([key]) => !['group_members', 'group_id', 'zoho_record_id', 'Event_Info'].includes(key))
                       .map(([key, value], index) => (
                         <tr key={index} className="border-b border-gray-200 last:border-0">
-                          <td className="py-2 text-gray-600 capitalize font-medium text-left w-1/3">
-                            {/* Translate field names */}
-                            {translateFieldLabel(key)}
+                          <td className="py-2 text-gray-600 font-medium text-left w-1/3">
+                            {/* Format field names with proper capitalization */}
+                            {formatFieldLabel(key)}
                           </td>
                           <td className="py-2 text-left font-semibold text-blue-800">
                             {Array.isArray(value) ? value.join(', ') : 

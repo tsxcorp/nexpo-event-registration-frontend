@@ -203,3 +203,37 @@ export function convertFieldIdsToLabels(formData: Record<string, any>, fields: F
   console.log('📋 Final converted data:', convertedData);
   return convertedData;
 } 
+
+/**
+ * Format field label with proper capitalization for Vietnamese characters
+ * @param label - The field label to format
+ * @returns Properly capitalized label
+ */
+export function formatFieldLabel(label: string): string {
+  // Replace underscores with spaces first
+  let formatted = label.replace(/_/g, ' ');
+  
+  // Split by spaces and capitalize each word
+  const words = formatted.split(' ');
+  const capitalizedWords = words.map(word => {
+    if (!word) return word;
+    
+    // Handle Vietnamese characters properly
+    const firstChar = word.charAt(0);
+    const rest = word.slice(1);
+    
+    // Check if first character is Vietnamese
+    const vietnameseFirstChars = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
+    
+    if (vietnameseFirstChars.test(firstChar)) {
+      // For Vietnamese characters, we need to handle the tone marks
+      const upperFirst = firstChar.toUpperCase();
+      return upperFirst + rest;
+    } else {
+      // For regular characters
+      return firstChar.toUpperCase() + rest.toLowerCase();
+    }
+  });
+  
+  return capitalizedWords.join(' ');
+} 
