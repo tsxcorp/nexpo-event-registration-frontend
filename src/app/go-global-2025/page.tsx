@@ -156,7 +156,7 @@ function GoGlobal2025Content() {
               lineHeight: '1.4',
               maxWidth: '600px'
             }}>
-              Đăng ký tham gia sự kiện kết nối kinh doanh toàn cầu
+              Đăng ký tham gia HỘI NGHỊ CHIẾN LƯỢC CẤP CAO dành cho cộng đồng doanh nhân Việt Nam
             </p>
           </div>
         </header>
