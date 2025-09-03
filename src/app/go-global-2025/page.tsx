@@ -199,6 +199,9 @@ function GoGlobal2025Content() {
                     setIframeLoading(false);
                   }}
                 />
+                
+                {/* Bottom spacing to ensure submit button is visible */}
+                <div className="h-32 bg-transparent"></div>
               </div>
             </>
           ) : (
@@ -216,6 +219,21 @@ function GoGlobal2025Content() {
           )}
         </div>
         
+        {/* Simple Image Section */}
+        <div className="w-full py-4">
+          <a 
+            href="https://media.tsx.vn/upload/bea1af77-94e7-4a2d-83de-9cc20e138073.png"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img 
+              src="https://media.tsx.vn/upload/bea1af77-94e7-4a2d-83de-9cc20e138073.png"
+              alt="Event Image"
+              className="w-full h-auto"
+            />
+          </a>
+        </div>
+
         {/* Powered by Nexpo Footer */}
         <PoweredByFooter variant="minimal" className="border-t-0" />
       </div>
