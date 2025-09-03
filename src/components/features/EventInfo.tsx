@@ -181,76 +181,81 @@ const EventInfo: FC<EventInfoProps> = ({
         </div>
       </header>
 
-      {/* Banner Section - Responsive with proper dimensions */}
-      <section className="relative w-full h-[50vh] sm:h-[60vh] lg:h-[70vh] mt-16 sm:mt-20">
+      {/* Banner Section - Optimized responsive dimensions and safe areas */}
+      <section className="relative w-full mt-16 sm:mt-20">
         {bannerUrl ? (
-          <div className="relative w-full h-full overflow-hidden">
+          <div className="relative w-full aspect-[16/9] sm:aspect-[21/9] lg:aspect-[3/1] overflow-hidden">
             <Image
               src={bannerUrl}
               alt={eventData.name}
               fill
-              sizes="100vw"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 100vw"
               className="object-cover object-center"
               quality={95}
               priority
               style={{
-                transform: `translateY(${scrollY * 0.3}px)`,
+                transform: `translateY(${scrollY * 0.2}px)`,
               }}
             />
-            {/* Gradient overlay for better text readability */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/30"></div>
+            {/* Enhanced gradient overlay for better text readability */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/40"></div>
             
-            {/* Content overlay - responsive positioning */}
-            <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6 lg:p-8">
-              <div className="text-center text-white max-w-4xl mx-auto">
-                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 drop-shadow-lg">
+            {/* Content overlay with safe area margins */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              {/* Safe area container with proper margins */}
+              <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="text-center text-white">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold mb-2 sm:mb-3 lg:mb-4 drop-shadow-lg leading-tight">
+                    {eventData.name}
+                  </h1>
+                  {eventData.location && (
+                    <p className="text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl opacity-90 drop-shadow-md leading-relaxed">
+                      {eventData.location}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          // Fallback when no banner image - responsive height
+          <div className="relative w-full aspect-[16/9] sm:aspect-[21/9] lg:aspect-[3/1] bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 flex items-center justify-center">
+            <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center text-white">
+                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold mb-2 sm:mb-3 lg:mb-4 leading-tight">
                   {eventData.name}
                 </h1>
                 {eventData.location && (
-                  <p className="text-sm sm:text-base md:text-lg lg:text-xl opacity-90 drop-shadow-md">
+                  <p className="text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl opacity-90 leading-relaxed">
                     {eventData.location}
                   </p>
                 )}
               </div>
             </div>
           </div>
-        ) : (
-          // Fallback when no banner image
-          <div className="relative w-full h-full bg-gradient-to-br from-blue-600 via-blue-700 to-purple-700 flex items-center justify-center">
-            <div className="text-center text-white max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
-                {eventData.name}
-              </h1>
-              {eventData.location && (
-                <p className="text-sm sm:text-base md:text-lg lg:text-xl opacity-90">
-                  {eventData.location}
-                </p>
-              )}
-            </div>
-          </div>
         )}
         
-        {/* Floating particles effect - adjusted for mobile */}
-        <div className="absolute inset-0 pointer-events-none hidden sm:block">
-          {[...Array(4)].map((_, i) => (
+        {/* Floating particles effect - mobile optimized */}
+        <div className="absolute inset-0 pointer-events-none">
+          {[...Array(3)].map((_, i) => (
             <div
               key={i}
-              className="absolute w-1 h-1 sm:w-2 sm:h-2 bg-white/30 rounded-full animate-float"
+              className="absolute w-1 h-1 sm:w-2 sm:h-2 bg-white/20 sm:bg-white/30 rounded-full animate-float"
               style={{
-                left: `${25 + i * 20}%`,
-                top: `${20 + i * 15}%`,
-                animationDelay: `${i * 1}s`,
-                animationDuration: `${4 + i * 0.5}s`
+                left: `${20 + i * 30}%`,
+                top: `${15 + i * 20}%`,
+                animationDelay: `${i * 0.5}s`,
+                animationDuration: `${3 + i * 0.5}s`
               }}
             ></div>
           ))}
         </div>
       </section>
 
-      {/* Event Description Card - Responsive spacing */}
-      <section className="relative -mt-16 sm:-mt-24 lg:-mt-32 z-10">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className={`bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-2xl p-6 sm:p-8 md:p-12 transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+      {/* Event Description Card - Optimized responsive spacing and safe areas */}
+      <section className="relative -mt-12 sm:-mt-16 lg:-mt-20 z-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className={`bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-2xl p-4 sm:p-6 md:p-8 lg:p-12 transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
             <div className="text-center mb-8">
               <h2 className={`text-2xl sm:text-3xl md:text-4xl font-light text-gray-900 mb-4 transform transition-all duration-1000 delay-300 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
                 {eventData.name}
@@ -314,20 +319,20 @@ const EventInfo: FC<EventInfoProps> = ({
         </div>
       </section>
 
-      {/* Event Registration Section with animated background */}
-      <section id="registration-form" className="relative bg-gradient-to-br from-blue-50 via-white to-purple-50 py-16 px-4 overflow-hidden">
-        {/* Animated background elements */}
+      {/* Event Registration Section with optimized responsive design */}
+      <section id="registration-form" className="relative bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8 sm:py-12 lg:py-16 overflow-hidden">
+        {/* Animated background elements - mobile optimized */}
         <div className="absolute inset-0">
           <div 
-            className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse"
+            className="absolute top-1/4 left-1/4 w-48 h-48 sm:w-96 sm:h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse"
             style={{ transform: `translateY(${scrollY * 0.1}px)` }}
           ></div>
           <div 
-            className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-500/5 rounded-full blur-3xl animate-pulse"
+            className="absolute bottom-1/4 right-1/4 w-40 h-40 sm:w-80 sm:h-80 bg-purple-500/5 rounded-full blur-3xl animate-pulse"
             style={{ transform: `translateY(${scrollY * -0.1}px)`, animationDelay: '1s' }}
           ></div>
         </div>
-        <div className="relative max-w-4xl mx-auto">
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Registration Header with slide-up animation */}
           <div className={`bg-gradient-to-r from-gray-900 via-blue-900 to-gray-900 text-white rounded-2xl p-6 md:p-8 mb-8 transform transition-all duration-1000 delay-300 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
             <div className="text-center">
