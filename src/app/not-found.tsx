@@ -6,12 +6,14 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { EventData, eventApi } from '@/lib/api/events';
+import { i18n } from '@/lib/translation/i18n';
 
 export default function NotFound() {
   const router = useRouter();
   const [events, setEvents] = useState<EventData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const currentLanguage = 'vi'; // Default to Vietnamese
 
   useEffect(() => {
     const loadEvents = async () => {

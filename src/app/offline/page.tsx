@@ -1,14 +1,9 @@
-import { Metadata } from 'next';
+'use client';
+
 import Link from 'next/link';
 
-export const metadata: Metadata = {
-  title: 'Offline - Nexpo Event Registration',
-  description: 'You are currently offline. Some features may not be available.',
-  robots: {
-    index: false,
-    follow: false,
-  },
-};
+// Force dynamic rendering to prevent prerendering issues
+export const dynamic = 'force-dynamic';
 
 export default function OfflinePage() {
   return (

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import PWAInstaller from '@/components/common/PWAInstaller';
@@ -56,13 +56,6 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
-  themeColor: '#3b82f6',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -77,6 +70,14 @@ export const metadata: Metadata = {
     'msapplication-TileColor': '#3b82f6',
     'msapplication-config': '/browserconfig.xml',
   },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#3b82f6',
 };
 
 export default function RootLayout({
