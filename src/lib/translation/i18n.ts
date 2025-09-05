@@ -200,7 +200,7 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     
     // Ticket page translations
     member_check_title: "Kiểm tra thành viên",
-    buy_ticket_title: "Mua vé",
+    buy_ticket_title: "Chọn vé",
     member_check_subtitle: "Xác minh thông tin thành viên",
     buy_ticket_subtitle: "Hoàn tất mua vé cho sự kiện",
     member_check_section: "Bạn là hội viên của hiệp hội",

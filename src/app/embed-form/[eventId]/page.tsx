@@ -265,20 +265,20 @@ export default function EmbedFormPage() {
         .embed-form-container {
           max-width: none !important;
           margin: 0 !important;
-          padding: 0 !important;
+          padding: 20px 16px !important;
         }
         
         /* Mobile optimization - full width */
         @media (max-width: 768px) {
           .embed-form-container {
-            padding: 0 !important;
+            padding: 16px 12px !important;
             margin: 0 !important;
             width: 100vw !important;
             max-width: 100vw !important;
           }
           
           .embed-form-container .card {
-            border-radius: 0 !important;
+            border-radius: 8px !important;
             margin: 0 !important;
             padding: 16px !important;
             width: 100% !important;
@@ -288,6 +288,7 @@ export default function EmbedFormPage() {
         
         .embed-form-container .hero-section {
           ${!embedConfig.showHeader ? 'display: none !important;' : ''}
+          margin-bottom: 24px !important;
         }
         
         .embed-form-container .footer-section {

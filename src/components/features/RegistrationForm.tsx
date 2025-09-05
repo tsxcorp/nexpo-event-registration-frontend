@@ -979,7 +979,7 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
                     </span>
                   ) : (
                     isSpecialEvent 
-                      ? `✓ ${i18n[currentLanguage]?.buy_ticket || 'Mua vé'}`
+                      ? `✓ ${i18n[currentLanguage]?.buy_ticket || 'Chọn vé'}`
                       : `✓ ${i18n[currentLanguage]?.complete_registration || 'Hoàn tất đăng ký'}`
                   )}
                 </Button>
