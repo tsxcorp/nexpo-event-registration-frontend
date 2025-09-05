@@ -291,6 +291,18 @@ export default function EmbedFormPage() {
           margin-bottom: 24px !important;
         }
         
+        /* Add top margin when header is disabled */
+        .embed-form-container .registration-form-container {
+          ${!embedConfig.showHeader ? 'margin-top: 32px !important;' : ''}
+        }
+        
+        /* Additional spacing for mobile when no header */
+        @media (max-width: 768px) {
+          .embed-form-container .registration-form-container {
+            ${!embedConfig.showHeader ? 'margin-top: 24px !important;' : ''}
+          }
+        }
+        
         .embed-form-container .footer-section {
           ${!embedConfig.showFooter ? 'display: none !important;' : ''}
         }
@@ -351,15 +363,17 @@ export default function EmbedFormPage() {
         )}
 
         {/* Registration Form */}
-        <RegistrationForm
-          fields={displayData.formFields || []}
-          eventId={eventId}
-          eventData={displayData}
-          currentLanguage={currentLanguage}
-          onRegisterFormMigration={setFormMigrationCallback}
-          isEmbedded={true}
-          embedConfig={embedConfig}
-        />
+        <div className="registration-form-container">
+          <RegistrationForm
+            fields={displayData.formFields || []}
+            eventId={eventId}
+            eventData={displayData}
+            currentLanguage={currentLanguage}
+            onRegisterFormMigration={setFormMigrationCallback}
+            isEmbedded={true}
+            embedConfig={embedConfig}
+          />
+        </div>
 
         {/* Footer (if enabled) */}
         {embedConfig.showFooter && (
