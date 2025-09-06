@@ -17,6 +17,7 @@ function CheckInContent() {
     // Get URL parameters
     const addEvent = searchParams?.get('Add_Event');
     const conference = searchParams?.get('conference');
+    const subSession = searchParams?.get('sub_session');
     const lang = searchParams?.get('lang') || 'vi';
     
     setCurrentLanguage(lang);
@@ -24,6 +25,7 @@ function CheckInContent() {
     console.log('🔍 Check-in parameters:', {
       addEvent,
       conference,
+      subSession,
       lang
     });
 
@@ -37,6 +39,9 @@ function CheckInContent() {
     }
     if (conference) {
       params.append('conference', conference);
+    }
+    if (subSession) {
+      params.append('sub_session', subSession);
     }
     
     // Combine base URL with parameters
