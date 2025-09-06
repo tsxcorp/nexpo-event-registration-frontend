@@ -77,6 +77,48 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
     message: string;
     type: 'success' | 'error' | 'info';
   }>({ show: false, message: '', type: 'info' });
+  
+  // Tour system state
+  const [isTourActive, setIsTourActive] = useState(false);
+  const [currentTourStep, setCurrentTourStep] = useState(0);
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [tourSteps] = useState([
+    {
+      id: 'overview',
+      title: 'Tổng quan',
+      description: 'Xem thông tin cá nhân và QR code của bạn',
+      target: 'overview-tab',
+      position: 'bottom'
+    },
+    {
+      id: 'exhibitors',
+      title: 'Danh sách Nhà Triễn Lãm',
+      description: 'Khám phá các gian hàng và thêm vào yêu thích',
+      target: 'exhibitors-tab',
+      position: 'bottom'
+    },
+    {
+      id: 'matching',
+      title: 'Kết nối',
+      description: 'Tìm kiếm và kết nối với các nhà triễn lãm',
+      target: 'matching-tab',
+      position: 'bottom'
+    },
+    {
+      id: 'agenda',
+      title: 'Lịch trình',
+      description: 'Xem thông tin chương trình trong suốt quá trình sự kiện',
+      target: 'agenda-tab',
+      position: 'bottom'
+    },
+    {
+      id: 'more',
+      title: 'Thêm',
+      description: 'Cài đặt và thông tin khác',
+      target: 'more-tab',
+      position: 'bottom'
+    }
+  ]);
   const [qrMode, setQrMode] = useState<'personal' | 'group' | 'badge' | 'redeem'>('personal');
   const [isSupportContactExpanded, setIsSupportContactExpanded] = useState(false);
   const [isAboutNexpoOpen, setIsAboutNexpoOpen] = useState(false);
@@ -295,6 +337,40 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
 
     setFilteredExhibitors(filtered);
   }, [searchQuery, selectedCategory, selectedCategories, exhibitors]);
+
+  // Tour system functions
+  const startTour = () => {
+    setIsTourActive(true);
+    setCurrentTourStep(0);
+    setShowWelcome(false);
+  };
+
+  const nextTourStep = () => {
+    if (currentTourStep < tourSteps.length - 1) {
+      setCurrentTourStep(currentTourStep + 1);
+    } else {
+      endTour();
+    }
+  };
+
+  const prevTourStep = () => {
+    if (currentTourStep > 0) {
+      setCurrentTourStep(currentTourStep - 1);
+    }
+  };
+
+  const endTour = () => {
+    setIsTourActive(false);
+    setCurrentTourStep(0);
+  };
+
+  const skipTour = () => {
+    setShowWelcome(false);
+    setIsTourActive(false);
+    setCurrentTourStep(0);
+  };
+
+    // No auto-hide - user must choose to start or skip tour
 
   // Entrance animations and scroll effects
   useEffect(() => {
@@ -1956,6 +2032,103 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       </div>
 
 
+
+      {/* Welcome Section - Full Screen Overlay */}
+      {showWelcome && (
+        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 max-w-sm w-full transform transition-all duration-500 ease-out">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+                <Icon name="CheckIcon" className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-800 mb-2">
+                🎉 Chào mừng bạn đến với {displayEventData.name}!
+              </h2>
+              <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+                Đăng ký thành công! Hãy khám phá các tính năng của ứng dụng để có trải nghiệm tốt nhất.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={startTour}
+                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                >
+                  🚀 Bắt đầu hướng dẫn
+                </button>
+                <button
+                  onClick={skipTour}
+                  className="w-full bg-gray-100 text-gray-600 py-3 px-6 rounded-xl font-medium hover:bg-gray-200 transition-all duration-200"
+                >
+                  Bỏ qua
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tour Overlay */}
+      {isTourActive && (
+        <div className="fixed inset-0 z-[90] pointer-events-none">
+          {/* Dark overlay - but keep navigation visible */}
+          <div className="absolute inset-0 bg-black/30"></div>
+          
+          {/* Tour tooltip - positioned above navigation */}
+          {tourSteps[currentTourStep] && (
+            <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 p-4 pointer-events-auto">
+              <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full transform transition-all duration-300">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                      {currentTourStep + 1}
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      {currentTourStep + 1} / {tourSteps.length}
+                    </span>
+                  </div>
+                  <button
+                    onClick={endTour}
+                    className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <Icon name="XMarkIcon" className="w-5 h-5 text-gray-400" />
+                  </button>
+                </div>
+                
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                  {tourSteps[currentTourStep].title}
+                </h3>
+                <p className="text-gray-600 text-sm mb-8">
+                  {tourSteps[currentTourStep].description}
+                </p>
+                
+                {/* Highlight instruction */}
+                {/* <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
+                  <div className="flex items-center gap-2 text-blue-700 text-sm">
+                    <Icon name="EyeIcon" className="w-4 h-4" />
+                    <span className="font-medium">Nhìn xuống thanh điều hướng bên dưới</span>
+                  </div>
+                </div> */}
+                
+                <div className="flex gap-3">
+                  {currentTourStep > 0 && (
+                    <button
+                      onClick={prevTourStep}
+                      className="flex-1 bg-gray-100 text-gray-600 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                    >
+                      Trước
+                    </button>
+                  )}
+                  <button
+                    onClick={nextTourStep}
+                    className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-600 transition-colors"
+                  >
+                    {currentTourStep === tourSteps.length - 1 ? 'Hoàn thành' : 'Tiếp theo'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Content */}
       <div 
@@ -4708,7 +4881,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       )}
 
       {/* Bottom Navigation - Native App Style */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 bottom-nav-shadow z-[60]">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 bottom-nav-shadow z-[95]">
         {/* Swipe indicator */}
         {isSwipeInProgress && (
           <div className="absolute top-0 left-0 right-0 h-1 bg-blue-200 overflow-hidden">
@@ -4726,6 +4899,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
             {tabs.map((tab, index) => (
               <button
                 key={tab.id}
+                id={`${tab.id}-tab`}
                 onClick={() => {
                   // Close all modals and overlays before switching tabs
                   setSelectedExhibitor(null);
@@ -4756,6 +4930,10 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                   activeTab === tab.id
                     ? 'text-blue-600 bg-blue-50'
                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                } ${
+                  isTourActive && tourSteps[currentTourStep]?.target === `${tab.id}-tab`
+                    ? 'ring-4 ring-blue-500 ring-opacity-50 bg-blue-100 animate-pulse'
+                    : ''
                 }`}
                 style={{ transitionDelay: `${index * 50}ms` }}
               >
