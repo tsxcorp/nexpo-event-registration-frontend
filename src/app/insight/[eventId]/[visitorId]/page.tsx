@@ -2072,57 +2072,75 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           {/* Dark overlay - but keep navigation visible */}
           <div className="absolute inset-0 bg-black/30"></div>
           
-          {/* Tour tooltip - positioned above navigation */}
+          {/* Tour tooltip - mobile optimized */}
           {tourSteps[currentTourStep] && (
-            <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 p-4 pointer-events-auto">
-              <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full transform transition-all duration-300">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                      {currentTourStep + 1}
+            <div className="absolute left-1/2 transform -translate-x-1/2 bottom-24 w-[calc(100vw-2rem)] max-w-sm pointer-events-auto">
+              <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden transform transition-all duration-300">
+                {/* Header with gradient */}
+                <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white text-lg font-bold">
+                        {currentTourStep + 1}
+                      </div>
+                      <div>
+                        <div className="text-white text-sm font-medium">
+                          Bước {currentTourStep + 1} / {tourSteps.length}
+                        </div>
+                        <div className="text-white/80 text-xs">
+                          Hướng dẫn sử dụng
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-sm text-gray-500">
-                      {currentTourStep + 1} / {tourSteps.length}
-                    </span>
+                    <button
+                      onClick={endTour}
+                      className="w-8 h-8 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                    >
+                      <Icon name="XMarkIcon" className="w-4 h-4" />
+                    </button>
                   </div>
-                  <button
-                    onClick={endTour}
-                    className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <Icon name="XMarkIcon" className="w-5 h-5 text-gray-400" />
-                  </button>
                 </div>
                 
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                  {tourSteps[currentTourStep].title}
-                </h3>
-                <p className="text-gray-600 text-sm mb-8">
-                  {tourSteps[currentTourStep].description}
-                </p>
-                
-                {/* Highlight instruction */}
-                {/* <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
-                  <div className="flex items-center gap-2 text-blue-700 text-sm">
-                    <Icon name="EyeIcon" className="w-4 h-4" />
-                    <span className="font-medium">Nhìn xuống thanh điều hướng bên dưới</span>
+                {/* Content */}
+                <div className="px-6 py-5">
+                  <h3 className="text-xl font-bold text-gray-800 mb-3">
+                    {tourSteps[currentTourStep].title}
+                  </h3>
+                  <p className="text-gray-600 text-base leading-relaxed mb-6">
+                    {tourSteps[currentTourStep].description}
+                  </p>
+                  
+                  {/* Progress bar */}
+                  <div className="mb-6">
+                    <div className="flex justify-between text-xs text-gray-500 mb-2">
+                      <span>Tiến độ</span>
+                      <span>{Math.round(((currentTourStep + 1) / tourSteps.length) * 100)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${((currentTourStep + 1) / tourSteps.length) * 100}%` }}
+                      ></div>
+                    </div>
                   </div>
-                </div> */}
-                
-                <div className="flex gap-3">
-                  {currentTourStep > 0 && (
+                  
+                  {/* Action buttons */}
+                  <div className="flex gap-3">
+                    {currentTourStep > 0 && (
+                      <button
+                        onClick={prevTourStep}
+                        className="flex-1 bg-gray-100 text-gray-700 py-3 px-4 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                      >
+                        ← Trước
+                      </button>
+                    )}
                     <button
-                      onClick={prevTourStep}
-                      className="flex-1 bg-gray-100 text-gray-600 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                      onClick={nextTourStep}
+                      className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg"
                     >
-                      Trước
+                      {currentTourStep === tourSteps.length - 1 ? '🎉 Hoàn thành' : 'Tiếp theo →'}
                     </button>
-                  )}
-                  <button
-                    onClick={nextTourStep}
-                    className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-600 transition-colors"
-                  >
-                    {currentTourStep === tourSteps.length - 1 ? 'Hoàn thành' : 'Tiếp theo'}
-                  </button>
+                  </div>
                 </div>
               </div>
             </div>
