@@ -378,7 +378,7 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
     
     // 4. Add Ticket_Type for free registration
     if (isFreeRegistration) {
-      customDataWithFieldIds["Ticket_Type"] = "FOC";
+      customDataWithFieldIds["ybahtvt_ticketype"] = "FOC";
       console.log('🎫 Added Ticket_Type: FOC for free registration');
     }
     
