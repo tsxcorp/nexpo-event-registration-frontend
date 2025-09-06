@@ -79,6 +79,7 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isFreeRegistration, setIsFreeRegistration] = useState(false);
   
 
   
@@ -374,6 +375,13 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
 
     // 3. Convert customData from field labels to field_id format for backend
     const customDataWithFieldIds = convertFormDataToFieldIds(customData, allVisibleFields);
+    
+    // 4. Add Ticket_Type for free registration
+    if (isFreeRegistration) {
+      customDataWithFieldIds["Ticket_Type"] = "FOC";
+      console.log('🎫 Added Ticket_Type: FOC for free registration');
+    }
+    
     const payload = {
       ...coreData,
       group_members: data.group_members,
@@ -436,7 +444,7 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
         });
         
         // Custom redirect logic for specific event - always redirect to Buy_Ticket
-        if (eventId === '4433256000013547003' && eventData?.ticket_mode === true) {
+        if (eventId === '4433256000013547003' && eventData?.ticket_mode === true && !isFreeRegistration) {
           console.log('🎯 Custom redirect logic triggered for event 4433256000013547003 - direct to Buy_Ticket');
           
           // Always redirect to Buy_Ticket form, regardless of member_status
@@ -489,7 +497,7 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
           // Fallback: If parent doesn't handle the message, redirect parent window after 3 seconds
           setTimeout(() => {
             console.log('⏰ Fallback redirect parent window after 3 seconds...');
-            if (eventData?.ticket_mode) {
+            if (eventData?.ticket_mode && !isFreeRegistration) {
               const paymentQueryParams = new URLSearchParams({
                 eventId: eventId,
                 registrationData: encodeURIComponent(JSON.stringify(registrationData)),
@@ -508,7 +516,7 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
           }, 3000);
         } else {
           // For non-embedded forms, use normal redirect
-          if (eventData?.ticket_mode) {
+          if (eventData?.ticket_mode && !isFreeRegistration) {
             // Redirect to payment page for ticket mode events
             const paymentQueryParams = new URLSearchParams({
               eventId: eventId,
@@ -964,25 +972,66 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
               )}
               
               {isLastStep ? (
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 sm:px-8 sm:py-3 rounded-lg text-sm sm:text-base font-bold disabled:opacity-50 transition-all duration-200 shadow-md hover:shadow-lg"
-                  onClick={() => {
-                    userIntentToSubmitRef.current = true;
-                  }}
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-2 border-white border-t-transparent mr-3"></div>
-                      {i18n[currentLanguage]?.submitting || 'Đang gửi...'}
-                    </span>
-                  ) : (
-                    isSpecialEvent 
-                      ? `✓ ${i18n[currentLanguage]?.buy_ticket || 'Chọn vé'}`
-                      : `✓ ${i18n[currentLanguage]?.complete_registration || 'Hoàn tất đăng ký'}`
-                  )}
-                </Button>
+                isSpecialEvent ? (
+                  // Special event: Show two buttons
+                  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-3 sm:px-8 sm:py-3 rounded-lg text-sm sm:text-base font-bold disabled:opacity-50 transition-all duration-200 shadow-md hover:shadow-lg"
+                      onClick={() => {
+                        setIsFreeRegistration(true);
+                        userIntentToSubmitRef.current = true;
+                      }}
+                    >
+                      {loading ? (
+                        <span className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-2 border-white border-t-transparent mr-3"></div>
+                          {i18n[currentLanguage]?.submitting || 'Đang gửi...'}
+                        </span>
+                      ) : (
+                        `✓ ${i18n[currentLanguage]?.free_registration || 'Đăng ký tham quan miễn phí'}`
+                      )}
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 sm:px-8 sm:py-3 rounded-lg text-sm sm:text-base font-bold disabled:opacity-50 transition-all duration-200 shadow-md hover:shadow-lg"
+                      onClick={() => {
+                        setIsFreeRegistration(false);
+                        userIntentToSubmitRef.current = true;
+                      }}
+                    >
+                      {loading ? (
+                        <span className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-2 border-white border-t-transparent mr-3"></div>
+                          {i18n[currentLanguage]?.submitting || 'Đang gửi...'}
+                        </span>
+                      ) : (
+                        `✓ ${i18n[currentLanguage]?.buy_ticket || 'Chọn vé'}`
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  // Normal event: Show single button
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 sm:px-8 sm:py-3 rounded-lg text-sm sm:text-base font-bold disabled:opacity-50 transition-all duration-200 shadow-md hover:shadow-lg"
+                    onClick={() => {
+                      userIntentToSubmitRef.current = true;
+                    }}
+                  >
+                    {loading ? (
+                      <span className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-2 border-white border-t-transparent mr-3"></div>
+                        {i18n[currentLanguage]?.submitting || 'Đang gửi...'}
+                      </span>
+                    ) : (
+                      `✓ ${i18n[currentLanguage]?.complete_registration || 'Hoàn tất đăng ký'}`
+                    )}
+                  </Button>
+                )
               ) : (
                 <Button
                   type="button"
