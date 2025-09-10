@@ -3,7 +3,6 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import PoweredByFooter from '@/components/common/PoweredByFooter';
 import { i18n } from '@/lib/translation/i18n';
 
 function TicketPageContent() {
@@ -187,9 +186,6 @@ function TicketPageContent() {
           </div>
         )}
       </div>
-      
-      {/* Powered by Nexpo Footer */}
-      <PoweredByFooter variant="minimal" className="border-t-0" />
       </div>
     </div>
   );
