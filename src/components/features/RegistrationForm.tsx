@@ -408,7 +408,7 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
       const result = responseData.success === false ? responseData.zohoResponse : responseData;
       const zohoRecordId = result.zoho_record_id;
 
-      if (response.ok && zohoRecordId) {
+      if (response.ok) {
         // Combine backend response with frontend group members data
         const frontendGroupMembers = data.group_members || [];
         const backendGroupMembers = result.group_members || [];
@@ -506,12 +506,10 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
               const paymentUrl = `https://registration.nexpo.vn/payment?${paymentQueryParams.toString()}`;
               window.parent.location.href = paymentUrl;
             } else {
-              const queryParams = new URLSearchParams({
-                data: JSON.stringify(registrationData),
-                lang: currentLanguage
-              });
-              const thankyouUrl = `https://registration.nexpo.vn/thankyou?${queryParams.toString()}`;
-              window.parent.location.href = thankyouUrl;
+              // Redirect to insight page instead of thank you page
+              const recordId = zohoRecordId || 'pending';
+              const insightUrl = `https://registration.nexpo.vn/insight/${eventId}/${recordId}`;
+              window.parent.location.href = insightUrl;
             }
           }, 3000);
         } else {
@@ -527,14 +525,10 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
             const paymentUrl = `/payment?${paymentQueryParams.toString()}`;
             router.push(paymentUrl);
           } else {
-            // Redirect to thank you page for non-ticket mode events
-            const queryParams = new URLSearchParams({
-              data: JSON.stringify(registrationData),
-              lang: currentLanguage // Pass current language to Thank You page
-            });
-            
-            const thankyouUrl = `/thankyou?${queryParams.toString()}`;
-            router.push(thankyouUrl);
+            // Redirect to insight page instead of thank you page
+            const recordId = zohoRecordId || 'pending';
+            const insightUrl = `/insight/${eventId}/${recordId}`;
+            router.push(insightUrl);
           }
         }
       } else {
@@ -728,27 +722,29 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
         }}
         className="space-y-3 sm:space-y-6 pb-20 sm:pb-6"
       >
-        {/* Multi-Step Indicator */}
-        <div className="flex items-center justify-center mb-4 sm:mb-8 px-2 sm:px-4">
-          <div className="flex items-center space-x-1 sm:space-x-2 overflow-x-auto max-w-full">
-            {allSteps.map((step, index) => (
-              <div key={index} className="flex items-center flex-shrink-0">
-                <div className={`flex items-center justify-center w-7 h-7 sm:w-10 sm:h-10 rounded-full border-2 text-xs sm:text-sm font-bold ${
-                  index <= currentStep 
-                    ? 'bg-blue-600 border-blue-600 text-white shadow-lg' 
-                    : 'border-gray-300 text-gray-500 bg-white'
-                }`}>
-                  {index + 1}
+        {/* Multi-Step Indicator - Only show if more than 1 step */}
+        {totalSteps > 1 && (
+          <div className="flex items-center justify-center mb-4 sm:mb-8 px-2 sm:px-4">
+            <div className="flex items-center space-x-1 sm:space-x-2 overflow-x-auto max-w-full">
+              {allSteps.map((step, index) => (
+                <div key={index} className="flex items-center flex-shrink-0">
+                  <div className={`flex items-center justify-center w-7 h-7 sm:w-10 sm:h-10 rounded-full border-2 text-xs sm:text-sm font-bold ${
+                    index <= currentStep 
+                      ? 'bg-blue-600 border-blue-600 text-white shadow-lg' 
+                      : 'border-gray-300 text-gray-500 bg-white'
+                  }`}>
+                    {index + 1}
+                  </div>
+                  {index < allSteps.length - 1 && (
+                    <div className={`w-4 sm:w-8 h-1 ${
+                      index < currentStep ? 'bg-blue-600' : 'bg-gray-300'
+                    }`}></div>
+                  )}
                 </div>
-                {index < allSteps.length - 1 && (
-                  <div className={`w-4 sm:w-8 h-1 ${
-                    index < currentStep ? 'bg-blue-600' : 'bg-gray-300'
-                  }`}></div>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Progress Info */}
         {/* <div className="text-center mb-4 sm:mb-8 px-2 sm:px-4">
@@ -946,30 +942,24 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
 
         {/* Navigation Buttons - Better mobile spacing */}
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 sm:p-4 shadow-lg z-40 sm:relative sm:bottom-auto sm:border-t-0 sm:shadow-none sm:bg-transparent sm:mt-8">
-          <div className="flex flex-col sm:flex-row justify-between items-center w-full max-w-4xl mx-auto space-y-3 sm:space-y-0">
-            {/* Back Button */}
-            <Button
-              type="button"
-              onClick={handlePrevStep}
-              disabled={currentStep === 0}
-              className="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white px-4 py-3 sm:px-6 sm:py-3 rounded-lg text-sm sm:text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md order-1 sm:order-none"
-            >
-              ← {i18n[currentLanguage]?.back || 'Quay lại'}
-            </Button>
+          <div className={`flex flex-col sm:flex-row items-center w-full max-w-4xl mx-auto space-y-3 sm:space-y-0 ${totalSteps > 1 ? 'justify-between' : 'justify-center'}`}>
+            {/* Back Button - Only show if more than 1 step */}
+            {totalSteps > 1 && (
+              <Button
+                type="button"
+                onClick={handlePrevStep}
+                disabled={currentStep === 0}
+                className="w-full sm:w-auto bg-gray-500 hover:bg-gray-600 text-white px-4 py-3 sm:px-6 sm:py-3 rounded-lg text-sm sm:text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md order-1 sm:order-none"
+              >
+                ← {i18n[currentLanguage]?.back || 'Quay lại'}
+              </Button>
+            )}
             
 
 
             {/* Center content for mobile - Add member button */}
             <div className="flex flex-col sm:flex-row w-full sm:w-auto space-y-3 sm:space-y-0 sm:space-x-4 order-3 sm:order-none">
-              {groupMembers.length === 0 && !isSpecialEvent && (
-                <Button
-                  type="button"
-                  onClick={handleAddMember}
-                  className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-4 py-3 sm:px-6 sm:py-3 rounded-lg text-sm sm:text-base font-bold transition-all duration-200 shadow-md hover:shadow-lg"
-                >
-                  + {i18n[currentLanguage]?.add_member || 'Thêm thành viên'}
-                </Button>
-              )}
+              {/* Add member button removed from navigation - now using floating bubble */}
               
               {isLastStep ? (
                 isSpecialEvent ? (
@@ -1047,6 +1037,43 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
 
         {/* Add sufficient padding at bottom for mobile to account for fixed navigation */}
         <div className="h-40 sm:h-0"></div>
+
+        {/* Add Member Section - Clean inline approach - Only show from core fields step onwards */}
+        {groupMembers.length === 0 && !isSpecialEvent && currentSection.type === 'core' && (
+          <div className={`w-full max-w-4xl mx-auto mt-3 sm:mt-6 px-2 sm:px-4 ${isActuallyEmbedded() ? 'embed-container-mobile' : ''}`}>
+            <Card className={`border border-green-100 sm:border-2 shadow-md sm:shadow-lg bg-gradient-to-br from-green-50 to-white ${isActuallyEmbedded() ? 'embed-mobile-optimized' : ''}`}>
+              <div className="p-4 sm:p-6 text-center">
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg className="w-8 h-8 sm:w-10 sm:h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
+                      {i18n[currentLanguage]?.["Thêm thành viên nhóm"] || "Thêm thành viên nhóm"}
+                    </h3>
+                    <p className="text-sm sm:text-base text-gray-600 mb-4">
+                      {i18n[currentLanguage]?.["Bạn có thể thêm các thành viên khác vào nhóm đăng ký"] || "Bạn có thể thêm các thành viên khác vào nhóm đăng ký"}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={handleAddMember}
+                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 sm:px-8 sm:py-4 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
+                  >
+                    <span className="flex items-center gap-2">
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                      </svg>
+                      {i18n[currentLanguage]?.["Thêm thành viên đầu tiên"] || "Thêm thành viên đầu tiên"}
+                    </span>
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* Group Member Dialog - Mobile optimized */}
         {editIndex !== null && (
