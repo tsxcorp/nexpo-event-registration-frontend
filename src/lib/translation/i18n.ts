@@ -98,7 +98,6 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     no_form_fields: "Không có trường biểu mẫu để hiển thị",
     
     // Payment Page
-    registration_successful: "Đăng ký thành công!",
     thank_you_for_registration: "Cảm ơn bạn đã đăng ký tham gia sự kiện của chúng tôi.",
     registration_summary: "Thông tin đăng ký",
     event_information: "Thông tin sự kiện",
@@ -276,7 +275,16 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     contact_us: "Liên hệ",
     translating_content: "Đang dịch...",
     language_vietnamese: "Tiếng Việt",
-    language_english: "English"
+    language_english: "English",
+    
+    // Thank You Popup
+    registration_successful: "Đăng ký thành công!",
+    thank_you_message: "Cảm ơn bạn đã đăng ký tham gia sự kiện",
+    event_info: "Thông tin sự kiện",
+    registration_info: "Thông tin đăng ký",
+    success_message: "Bạn sẽ nhận được email xác nhận đăng ký sau khi BTC kiểm tra thông tin thành viên là chính xác. Vui lòng kiểm tra hộp thư của bạn để cập nhật.",
+    close: "Đóng",
+    auto_close_message: "Popup sẽ tự động đóng sau"
   },
 
   en: {
@@ -564,6 +572,15 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     translating_content: "Translating...",
     language_vietnamese: "Vietnamese",
     language_english: "English",
+    
+    // Thank You Popup
+    registration_successful: "Registration Successful!",
+    thank_you_message: "Thank you for registering for the event",
+    event_info: "Event Information",
+    registration_info: "Registration Information",
+    success_message: "You will receive a registration confirmation email after the organizing committee verifies that the member information is accurate. Please check your inbox for updates.",
+    close: "Close",
+    auto_close_message: "Popup will auto close in",
     
     // QR Code related keys (camelCase)
     badge_qr_code: "Badge QR Code",

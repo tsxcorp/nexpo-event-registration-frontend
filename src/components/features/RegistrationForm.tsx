@@ -13,6 +13,7 @@ import DynamicFormFields from './DynamicFormFields';
 import SubFormFields from './SubFormFields';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import ThankYouPopup from '@/components/common/ThankYouPopup';
 import { i18n } from '@/lib/translation/i18n';
 
 interface FormData {
@@ -80,6 +81,8 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
   const [isNew, setIsNew] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isFreeRegistration, setIsFreeRegistration] = useState(false);
+  const [showThankYouPopup, setShowThankYouPopup] = useState(false);
+  const [popupData, setPopupData] = useState<any>(null);
   
 
   
@@ -476,6 +479,31 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
             console.log('🔄 Redirecting to ticket route:', redirectUrl);
             router.push(redirectUrl);
           }
+          return; // Exit early, don't continue with normal redirect logic
+        }
+        
+        // Custom popup logic for specific event - show thank you popup instead of redirect
+        if (eventId === '4433256000014023019') {
+          console.log('🎯 Custom popup logic triggered for event 4433256000014023019 - show thank you popup');
+          
+          // Prepare popup data
+          const popupEventData = {
+            name: eventData?.name || 'Sự kiện',
+            date: eventData?.start_date || '',
+            location: eventData?.location || ''
+          };
+          
+          const popupRegistrationData = {
+            Full_Name: coreData.Full_Name,
+            Email: coreData.Email
+          };
+          
+          setPopupData({
+            eventData: popupEventData,
+            registrationData: popupRegistrationData
+          });
+          setShowThankYouPopup(true);
+          
           return; // Exit early, don't continue with normal redirect logic
         }
         
@@ -1167,6 +1195,20 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
           </div>
         )}
 
+        {/* Thank You Popup */}
+        <ThankYouPopup
+          isOpen={showThankYouPopup}
+          onClose={() => {
+            setShowThankYouPopup(false);
+            // Refresh the page after popup closes
+            window.location.reload();
+          }}
+          eventData={popupData?.eventData}
+          registrationData={popupData?.registrationData}
+          currentLanguage={currentLanguage}
+          showCloseButton={true}
+          autoCloseDelay={10000}
+        />
 
       </form>
     </FormProvider>
