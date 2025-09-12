@@ -1067,8 +1067,17 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
         <div className="h-40 sm:h-0"></div>
 
         {/* Add Member Section - Clean inline approach - Only show from core fields step onwards */}
-        {groupMembers.length === 0 && !isSpecialEvent && currentSection.type === 'core' && (
-          <div className={`w-full max-w-4xl mx-auto mt-3 sm:mt-6 px-2 sm:px-4 ${isActuallyEmbedded() ? 'embed-container-mobile' : ''}`}>
+        {groupMembers.length === 0 && !isSpecialEvent && currentSection.type === 'core' && (() => {
+          // Calculate spacing based on number of core fields
+          const coreFieldsCount = currentSection.fields?.length || 0;
+          const getSpacing = () => {
+            if (coreFieldsCount <= 2) return 'mt-8 sm:mt-12'; // More spacing for fewer fields
+            if (coreFieldsCount <= 4) return 'mt-6 sm:mt-8';  // Medium spacing
+            return 'mt-3 sm:mt-6'; // Less spacing for many fields
+          };
+          
+          return (
+            <div className={`w-full max-w-4xl mx-auto ${getSpacing()} px-2 sm:px-4 ${isActuallyEmbedded() ? 'embed-container-mobile' : ''}`}>
             <Card className={`border border-green-100 sm:border-2 shadow-md sm:shadow-lg bg-gradient-to-br from-green-50 to-white ${isActuallyEmbedded() ? 'embed-mobile-optimized' : ''}`}>
               <div className="p-4 sm:p-6 text-center">
                 <div className="flex flex-col items-center space-y-4">
@@ -1100,8 +1109,11 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
                 </div>
               </div>
             </Card>
+            {/* Add bottom spacing based on field count */}
+            <div className={`${coreFieldsCount <= 2 ? 'h-16 sm:h-20' : coreFieldsCount <= 4 ? 'h-12 sm:h-16' : 'h-8 sm:h-12'}`}></div>
           </div>
-        )}
+          );
+        })()}
 
         {/* Group Member Dialog - Mobile optimized */}
         {editIndex !== null && (
