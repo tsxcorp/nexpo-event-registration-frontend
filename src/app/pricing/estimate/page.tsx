@@ -9,6 +9,9 @@ export default function PricingEstimatePage() {
     eventType: '',
     expectedGuests: '',
     eventDays: 1,
+    // Ticket sales
+    hasTicketSales: false,
+    ticketPrice: 0,
     // Onsite services
     qrScanners: 0,
     badgePrinters: 0,
@@ -26,7 +29,10 @@ export default function PricingEstimatePage() {
   const [estimate, setEstimate] = useState<{
     saasFee: number;
     onsiteServices: number;
-    total: number;
+    ticketFeeMin: number;
+    ticketFeeMax: number;
+    totalMin: number;
+    totalMax: number;
     breakdown: any[];
   } | null>(null);
 
@@ -70,9 +76,9 @@ export default function PricingEstimatePage() {
     } else if (guests >= selectedEventType.guestMax) {
       saasFee = selectedEventType.saasMax;
     } else {
-      // Linear interpolation
+      // Linear interpolation - round to nearest million
       const ratio = (guests - selectedEventType.guestMin) / (selectedEventType.guestMax - selectedEventType.guestMin);
-      saasFee = selectedEventType.saasMin + (selectedEventType.saasMax - selectedEventType.saasMin) * ratio;
+      saasFee = Math.round(selectedEventType.saasMin + (selectedEventType.saasMax - selectedEventType.saasMin) * ratio);
     }
 
     // Calculate onsite services
@@ -80,7 +86,7 @@ export default function PricingEstimatePage() {
     const breakdown = [];
 
     // Badge printing materials (7,000-9,000 VND per badge)
-    const badgeMaterials = guests * 0.008; // 8,000 VND average
+    const badgeMaterials = Math.round(guests * 0.008); // 8,000 VND average, round to nearest million
     onsiteServicesTotal += badgeMaterials;
     breakdown.push({
       service: 'Vật tư in ấn (mực + giấy badge)',
@@ -94,7 +100,7 @@ export default function PricingEstimatePage() {
     onsiteServices.forEach(service => {
       const quantity = formData[service.key as keyof typeof formData] as number;
       if (quantity > 0) {
-        const total = quantity * service.pricePerDay * days;
+        const total = Math.round(quantity * service.pricePerDay * days);
         onsiteServicesTotal += total;
         breakdown.push({
           service: service.label,
@@ -109,13 +115,13 @@ export default function PricingEstimatePage() {
 
     // One-time services
     if (formData.whiteLabel) {
-      const whiteLabelCost = 22.5; // Average of 15-30 million
+      const whiteLabelCost = 23; // Average of 15-30 million, rounded
       onsiteServicesTotal += whiteLabelCost;
       breakdown.push({
         service: 'White-label domain + branding',
         quantity: 1,
         unit: 'gói',
-        pricePerUnit: 22.5,
+        pricePerUnit: 23,
         total: whiteLabelCost
       });
     }
@@ -132,12 +138,33 @@ export default function PricingEstimatePage() {
       });
     }
 
-    const total = saasFee + onsiteServicesTotal;
+    // Calculate ticket fee range if ticket sales enabled (3-5%)
+    let ticketFeeMin = 0;
+    let ticketFeeMax = 0;
+    if (formData.hasTicketSales && formData.ticketPrice > 0) {
+      const totalTicketRevenue = guests * formData.ticketPrice;
+      ticketFeeMin = Math.round(totalTicketRevenue * 0.03 / 1000000); // 3% fee
+      ticketFeeMax = Math.round(totalTicketRevenue * 0.05 / 1000000); // 5% fee
+      
+      breakdown.push({
+        service: 'Phí thanh toán vé (3-5%)',
+        quantity: guests,
+        unit: 'vé',
+        pricePerUnit: `${Math.round(formData.ticketPrice * 0.03 / 1000000)} - ${Math.round(formData.ticketPrice * 0.05 / 1000000)}`,
+        total: `${ticketFeeMin} - ${ticketFeeMax}`
+      });
+    }
+
+    const totalMin = saasFee + onsiteServicesTotal + ticketFeeMin;
+    const totalMax = saasFee + onsiteServicesTotal + ticketFeeMax;
 
     setEstimate({
       saasFee,
       onsiteServices: onsiteServicesTotal,
-      total,
+      ticketFeeMin,
+      ticketFeeMax,
+      totalMin,
+      totalMax,
       breakdown
     });
   };
@@ -196,7 +223,7 @@ export default function PricingEstimatePage() {
                 </label>
                 <input
                   type="number"
-                  value={formData.expectedGuests}
+                  value={formData.expectedGuests || ''}
                   onChange={(e) => handleInputChange('expectedGuests', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Nhập số lượng khách"
@@ -211,10 +238,49 @@ export default function PricingEstimatePage() {
                 <input
                   type="number"
                   min="1"
-                  value={formData.eventDays}
-                  onChange={(e) => handleInputChange('eventDays', parseInt(e.target.value))}
+                  value={formData.eventDays || ''}
+                  onChange={(e) => handleInputChange('eventDays', e.target.value === '' ? 1 : parseInt(e.target.value) || 1)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
+              </div>
+
+              {/* Ticket Sales */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900">Bán vé trực tuyến</h3>
+                
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.hasTicketSales}
+                    onChange={(e) => handleInputChange('hasTicketSales', e.target.checked)}
+                    className="mr-3"
+                  />
+                  <span className="text-sm text-gray-700">Có bán vé trực tuyến</span>
+                </div>
+
+                {formData.hasTicketSales && (
+                  <div className="space-y-4 pl-6 border-l-2 border-blue-200">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Giá vé (VND)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.ticketPrice || ''}
+                        onChange={(e) => handleInputChange('ticketPrice', e.target.value === '' ? 0 : parseInt(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Nhập giá vé"
+                      />
+                    </div>
+                    
+                    <div className="p-3 bg-blue-50 rounded-lg">
+                      <p className="text-sm text-blue-700">
+                        <strong>Lưu ý:</strong> Phí thanh toán vé: 3-5% tùy đối tác thanh toán
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Onsite Services */}
@@ -230,15 +296,15 @@ export default function PricingEstimatePage() {
                         <p className="text-xs text-gray-500">
                           {service.key === 'leadScannerBooths' 
                             ? '200,000 VND / booth / ngày'
-                            : `${service.pricePerDay} triệu VND / ${service.unit} / ngày`
+                            : `${(service.pricePerDay * 1000000).toLocaleString('vi-VN')} VND / ${service.unit} / ngày`
                           }
                         </p>
                       </div>
                       <input
                         type="number"
                         min="0"
-                        value={formData[service.key as keyof typeof formData]}
-                        onChange={(e) => handleInputChange(service.key, parseInt(e.target.value) || 0)}
+                        value={formData[service.key as keyof typeof formData] as number || ''}
+                        onChange={(e) => handleInputChange(service.key, e.target.value === '' ? 0 : parseInt(e.target.value) || 0)}
                         className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
                       />
                     </div>
@@ -258,7 +324,7 @@ export default function PricingEstimatePage() {
                       className="mr-3"
                     />
                     <span className="text-sm text-gray-700">
-                      White-label domain + branding (15-30 triệu VND)
+                      White-label domain + branding (15,000,000 - 30,000,000 VND)
                     </span>
                   </label>
                   <label className="flex items-center">
@@ -269,7 +335,7 @@ export default function PricingEstimatePage() {
                       className="mr-3"
                     />
                     <span className="text-sm text-gray-700">
-                      Tích hợp CRM/MA nâng cao (10-20 triệu VND)
+                      Tích hợp CRM/MA nâng cao (10,000,000 - 20,000,000 VND)
                     </span>
                   </label>
                 </div>
@@ -294,27 +360,36 @@ export default function PricingEstimatePage() {
                   <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg">
                     <span className="font-medium text-gray-700">Gói SaaS (Full Features)</span>
                     <span className="font-bold text-blue-600">
-                      {estimate.saasFee.toFixed(1)} triệu VND
+                      {(estimate.saasFee * 1000000).toLocaleString('vi-VN')} VND
                     </span>
                   </div>
                   
                   <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg">
                     <span className="font-medium text-gray-700">Dịch vụ onsite</span>
                     <span className="font-bold text-green-600">
-                      {estimate.onsiteServices.toFixed(1)} triệu VND
+                      {(estimate.onsiteServices * 1000000).toLocaleString('vi-VN')} VND
                     </span>
                   </div>
+                  
+                  {estimate.ticketFeeMin > 0 && (
+                    <div className="flex justify-between items-center p-4 bg-orange-50 rounded-lg">
+                      <span className="font-medium text-gray-700">Phí thanh toán vé (3-5%)</span>
+                      <span className="font-bold text-orange-600">
+                        {(estimate.ticketFeeMin * 1000000).toLocaleString('vi-VN')} - {(estimate.ticketFeeMax * 1000000).toLocaleString('vi-VN')} VND
+                      </span>
+                    </div>
+                  )}
                   
                   <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg">
                     <span className="font-bold text-lg">Tổng cộng</span>
                     <span className="font-bold text-xl">
-                      {estimate.total.toFixed(1)} triệu VND
+                      {(estimate.totalMin * 1000000).toLocaleString('vi-VN')} - {(estimate.totalMax * 1000000).toLocaleString('vi-VN')} VND
                     </span>
                   </div>
                 </div>
 
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Chi tiết dịch vụ onsite</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Chi tiết dịch vụ</h3>
                   <div className="space-y-2">
                     {estimate.breakdown.map((item, index) => (
                       <div key={index} className="flex justify-between text-sm">
@@ -323,7 +398,10 @@ export default function PricingEstimatePage() {
                           {item.quantity > 1 && ` (${item.quantity} ${item.unit}${item.days ? ` × ${item.days} ngày` : ''})`}
                         </span>
                         <span className="font-medium">
-                          {item.total.toFixed(1)} triệu VND
+                          {typeof item.total === 'string' ? 
+                            `${item.total} triệu VND` : 
+                            `${(item.total * 1000000).toLocaleString('vi-VN')} VND`
+                          }
                         </span>
                       </div>
                     ))}
@@ -368,15 +446,75 @@ export default function PricingEstimatePage() {
       </div>
 
       {/* Footer */}
-      <div className="bg-gray-900 text-white py-8">
+      <footer className="bg-white border-t border-gray-200 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <p className="text-gray-400">
-              © 2025 Nexpo.vn - All rights reserved. Powered by NEXPO
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {/* Company Info */}
+            <div className="lg:col-span-2">
+              <div className="flex items-center mb-4">
+                <img 
+                  src="/nexpo-logo.png" 
+                  alt="Nexpo" 
+                  className="h-8 w-auto mr-3"
+                />
+              </div>
+              <p className="text-gray-600 mb-4">
+                Nền tảng quản lý sự kiện và triển lãm hàng đầu Việt Nam, 
+                cung cấp giải pháp toàn diện cho các sự kiện từ quy mô nhỏ đến lớn.
+              </p>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Địa chỉ:</span> Tầng 5 – Tòa nhà Ngọc Linh Nhi, 97 Trần Quang Diệu, Phường 14, Quận 3, TP.HCM
+                </p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Hotline:</span> 028.6682.7794
+                </p>
+              </div>
+            </div>
+
+            {/* Contact */}
+            <div>
+              <h4 className="text-lg font-semibold mb-4 text-gray-900">Liên hệ</h4>
+              <div className="space-y-3">
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <a href="mailto:contact@nexpo.vn" className="text-gray-600 hover:text-blue-600 transition-colors">
+                    contact@nexpo.vn
+                  </a>
+                </div>
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+                  </svg>
+                  <a href="https://nexpo.vn" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-green-600 transition-colors">
+                    nexpo.vn
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Services */}
+            <div>
+              <h4 className="text-lg font-semibold mb-4 text-gray-900">Dịch vụ</h4>
+              <ul className="space-y-2 text-gray-600">
+                <li>Quản lý sự kiện</li>
+                <li>Check-in tự động</li>
+                <li>Bán vé trực tuyến</li>
+                <li>Quản lý triển lãm</li>
+                <li>Báo cáo thống kê</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-200 mt-8 pt-8 text-center">
+            <p className="text-gray-500 text-sm">
+              © 2024 NEXPO. Tất cả quyền được bảo lưu.
             </p>
           </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }

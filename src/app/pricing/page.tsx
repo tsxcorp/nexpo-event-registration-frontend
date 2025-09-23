@@ -7,45 +7,45 @@ export default function PricingPage() {
   const saasPricing = [
     {
       eventType: 'Event',
-      scale: '300 – 2.000 khách',
-      price: '10 – 15 triệu VND / sự kiện'
+      scale: '300 – 2,000 khách',
+      price: '10,000,000 – 15,000,000 VND / sự kiện'
     },
     {
       eventType: 'Conference',
-      scale: '500 – 5.000 khách',
-      price: '18 – 25 triệu VND / sự kiện'
+      scale: '500 – 5,000 khách',
+      price: '18,000,000 – 25,000,000 VND / sự kiện'
     },
     {
       eventType: 'Exhibition',
-      scale: '2.000 – 20.000+ khách',
-      price: '25 – 40 triệu VND / sự kiện'
+      scale: '2,000 – 20,000+ khách',
+      price: '25,000,000 – 40,000,000 VND / sự kiện'
     }
   ];
 
   const onsiteServices = [
     {
       service: 'Máy quét QR cầm tay',
-      price: '1 – 1.5 triệu / thiết bị / ngày',
+      price: '1,000,000 – 1,500,000 VND / thiết bị / ngày',
       note: 'Gợi ý 3–20 thiết bị tuỳ quy mô'
     },
     {
       service: 'Máy in badge onsite',
-      price: '2 – 3 triệu / máy / ngày',
+      price: '2,000,000 – 3,000,000 VND / máy / ngày',
       note: 'Gợi ý 2–10 máy'
     },
     {
       service: 'Vật tư in ấn (mực + giấy badge)',
-      price: '7.000 – 9.000đ / badge',
+      price: '7,000 – 9,000 VND / badge',
       note: 'Tính theo số lượng khách, tùy loại giấy'
     },
     {
       service: 'Kiosk self check-in',
-      price: '5 – 7 triệu / kiosk / ngày',
+      price: '5,000,000 – 7,000,000 VND / kiosk / ngày',
       note: 'Gợi ý 2–10 kiosk'
     },
     {
       service: 'Nhân sự onsite support',
-      price: '1.5 – 2.5 triệu / người / ngày',
+      price: '1,500,000 – 2,500,000 VND / người / ngày',
       note: 'Gợi ý 2–15 người'
     },
     {
@@ -55,28 +55,28 @@ export default function PricingPage() {
     },
     {
       service: 'White-label domain + branding',
-      price: '15 – 30 triệu / gói',
+      price: '15,000,000 – 30,000,000 VND / gói',
       note: 'Thiết lập một lần'
     },
     {
       service: 'Tích hợp CRM/MA nâng cao',
-      price: '10 – 20 triệu / gói',
+      price: '10,000,000 – 20,000,000 VND / gói',
       note: 'Thiết lập một lần'
     }
   ];
 
   const allInclusivePackages = [
     {
-      package: 'Event (300–2.000 khách)',
-      price: '25 – 45 triệu / sự kiện'
+      package: 'Event (300–2,000 khách)',
+      price: '25,000,000 – 45,000,000 VND / sự kiện'
     },
     {
-      package: 'Conference (500–5.000 khách)',
-      price: '60 – 100 triệu / sự kiện'
+      package: 'Conference (500–5,000 khách)',
+      price: '60,000,000 – 100,000,000 VND / sự kiện'
     },
     {
-      package: 'Exhibition (2.000–20.000+ khách)',
-      price: '180 – 400 triệu / sự kiện'
+      package: 'Exhibition (2,000–20,000+ khách)',
+      price: '180,000,000 – 400,000,000 VND / sự kiện'
     }
   ];
 
@@ -352,15 +352,75 @@ export default function PricingPage() {
       </div>
 
       {/* Footer */}
-      <div className="bg-gray-900 text-white py-8">
+      <footer className="bg-white border-t border-gray-200 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <p className="text-gray-400">
-              © 2025 Nexpo.vn - All rights reserved. Powered by NEXPO
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {/* Company Info */}
+            <div className="lg:col-span-2">
+              <div className="flex items-center mb-4">
+                <img 
+                  src="/nexpo-logo.png" 
+                  alt="Nexpo" 
+                  className="h-8 w-auto mr-3"
+                />
+              </div>
+              <p className="text-gray-600 mb-4">
+                Nền tảng quản lý sự kiện và triển lãm hàng đầu Việt Nam, 
+                cung cấp giải pháp toàn diện cho các sự kiện từ quy mô nhỏ đến lớn.
+              </p>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Địa chỉ:</span> Tầng 5 – Tòa nhà Ngọc Linh Nhi, 97 Trần Quang Diệu, Phường 14, Quận 3, TP.HCM
+                </p>
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Hotline:</span> 028.6682.7794
+                </p>
+              </div>
+            </div>
+
+            {/* Contact */}
+            <div>
+              <h4 className="text-lg font-semibold mb-4 text-gray-900">Liên hệ</h4>
+              <div className="space-y-3">
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <a href="mailto:contact@nexpo.vn" className="text-gray-600 hover:text-blue-600 transition-colors">
+                    contact@nexpo.vn
+                  </a>
+                </div>
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+                  </svg>
+                  <a href="https://nexpo.vn" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-green-600 transition-colors">
+                    nexpo.vn
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Services */}
+            <div>
+              <h4 className="text-lg font-semibold mb-4 text-gray-900">Dịch vụ</h4>
+              <ul className="space-y-2 text-gray-600">
+                <li>Quản lý sự kiện</li>
+                <li>Check-in tự động</li>
+                <li>Bán vé trực tuyến</li>
+                <li>Quản lý triển lãm</li>
+                <li>Báo cáo thống kê</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-200 mt-8 pt-8 text-center">
+            <p className="text-gray-500 text-sm">
+              © 2024 NEXPO. Tất cả quyền được bảo lưu.
             </p>
           </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }
