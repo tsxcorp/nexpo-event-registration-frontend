@@ -119,6 +119,66 @@ export default function RootLayout({
             gtag('config', 'G-PGPK8YGJ0V');
           `}
         </Script>
+        
+        {/* Easy AI Chat Widget - Only for insight pages */}
+        <Script
+          src="https://widget.easyaichat.app/dist/widget/main.js"
+          strategy="afterInteractive"
+        />
+        <Script id="easy-ai-chat-init" strategy="afterInteractive">
+          {`
+            console.log('🔍 Easy AI Chat script loaded, checking conditions...');
+            console.log('Current pathname:', window.location.pathname);
+            
+            if (window.location.pathname.includes('/insight/')) {
+              // Check if this is the specific event ID that should have Easy AI Chat
+              const pathSegments = window.location.pathname.split('/');
+              const eventIdIndex = pathSegments.indexOf('insight') + 1;
+              const eventId = pathSegments[eventIdIndex];
+              
+              console.log('📋 Path segments:', pathSegments);
+              console.log('🎯 Extracted event ID:', eventId);
+              
+              if (eventId === '4433256000013547003') {
+                console.log('🚀 Initializing Easy AI Chat for specific event:', eventId);
+                
+                // Wait for EasyAIChat to be available
+                const initWidget = () => {
+                  if (window.EasyAIChat) {
+                    console.log('✅ EasyAIChat object found, initializing...');
+                    try {
+                      window.EasyAIChat.init({"handle":"nexpovn"});
+                      console.log('🎉 Easy AI Chat initialized successfully for event', eventId);
+                      
+                      // Check if widget elements are created
+                      setTimeout(() => {
+                        const widgetElements = document.querySelectorAll('[class*="chat"], [id*="chat"], [class*="widget"], [id*="widget"]');
+                        console.log('🔍 Found potential widget elements:', widgetElements.length);
+                        widgetElements.forEach((el, index) => {
+                          console.log(\`Widget element \${index}:\`, el);
+                        });
+                      }, 2000);
+                      
+                    } catch (error) {
+                      console.error('❌ Error initializing Easy AI Chat:', error);
+                    }
+                  } else {
+                    console.warn('⚠️ EasyAIChat object not found, retrying in 100ms...');
+                    setTimeout(initWidget, 100);
+                  }
+                };
+                
+                // Start initialization
+                setTimeout(initWidget, 100);
+                
+              } else {
+                console.log('ℹ️ Easy AI Chat not enabled for event:', eventId);
+              }
+            } else {
+              console.log('ℹ️ Not an insight page, Easy AI Chat not needed');
+            }
+          `}
+        </Script>
       </head>
       <body className={inter.className}>
         <ErrorBoundary>

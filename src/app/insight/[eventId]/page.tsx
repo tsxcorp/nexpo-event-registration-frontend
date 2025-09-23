@@ -55,6 +55,7 @@ export default function InsightAccessPage({ params }: InsightAccessPageProps) {
 
   // Language initialization is handled by useInsightTranslation hook
 
+
   // Animated background with parallax effect
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);

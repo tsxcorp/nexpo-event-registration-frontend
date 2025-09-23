@@ -78,6 +78,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
     type: 'success' | 'error' | 'info';
   }>({ show: false, message: '', type: 'info' });
   
+  
   // Tour system state
   const [isTourActive, setIsTourActive] = useState(false);
   const [currentTourStep, setCurrentTourStep] = useState(0);
@@ -184,6 +185,80 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
 
   // Favorite exhibitors localStorage key
   const getFavoriteStorageKey = () => `nexpo_favorites_${eventId}_${visitorId}`;
+
+  // Load Easy AI Chat widget for specific event
+  useEffect(() => {
+    if (eventId === '4433256000013547003') {
+      console.log('🚀 Loading Easy AI Chat for specific event:', eventId);
+      
+      const loadEasyAIChat = () => {
+        // Check if script is already loaded
+        if (document.querySelector('script[src*="easyaichat.app"]')) {
+          console.log('✅ Easy AI Chat script already loaded');
+          initializeWidget();
+          return;
+        }
+
+        console.log('📦 Loading Easy AI Chat script...');
+        const script = document.createElement('script');
+        script.src = 'https://widget.easyaichat.app/dist/widget/main.js';
+        script.async = true;
+        script.onload = () => {
+          console.log('✅ Easy AI Chat script loaded successfully');
+          initializeWidget();
+        };
+        script.onerror = (error) => {
+          console.error('❌ Failed to load Easy AI Chat script:', error);
+        };
+        
+        document.head.appendChild(script);
+      };
+
+      const initializeWidget = () => {
+        console.log('🔧 Attempting to initialize Easy AI Chat widget...');
+        let retryCount = 0;
+        const maxRetries = 30;
+        
+        const checkAndInit = () => {
+          retryCount++;
+          console.log(`🔄 Checking for EasyAIChat object (attempt ${retryCount}/${maxRetries})`);
+          
+          if (typeof window !== 'undefined' && (window as any).EasyAIChat) {
+            console.log('✅ EasyAIChat object found, initializing...');
+            try {
+              (window as any).EasyAIChat.init({ handle: "nexpovn" });
+              console.log('🎉 Easy AI Chat initialized successfully!');
+              
+              // Check for widget elements after initialization
+              setTimeout(() => {
+                const allElements = document.querySelectorAll('*');
+                console.log('🔍 Total elements on page:', allElements.length);
+                
+                // Look for common chat widget patterns
+                const chatElements = document.querySelectorAll('[class*="chat"], [id*="chat"], [class*="widget"], [class*="ai"], [class*="easy"]');
+                console.log('🔍 Found chat-related elements:', chatElements.length);
+                chatElements.forEach((el, index) => {
+                  console.log(`Chat element ${index}:`, el.tagName, el.className, el.id);
+                });
+              }, 3000);
+              
+            } catch (error) {
+              console.error('❌ Failed to initialize Easy AI Chat widget:', error);
+            }
+          } else if (retryCount < maxRetries) {
+            setTimeout(checkAndInit, 200);
+          } else {
+            console.error('❌ EasyAIChat object not found after maximum retries');
+          }
+        };
+        
+        checkAndInit();
+      };
+
+      loadEasyAIChat();
+    }
+  }, [eventId, visitorId]);
+
 
   // Load favorites from localStorage
   useEffect(() => {
@@ -1892,7 +1967,105 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
   };
 
   return (
-          <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-gray-50 relative overflow-hidden smooth-scroll">
+    <>
+      {/* Easy AI Chat Widget - Direct HTML approach for specific event */}
+      {eventId === '4433256000013547003' && (
+        <>
+          <script src="https://widget.easyaichat.app/dist/widget/main.js"></script>
+          <script dangerouslySetInnerHTML={{
+            __html: `
+              console.log('🚀 Loading Easy AI Chat for event:', '${eventId}');
+              setTimeout(() => {
+                if (window.EasyAIChat) {
+                  window.EasyAIChat.init({"handle":"nexpovn"});
+                  console.log('🎉 Easy AI Chat initialized successfully!');
+                  
+                  // Add CSS to position widget above navbar with better targeting
+                  const style = document.createElement('style');
+                  style.textContent = \`
+                    /* Easy AI Chat widget positioning - target all possible selectors */
+                    [class*="chat"], 
+                    [class*="widget"], 
+                    [id*="chat"],
+                    [id*="widget"],
+                    [class*="easy"],
+                    [class*="ai"],
+                    iframe[src*="easyaichat"],
+                    div[data-widget],
+                    .easyai-chat-widget,
+                    #easyai-chat-widget {
+                      bottom: 80px !important;
+                      z-index: 90 !important;
+                      right: 16px !important;
+                    }
+                    
+                    /* Ensure navbar stays on top */
+                    .bottom-nav-shadow,
+                    [class*="bottom-nav"],
+                    .fixed.bottom-0 {
+                      z-index: 95 !important;
+                    }
+                    
+                    /* Additional mobile safety */
+                    @media (max-width: 768px) {
+                      [class*="chat"], 
+                      [class*="widget"], 
+                      [id*="chat"],
+                      [id*="widget"],
+                      [class*="easy"],
+                      [class*="ai"],
+                      iframe[src*="easyaichat"],
+                      div[data-widget],
+                      .easyai-chat-widget,
+                      #easyai-chat-widget {
+                        bottom: 80px !important;
+                        z-index: 90 !important;
+                        right: 16px !important;
+                        max-width: calc(100vw - 32px) !important;
+                      }
+                    }
+                  \`;
+                  document.head.appendChild(style);
+                  
+                  // Monitor for widget creation and apply styles directly
+                  const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                      mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === 1) {
+                          const element = node as Element;
+                          // Check if this might be a chat widget
+                          if (element.className?.includes('chat') || 
+                              element.className?.includes('widget') ||
+                              element.id?.includes('chat') ||
+                              element.id?.includes('widget') ||
+                              element.tagName === 'IFRAME' && element.getAttribute('src')?.includes('easyaichat')) {
+                            element.setAttribute('style', 'bottom: 80px !important; z-index: 90 !important; right: 16px !important;');
+                          }
+                          
+                          // Also check child elements
+                          const chatElements = element.querySelectorAll('[class*="chat"], [class*="widget"], [id*="chat"], [id*="widget"], iframe[src*="easyaichat"]');
+                          chatElements.forEach((el) => {
+                            el.setAttribute('style', 'bottom: 80px !important; z-index: 90 !important; right: 16px !important;');
+                          });
+                        }
+                      });
+                    });
+                  });
+                  
+                  observer.observe(document.body, {
+                    childList: true,
+                    subtree: true
+                  });
+                } else {
+                  console.error('❌ EasyAIChat object not found');
+                }
+              }, 1000);
+            `
+          }} />
+        </>
+      )}
+      
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-gray-50 relative overflow-hidden smooth-scroll">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div 
@@ -4988,5 +5161,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
         <PoweredByFooter variant="minimal" className="border-t-0" />
       </div>
     </div>
+
+    </>
   );
 } 
