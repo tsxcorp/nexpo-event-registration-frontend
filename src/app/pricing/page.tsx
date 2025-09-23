@@ -50,7 +50,7 @@ export default function PricingPage() {
     },
     {
       service: 'Lead scanner app (exhibitor)',
-      price: '2 – 5 triệu / booth',
+      price: '200,000 VND / booth / ngày',
       note: 'Thu theo booth đăng ký'
     },
     {
@@ -106,6 +106,21 @@ export default function PricingPage() {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        
+        {/* CTA Section */}
+        <div className="text-center mb-12">
+          <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-4 text-lg font-semibold">
+            <a href="/pricing/estimate" className="flex items-center gap-3">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              Nhận báo giá tự động cho sự kiện của bạn
+            </a>
+          </Button>
+          <p className="text-gray-600 mt-4">
+            Điền thông tin sự kiện và nhận báo giá chính xác trong vài phút
+          </p>
+        </div>
         
         {/* Platform Features Overview */}
         <Card className="mb-8">
@@ -334,15 +349,6 @@ export default function PricingPage() {
           </div>
         </Card>
 
-        {/* Download Section */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3">
-            Tải PDF
-          </Button>
-          <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 px-6 py-3">
-            Xem bản HTML
-          </Button>
-        </div>
       </div>
 
       {/* Footer */}
