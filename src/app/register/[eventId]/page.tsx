@@ -45,10 +45,11 @@ export default function RegisterPage() {
     setLoading(true);
     setError(false);
     
-    eventApi.getEventInfo(eventId)
+    // Test new API endpoint first, fallback to old API if it fails
+    eventApi.getEventInfoRest(eventId)
       .then(res => {
         const event = res.event;
-        console.log('📥 Event data loaded:', { 
+        console.log('✅ /api/events-rest SUCCESS:', { 
           name: event.name, 
           fieldsCount: event.formFields?.length 
         });
@@ -56,7 +57,24 @@ export default function RegisterPage() {
         setError(false);
       })
       .catch(err => {
-        console.error('❌ Failed to load event:', err);
+        console.warn('⚠️ /api/events-rest failed, trying /api/events:', err.message);
+        
+        // Fallback to original API
+        return eventApi.getEventInfo(eventId);
+      })
+      .then(res => {
+        if (res) {
+          const event = res.event;
+          console.log('✅ /api/events SUCCESS (fallback):', { 
+            name: event.name, 
+            fieldsCount: event.formFields?.length 
+          });
+          setOriginalEventData(event);
+          setError(false);
+        }
+      })
+      .catch(err => {
+        console.error('❌ Both APIs failed:', err);
         setError(true);
       })
       .finally(() => setLoading(false));
@@ -71,10 +89,21 @@ export default function RegisterPage() {
         fieldsCount: eventData.formFields?.length,
       });
       
+      // Special banner logging for event 4433256000013547003
+      if (eventId === '4433256000013547003') {
+        console.log('🎯 RegisterPage - Banner check:');
+        console.log('Banner URL:', eventData.banner);
+        console.log('Banner type:', typeof eventData.banner);
+        console.log('Banner empty?', !eventData.banner);
+        console.log('Banner length:', eventData.banner?.length);
+        console.log('Banner starts with http:', eventData.banner?.startsWith('http'));
+        console.log('Banner starts with /:', eventData.banner?.startsWith('/'));
+      }
+      
       // Force re-render by updating key
       setForceUpdateKey(prev => prev + 1);
     }
-  }, [eventData]);
+  }, [eventData, eventId]);
 
   // Register form migration callback
   useEffect(() => {

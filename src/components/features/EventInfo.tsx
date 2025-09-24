@@ -129,6 +129,16 @@ const EventInfo: FC<EventInfoProps> = ({
   const bannerUrl = buildBannerUrl(eventData);
   const logoUrl = buildLogoUrl(eventData);
 
+  // Special logging for event 4433256000013547003
+  if (eventId === '4433256000013547003') {
+    console.log('🎯 EventInfo - Banner processing:');
+    console.log('Raw event.banner:', eventData.banner);
+    console.log('Raw event.header:', eventData.header);
+    console.log('buildBannerUrl result:', bannerUrl);
+    console.log('bannerUrl type:', typeof bannerUrl);
+    console.log('bannerUrl truthy?', !!bannerUrl);
+  }
+
   return (
     <div className="min-h-screen bg-white overflow-hidden">
       {/* Animated Background Elements */}

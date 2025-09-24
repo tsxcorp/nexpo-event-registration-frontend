@@ -145,10 +145,104 @@ export interface EventData {
 }
 
 export const eventApi = {
+  // Test new API endpoint
+  getEventInfoRest: async (eventId: string): Promise<{ event: EventData }> => {
+    try {
+      console.log('🔄 Testing /api/events-rest for eventId:', eventId);
+      const timestamp = Date.now(); // Cache busting
+      const requestUrl = `/api/events-rest/?eventId=${eventId}&_t=${timestamp}`;
+      console.log('🔄 Request URL:', requestUrl);
+      console.log('🔄 API Client base URL:', apiClient.defaults?.baseURL);
+      console.log('🔄 Full request URL:', `${apiClient.defaults?.baseURL}${requestUrl}`);
+      console.log('🔄 Environment variables:');
+      console.log('  - NEXT_PUBLIC_BACKEND_API_URL:', process.env.NEXT_PUBLIC_BACKEND_API_URL);
+      console.log('  - NODE_ENV:', process.env.NODE_ENV);
+      
+      const response = await apiClient.get(requestUrl);
+      
+      console.log('📥 /api/events-rest response:', response.data);
+      
+      // Special logging for event 4433256000013547003
+      if (eventId === '4433256000013547003') {
+        console.log('🎯 Special event banner check:');
+        console.log('Raw response.data:', response.data);
+        console.log('response.data.banner:', response.data.banner);
+        console.log('response.data.event?.banner:', response.data.event?.banner);
+      }
+      
+      // Check if response has event object first
+      let event = response.data.event;
+      
+      // If no event object, try to construct from response.data
+      if (!event && response.data) {
+        event = {
+          id: response.data.id || eventId,
+          name: response.data.name || '',
+          description: response.data.description || '',
+          start_date: response.data.start_date || '',
+          end_date: response.data.end_date || '',
+          banner: response.data.banner || '',
+          logo: response.data.logo || '',
+          header: response.data.header || '',
+          footer: response.data.footer || '',
+          favicon: response.data.favicon || '',
+          email: response.data.email || '',
+          phone: response.data.phone || '',
+          address: response.data.address || '',
+          website: response.data.website || '',
+          formFields: response.data.formFields || [],
+          matching_enabled: response.data.matching_enabled || false,
+          matching_fields: response.data.matching_fields || [],
+          badge_template: response.data.badge_template || '',
+          badge_size: response.data.badge_size || '',
+          badge_printing: response.data.badge_printing || false,
+          ticket_mode: response.data.ticket_mode || false,
+          floor_plan_pdf: response.data.floor_plan_pdf || '',
+          directory_url: response.data.directory_url || ''
+        };
+      }
+      
+      if (!event) {
+        throw new Error('Event not found in /api/events-rest response');
+      }
+      
+      // Special logging for event 4433256000013547003 - final event object
+      if (eventId === '4433256000013547003') {
+        console.log('🎯 Final event object banner:', event.banner);
+        console.log('🎯 Banner type:', typeof event.banner);
+        console.log('🎯 Banner length:', event.banner?.length);
+        console.log('🎯 Banner starts with http:', event.banner?.startsWith('http'));
+      }
+      
+      return { event };
+    } catch (error: any) {
+      console.error('❌ /api/events-rest error - Full error object:', error);
+      console.error('❌ /api/events-rest error - Error type:', typeof error);
+      console.error('❌ /api/events-rest error - Error constructor:', error?.constructor?.name);
+      console.error('❌ /api/events-rest error - Error message:', error?.message);
+      console.error('❌ /api/events-rest error - Error stack:', error?.stack);
+      console.error('❌ /api/events-rest error - Response status:', error?.response?.status);
+      console.error('❌ /api/events-rest error - Response statusText:', error?.response?.statusText);
+      console.error('❌ /api/events-rest error - Response data:', error?.response?.data);
+      console.error('❌ /api/events-rest error - Request config:', error?.config);
+      console.error('❌ /api/events-rest error - Request URL:', error?.config?.url);
+      console.error('❌ /api/events-rest error - Request method:', error?.config?.method);
+      throw error;
+    }
+  },
+
   getEventInfo: async (eventId: string): Promise<{ event: EventData }> => {
     // The backend uses a query parameter for this specific route
     const timestamp = Date.now(); // Cache busting
     const response = await apiClient.get(`/api/events/?eventId=${eventId}&_t=${timestamp}`);
+    
+    // Special logging for event 4433256000013547003
+    if (eventId === '4433256000013547003') {
+      console.log('🎯 OLD API - Special event banner check:');
+      console.log('Raw response.data:', response.data);
+      console.log('response.data.banner:', response.data.banner);
+      console.log('response.data.event?.banner:', response.data.event?.banner);
+    }
     
     // Check if response has event object first
     let event = response.data.event;
@@ -225,6 +319,13 @@ export const eventApi = {
       }
     }
     
+    // Special logging for event 4433256000013547003 - final event object (OLD API)
+    if (eventId === '4433256000013547003') {
+      console.log('🎯 OLD API - Final event object banner:', event.banner);
+      console.log('🎯 OLD API - Banner type:', typeof event.banner);
+      console.log('🎯 OLD API - Banner length:', event.banner?.length);
+      console.log('🎯 OLD API - Banner starts with http:', event.banner?.startsWith('http'));
+    }
 
     
     return { event };
