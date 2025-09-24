@@ -56,10 +56,11 @@ export default function EmbedGeneratorPage() {
     setLoading(true);
     setError(false);
     
-    eventApi.getEventInfo(eventId)
+    // Test new API endpoint first, fallback to old API if it fails
+    eventApi.getEventInfoRest(eventId)
       .then(res => {
         const event = res.event;
-        console.log('📥 Event data loaded for embed:', { 
+        console.log('✅ /api/events-rest SUCCESS for embed generator:', { 
           name: event.name, 
           fieldsCount: event.formFields?.length 
         });
@@ -67,7 +68,24 @@ export default function EmbedGeneratorPage() {
         setError(false);
       })
       .catch(err => {
-        console.error('❌ Failed to load event for embed:', {
+        console.warn('⚠️ /api/events-rest failed for embed generator, trying /api/events:', err.message);
+        
+        // Fallback to original API
+        return eventApi.getEventInfo(eventId);
+      })
+      .then(res => {
+        if (res) {
+          const event = res.event;
+          console.log('✅ /api/events SUCCESS (fallback) for embed generator:', { 
+            name: event.name, 
+            fieldsCount: event.formFields?.length 
+          });
+          setOriginalEventData(event);
+          setError(false);
+        }
+      })
+      .catch(err => {
+        console.error('❌ Both APIs failed for embed generator:', {
           error: err.message,
           code: err.code,
           status: err.response?.status,
@@ -86,6 +104,12 @@ export default function EmbedGeneratorPage() {
             start_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
             end_date: new Date(Date.now() + 32 * 24 * 60 * 60 * 1000).toISOString(),
             location: 'Convention Center - Hall A',
+            registration_form: [],
+            status: 'active',
+            created_date: new Date().toISOString(),
+            badge_size: 'W106mm x H146mm',
+            badge_printing: true,
+            ticket_mode: false,
             formFields: [
               {
                 sort: 1,
@@ -656,3 +680,4 @@ ${config.autoResize ? `
     </div>
   );
 }
+

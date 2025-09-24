@@ -46,10 +46,11 @@ export default function EmbedFormPage() {
     setLoading(true);
     setError(false);
     
-    eventApi.getEventInfo(eventId)
+    // Test new API endpoint first, fallback to old API if it fails
+    eventApi.getEventInfoRest(eventId)
       .then(res => {
         const event = res.event;
-        console.log('📥 Event data loaded for embed form:', { 
+        console.log('✅ /api/events-rest SUCCESS for embed form:', { 
           name: event.name, 
           fieldsCount: event.formFields?.length 
         });
@@ -57,7 +58,24 @@ export default function EmbedFormPage() {
         setError(false);
       })
       .catch(err => {
-        console.error('❌ Failed to load event for embed form:', {
+        console.warn('⚠️ /api/events-rest failed for embed form, trying /api/events:', err.message);
+        
+        // Fallback to original API
+        return eventApi.getEventInfo(eventId);
+      })
+      .then(res => {
+        if (res) {
+          const event = res.event;
+          console.log('✅ /api/events SUCCESS (fallback) for embed form:', { 
+            name: event.name, 
+            fieldsCount: event.formFields?.length 
+          });
+          setOriginalEventData(event);
+          setError(false);
+        }
+      })
+      .catch(err => {
+        console.error('❌ Both APIs failed for embed form:', {
           error: err.message,
           code: err.code,
           status: err.response?.status,
@@ -395,3 +413,4 @@ export default function EmbedFormPage() {
     </div>
   );
 }
+
