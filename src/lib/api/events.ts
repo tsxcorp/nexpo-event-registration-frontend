@@ -199,9 +199,9 @@ export const eventApi = {
   },
 
   getEventInfo: async (eventId: string): Promise<{ event: EventData }> => {
-    // The backend uses a query parameter for this specific route
+    // Use REST API with proxy images to avoid Mixed Content issues
     const timestamp = Date.now(); // Cache busting
-    const response = await apiClient.get(`/api/events/?eventId=${eventId}&_t=${timestamp}`);
+    const response = await apiClient.get(`/api/events-rest/?eventId=${eventId}&_t=${timestamp}`);
     
     
     // Check if response has event object first
@@ -285,9 +285,9 @@ export const eventApi = {
   },
 
   getAllEvents: async (): Promise<{ events: EventData[] }> => {
-    // Get all events using NEXPO parameter with detailed=true for accurate data
+    // Use REST API with proxy images to avoid Mixed Content issues
     const timestamp = Date.now(); // Cache busting
-    const response = await apiClient.get(`/api/events/?eventId=NEXPO&detailed=true&_t=${timestamp}`);
+    const response = await apiClient.get(`/api/events-rest/?eventId=NEXPO&detailed=true&_t=${timestamp}`);
     
 
     
@@ -347,8 +347,8 @@ export const eventApi = {
   },
 
   getAllEventsBasic: async (): Promise<{ events: EventData[] }> => {
-    // Get all events without detailed=true for faster loading
-    const response = await apiClient.get(`/api/events/?eventId=NEXPO`);
+    // Use REST API with proxy images to avoid Mixed Content issues
+    const response = await apiClient.get(`/api/events-rest/?eventId=NEXPO`);
     
 
     
