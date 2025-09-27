@@ -20,6 +20,98 @@ interface CheckinPageProps {
   }>;
 }
 
+// QR Code Component using local qrcode library
+const QRCodeComponent = ({ qrData, imageSize }: { qrData: string; imageSize: string }) => {
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const [isGenerating, setIsGenerating] = useState(true);
+  
+  useEffect(() => {
+    const generateQR = async () => {
+      try {
+        const dataUrl = await QRCode.toDataURL(qrData, {
+          width: 200,
+          margin: 1,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          },
+          errorCorrectionLevel: 'M'
+        });
+        setQrDataUrl(dataUrl);
+        setIsGenerating(false);
+        console.log('✅ QR Code generated successfully with local library');
+      } catch (error) {
+        console.error('❌ QR Code generation failed:', error);
+        setIsGenerating(false);
+      }
+    };
+    
+    generateQR();
+  }, [qrData]);
+  
+  if (isGenerating) {
+    // Show loading state
+    return (
+      <div style={{
+        width: imageSize,
+        height: imageSize,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        border: '2px solid #ccc',
+        fontSize: imageSize === '26mm' ? '8px' : '6px',
+        textAlign: 'center' as const,
+        color: '#666',
+        padding: '1mm',
+        background: '#f8f9fa',
+        fontWeight: 'bold'
+      }}>
+        Loading QR...
+      </div>
+    );
+  }
+  
+  if (!qrDataUrl) {
+    // Show fallback
+    return (
+      <div style={{
+        width: imageSize,
+        height: imageSize,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        border: '2px solid #ccc',
+        fontSize: imageSize === '26mm' ? '8px' : '6px',
+        textAlign: 'center' as const,
+        color: '#666',
+        padding: '1mm',
+        background: '#f8f9fa',
+        fontWeight: 'bold'
+      }}>
+        QR<br/><small style={{wordBreak: 'break-all', lineHeight: 1.1}}>{qrData.slice(-12)}</small>
+      </div>
+    );
+  }
+  
+  return (
+    <img 
+      src={qrDataUrl}
+      alt={`QR Code: ${qrData}`}
+      style={{
+        width: imageSize,
+        height: imageSize,
+        objectFit: 'contain'
+      }}
+      onLoad={() => {
+        console.log('✅ QR Code loaded successfully from local library');
+      }}
+      onError={() => {
+        console.error('❌ QR Code image failed to load');
+      }}
+    />
+  );
+};
+
 export default function CheckinPage({ params }: CheckinPageProps) {
   const { eventId } = use(params);
   const router = useRouter();
@@ -136,6 +228,24 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         console.log('🖨️ Badge printing setting:', {
           badge_printing: response.event.badge_printing,
           enabled: !!response.event.badge_printing
+        });
+        console.log('🔒 One-time check-in setting:', {
+          one_time_check_in: response.event.one_time_check_in,
+          enabled: !!response.event.one_time_check_in
+        });
+        console.log('🔍 Full event data for debugging:', {
+          eventId: eventId,
+          eventData: response.event,
+          allKeys: Object.keys(response.event)
+        });
+        console.log('🔍 One-time check-in field check:', {
+          hasOneTimeCheckIn: 'one_time_check_in' in response.event,
+          oneTimeCheckInValue: response.event.one_time_check_in,
+          oneTimeCheckInType: typeof response.event.one_time_check_in,
+          oneTimeCheckInUndefined: response.event.one_time_check_in === undefined,
+          oneTimeCheckInNull: response.event.one_time_check_in === null,
+          oneTimeCheckInFalse: response.event.one_time_check_in === false,
+          oneTimeCheckInTrue: response.event.one_time_check_in === true
         });
         
         // Trigger entrance animation
@@ -385,6 +495,46 @@ export default function CheckinPage({ params }: CheckinPageProps) {
             }
             
             try {
+              // Check one-time check-in restriction for group visitors
+              if (eventData?.one_time_check_in) {
+                const checkInHistory = (visitor as any)?.check_in_history;
+                console.log(`🔒 One-time check-in check for visitor ${i + 1}:`, {
+                  name: visitor.name,
+                  visitorId: visitor.id,
+                  hasHistory: !!checkInHistory,
+                  historyLength: checkInHistory?.length || 0,
+                  history: checkInHistory,
+                  isArray: Array.isArray(checkInHistory),
+                  type: typeof checkInHistory
+                });
+                
+                if (checkInHistory && Array.isArray(checkInHistory)) {
+                  // Filter check-in history for current event only
+                  const currentEventCheckIns = checkInHistory.filter((checkIn: any) => 
+                    String(checkIn.event_id) === String(eventId)
+                  );
+                  
+                  console.log(`🔍 Group visitor ${i + 1} check-in history:`, {
+                    name: visitor.name,
+                    totalCheckIns: checkInHistory.length,
+                    currentEventCheckIns: currentEventCheckIns.length,
+                    currentEventId: eventId,
+                    allEventIds: checkInHistory.map((c: any) => c.event_id)
+                  });
+                  
+                  if (currentEventCheckIns.length >= 1) {
+                    console.log(`🚫 Visitor ${i + 1} already checked in - skipping`);
+                    errorCount++;
+                    results.push({
+                      visitor: visitor.name,
+                      status: 'error',
+                      message: `Đã check-in rồi (${currentEventCheckIns.length} lần) - Event chỉ cho phép 1 lần`
+                    });
+                    continue;
+                  }
+                }
+              }
+              
               // Submit check-in for this visitor
               console.log(`📝 Submitting check-in for visitor ${i + 1}:`, visitor.name);
               await visitorApi.submitCheckin(visitor);
@@ -484,6 +634,96 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         
         // Type guard to ensure this is a single visitor response
         const visitorResponse = response as VisitorResponse;
+        
+        // Check one-time check-in restriction
+        console.log('🔒 One-time check-in validation:', {
+          eventId: eventId,
+          eventOneTimeCheckIn: eventData?.one_time_check_in,
+          visitorId: visitorResponse.visitor.id,
+          visitorName: visitorResponse.visitor.name,
+          visitorData: visitorResponse.visitor
+        });
+        console.log('🔍 One-time check-in condition check:', {
+          eventDataExists: !!eventData,
+          oneTimeCheckInField: eventData?.one_time_check_in,
+          conditionResult: !!eventData?.one_time_check_in,
+          willEnterIfBlock: !!(eventData?.one_time_check_in)
+        });
+        
+        if (eventData?.one_time_check_in) {
+          const checkInHistory = (visitorResponse.visitor as any)?.check_in_history;
+          console.log('🔒 One-time check-in enabled, checking history:', {
+            hasHistory: !!checkInHistory,
+            historyLength: checkInHistory?.length || 0,
+            history: checkInHistory,
+            isArray: Array.isArray(checkInHistory),
+            type: typeof checkInHistory
+          });
+          
+          // Debug: Check all possible check-in history field names
+          const possibleHistoryFields = [
+            'check_in_history',
+            'checkin_history', 
+            'checkInHistory',
+            'checkinHistory',
+            'history',
+            'check_ins',
+            'checkins'
+          ];
+          
+          console.log('🔍 Checking all possible check-in history fields:');
+          possibleHistoryFields.forEach(field => {
+            const value = (visitorResponse.visitor as any)?.[field];
+            if (value !== undefined && value !== null) {
+              console.log(`  ${field}:`, {
+                value: value,
+                type: typeof value,
+                isArray: Array.isArray(value),
+                length: Array.isArray(value) ? value.length : 'N/A'
+              });
+            }
+          });
+          
+          if (checkInHistory && Array.isArray(checkInHistory)) {
+            // Filter check-in history for current event only
+            const currentEventCheckIns = checkInHistory.filter((checkIn: any) => 
+              String(checkIn.event_id) === String(eventId)
+            );
+            
+            console.log('🔍 Check-in history analysis:', {
+              totalCheckIns: checkInHistory.length,
+              currentEventCheckIns: currentEventCheckIns.length,
+              currentEventId: eventId,
+              allEventIds: checkInHistory.map((c: any) => c.event_id)
+            });
+            
+            if (currentEventCheckIns.length >= 1) {
+              console.log('🚫 Visitor already checked in - one-time restriction active');
+              setError(`❌ Visitor đã check-in rồi!\n\n• Visitor: ${visitorResponse.visitor.name}\n• Số lần check-in: ${currentEventCheckIns.length}\n• Event này chỉ cho phép check-in 1 lần\n\n💡 Liên hệ ban tổ chức nếu cần hỗ trợ.`);
+              setIsProcessing(false);
+              
+              // Reset input immediately for one-time restriction
+              setManualInput('');
+              console.log('🔄 Input reset after one-time check-in restriction');
+              
+              // Strong haptic feedback for restriction violation
+              if ('vibrate' in navigator) {
+                navigator.vibrate([200, 100, 200, 100, 200]);
+              }
+              
+              return;
+            }
+          }
+        } else {
+          console.log('ℹ️ One-time check-in is NOT enabled for this event, allowing check-in');
+          console.log('🔍 One-time check-in disabled details:', {
+            eventData: !!eventData,
+            oneTimeCheckIn: eventData?.one_time_check_in,
+            reason: eventData?.one_time_check_in === undefined ? 'Field not found in event data' : 
+                   eventData?.one_time_check_in === false ? 'Field is false' : 
+                   eventData?.one_time_check_in === null ? 'Field is null' : 'Unknown reason'
+          });
+        }
         
         // Submit check-in to Zoho Creator
         try {
@@ -701,14 +941,6 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   useEffect(() => {
     if (showSuccessScreen && visitor) {
       console.log('🎉 Success screen is now visible with visitor:', visitor);
-      console.log('🎯 Attempting to call generateBadgeContent...');
-      // Test direct call
-      try {
-        const testBadge = generateBadgeContent(visitor);
-        console.log('🎨 Badge content generated:', testBadge);
-      } catch (error) {
-        console.error('❌ Error generating badge content:', error);
-      }
     }
   }, [showSuccessScreen, visitor]);
 
@@ -805,52 +1037,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     };
   };
 
-  // Generate QR image with fallback (no React hooks)
-  const generateQRImage = (qrData: string, imageSize: string = '18mm') => {
-    console.log('🔥 Generating QR image for data:', qrData, 'size:', imageSize);
-    
-    // Primary QR API
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`;
-    console.log('🔗 QR API URL:', qrUrl);
-    
-    return (
-      <img 
-        src={qrUrl}
-        alt={`QR Code: ${qrData}`}
-        style={{
-          width: imageSize,
-          height: imageSize,
-          objectFit: 'contain'
-        }}
-        onError={(e) => {
-          console.error('❌ QR API failed, showing fallback');
-          // Replace with text fallback
-          const img = e.target as HTMLImageElement;
-          const fallback = document.createElement('div');
-          fallback.style.cssText = `
-            width: ${imageSize};
-            height: ${imageSize};
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid #000;
-            font-size: ${imageSize === '26mm' ? '8px' : '6px'};
-            text-align: center;
-            color: #000;
-            padding: 1mm;
-            background: #fff;
-            font-weight: bold;
-          `;
-          fallback.innerHTML = `QR<br/><small style="word-break: break-all; line-height: 1.1;">${qrData.slice(-12)}</small>`;
-          img.parentNode?.replaceChild(fallback, img);
-        }}
-        onLoad={() => {
-          console.log('✅ QR Code loaded successfully');
-        }}
-      />
-    );
-  };
+
 
   // Generate QR code for visitor  
   const generateQRCode = (visitorData: VisitorData) => {
@@ -893,7 +1080,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         flexShrink: 0,
         position: 'relative'
       }}>
-        {generateQRImage(qrData, qrImageSize)}
+        <QRCodeComponent qrData={qrData} imageSize={qrImageSize} />
       </div>
     );
   };
@@ -960,10 +1147,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
             order: badgeLayout.isVerticalLayout ? 1 : 0,
             flexShrink: 0
           }}>
-            {(() => {
-              console.log('🎯 About to call generateQRCode from generateBadgeContent');
-              return generateQRCode(visitorData);
-            })()}
+            {generateQRCode(visitorData)}
           </div>
           
           {/* Visitor Info */}
@@ -1135,9 +1319,9 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     }
   };
 
-  // Enhanced mobile print with progressive loading
-  const printBadgeWithProgressiveLoading = (visitorData: VisitorData) => {
-    console.log('📱 Using progressive loading for mobile print');
+  // Enhanced mobile print with local QR generation only
+  const printBadgeWithProgressiveLoading = async (visitorData: VisitorData) => {
+    console.log('📱 Using local QR generation for mobile print');
     
     const badgeSize = getBadgeSize();
     const contentHeight = badgeSize.height - 30;
@@ -1152,116 +1336,24 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       return;
     }
     
-    // Try multiple QR sources with Canvas as primary
-    const tryQRGeneration = async () => {
-      try {
-        // Try Canvas QR first (fastest)
-        console.log('🚀 Trying Canvas QR generation first...');
-        const canvasQR = await generateQRFallback(qrData);
-        if (canvasQR) {
-          console.log('✅ Canvas QR generated successfully, using it immediately');
-          printWithQRImage(canvasQR);
-          return;
-        }
-      } catch (error) {
-        console.log('⚠️ Canvas QR failed, trying external APIs...');
+    // Generate QR using local library only (no external APIs)
+    try {
+      console.log('🚀 Generating QR with local library...');
+      const canvasQR = await generateQRFallback(qrData);
+      if (canvasQR) {
+        console.log('✅ Local QR generated successfully, printing immediately');
+        printBadgeWithQR(visitorData, canvasQR);
+        return;
       }
-      
-      // Fallback to external APIs
-      const externalQRSources = [
-        `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}&format=png&ecc=M`,
-        `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encodeURIComponent(qrData)}`
-      ];
-      
-      let currentSourceIndex = 0;
-      
-      const tryNextExternalSource = () => {
-        if (currentSourceIndex >= externalQRSources.length) {
-          console.error('❌ All QR sources failed, using text fallback');
-          printWithTextQR();
-          return;
-        }
-        
-        const qrUrl = externalQRSources[currentSourceIndex];
-        console.log(`🔄 Trying external QR source ${currentSourceIndex + 1}/${externalQRSources.length}`);
-        
-        const testImg = new Image();
-        testImg.crossOrigin = 'anonymous';
-        
-        testImg.onload = () => {
-          if (testImg.complete && testImg.naturalWidth > 0) {
-            console.log(`✅ External QR source ${currentSourceIndex + 1} loaded successfully`);
-            printWithQRImage(qrUrl);
-          } else {
-            console.log(`⚠️ External QR source ${currentSourceIndex + 1} onload fired but not fully loaded, retrying...`);
-            setTimeout(() => {
-              if (testImg.complete && testImg.naturalWidth > 0) {
-                console.log(`✅ External QR source ${currentSourceIndex + 1} verified as loaded`);
-                printWithQRImage(qrUrl);
-              } else {
-                console.log(`❌ External QR source ${currentSourceIndex + 1} failed verification`);
-                testImg.onerror = null;
-                testImg.onload = null;
-                currentSourceIndex++;
-                tryNextExternalSource();
-              }
-            }, 1000);
-          }
-        };
-        
-        testImg.onerror = () => {
-          console.log(`❌ External QR source ${currentSourceIndex + 1} failed, trying next...`);
-          testImg.onerror = null;
-          testImg.onload = null;
-          currentSourceIndex++;
-          setTimeout(tryNextExternalSource, 500);
-        };
-        
-        testImg.src = qrUrl;
-        
-        // Reduced timeout for external APIs
-        let retryCount = 0;
-        const maxRetries = 1;
-        const timeoutDuration = 2000;
-        
-        const timeoutHandler = () => {
-          if (!testImg.complete || testImg.naturalWidth === 0) {
-            retryCount++;
-            console.log(`⏰ External QR source ${currentSourceIndex + 1} attempt ${retryCount}/${maxRetries} timeout`);
-            
-            if (retryCount >= maxRetries) {
-              console.log(`❌ External QR source ${currentSourceIndex + 1} failed after ${maxRetries} attempts`);
-              testImg.onerror = null;
-              testImg.onload = null;
-              currentSourceIndex++;
-              tryNextExternalSource();
-            } else {
-              console.log(`🔄 Retrying external QR source ${currentSourceIndex + 1}...`);
-              testImg.src = qrUrl + '&t=' + Date.now() + '&retry=' + retryCount;
-              setTimeout(timeoutHandler, timeoutDuration);
-            }
-          }
-        };
-        
-        setTimeout(timeoutHandler, timeoutDuration);
-      };
-      
-      tryNextExternalSource();
-    };
+    } catch (error) {
+      console.error('❌ Local QR generation failed:', error);
+    }
     
-    // Start QR generation process
-    tryQRGeneration();
-    
-    const printWithQRImage = (qrUrl: string) => {
-      // ... existing print logic with working QR URL
-      printBadgeWithQR(visitorData, qrUrl);
-    };
-    
-    const printWithTextQR = () => {
-      // Direct print with text QR
-      printBadgeWithTextQR(visitorData, qrData);
-    };
+    // If local generation fails, use text fallback
+    console.log('⚠️ Local QR failed, using text fallback');
+    printBadgeWithTextQR(visitorData, qrData);
   };
+
 
   // Helper function to print with working QR URL
   const printBadgeWithQR = (visitorData: VisitorData, qrUrl: string) => {
@@ -1576,7 +1668,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         ...visitorData,
         badge_qr: finalQrData
       };
-      printBadgeWithProgressiveLoading(updatedVisitorData);
+      await printBadgeWithProgressiveLoading(updatedVisitorData);
       return;
     }
     
@@ -2047,6 +2139,16 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                       </div>
                     )}
                   </div>
+                  
+                  {/* One-time Check-in Status */}
+                  {eventData.one_time_check_in && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <div className="flex items-center gap-1 text-xs text-blue-300">
+                        <Icon name="CheckCircleIcon" className="w-3 h-3" />
+                        <span>Event này chỉ cho phép check-in 1 lần</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -2115,6 +2217,16 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                       <span>
                         {autoPrintEnabled ? 'Auto-print: Bật' : 'Auto-print: Tắt'}
                       </span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* One-time Check-in Status */}
+                {eventData?.one_time_check_in && (
+                  <div className="mt-2 flex items-center justify-center gap-2">
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
+                      <Icon name="CheckCircleIcon" className="w-3 h-3" />
+                      <span>Check-in 1 lần duy nhất</span>
                     </div>
                   </div>
                 )}
