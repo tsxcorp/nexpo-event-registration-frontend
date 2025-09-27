@@ -14,6 +14,11 @@ export function buildImageUrl(imageUrl?: string): string | null {
     return imageUrl;
   }
   
+  // If it contains a full hostname (like railway.app), make it a full URL
+  if (imageUrl.includes('.railway.app') || imageUrl.includes('.com') || imageUrl.includes('.net')) {
+    return `https://${imageUrl}`;
+  }
+  
   // If it's a relative path, prepend the API base URL
   const baseURL = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:3000';
   
