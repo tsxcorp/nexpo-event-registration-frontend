@@ -33,11 +33,6 @@ export function initializeFieldMappings(formFields: FormField[]): void {
     }
   });
   
-  console.log('🗃️ Initialized field ID mappings:', {
-    totalFields: formFields.length,
-    fieldsWithId: fieldIdToLabelMap.size,
-    mappings: Array.from(fieldIdToLabelMap.entries())
-  });
 }
 
 /**
@@ -54,7 +49,6 @@ export function parseCondition(conditionStr: string): Condition | null {
   const match = conditionStr.match(/show\s+if\s+\{([^}]+)\}\s*(=|!=|contains|not_contains)\s*["""]([^"""]+)["""]/i);
   
   if (!match) {
-    console.warn('⚠️ Invalid condition format:', conditionStr);
     return null;
   }
 
@@ -64,12 +58,6 @@ export function parseCondition(conditionStr: string): Condition | null {
   const fieldId = fieldReference.trim();
   const fieldLabel = fieldReference.trim();
 
-  console.log('🔍 Parsed condition:', {
-    originalCondition: conditionStr,
-    fieldReference: fieldReference.trim(),
-    operator: operator as Condition['operator'],
-    value: value.trim() // TRIM THE VALUE HERE!
-  });
 
   return {
     fieldId: fieldId,
@@ -91,22 +79,10 @@ export function evaluateCondition(condition: Condition | null, formValues: Recor
     return true; // No condition means always show
   }
 
-  console.log('🔍 Evaluating condition:', {
-    condition,
-    formValuesKeys: Object.keys(formValues),
-    fieldIdMappings: Array.from(fieldIdToLabelMap.entries()),
-    availableFieldIds: Array.from(fieldIdToLabelMap.keys())
-  });
 
   // Strategy 1: Use field_id if available (most robust)
   if (condition.fieldId && condition.fieldId.trim() !== '') {
     const currentFieldLabel = fieldIdToLabelMap.get(condition.fieldId);
-    console.log('🎯 Strategy 1 - Using field_id:', {
-      fieldId: condition.fieldId,
-      mappedLabel: currentFieldLabel,
-      hasValueInForm: currentFieldLabel ? (formValues[currentFieldLabel] !== undefined) : false,
-      actualValue: currentFieldLabel ? formValues[currentFieldLabel] : 'N/A'
-    });
     
     if (currentFieldLabel && formValues[currentFieldLabel] !== undefined) {
       return evaluateFieldCondition(condition, formValues[currentFieldLabel], condition.fieldId, formFields);

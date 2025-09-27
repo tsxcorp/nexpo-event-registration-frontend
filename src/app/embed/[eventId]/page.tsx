@@ -51,52 +51,30 @@ export default function EmbedGeneratorPage() {
   useEffect(() => {
     if (!eventId) return;
     
-    console.log('🔄 Loading event data for embed generator:', eventId);
-    console.log('🔗 API URL:', process.env.NEXT_PUBLIC_BACKEND_API_URL);
-    setLoading(true);
-    setError(false);
-    
-    // Test new API endpoint first, fallback to old API if it fails
-    eventApi.getEventInfoRest(eventId)
-      .then(res => {
-        const event = res.event;
-        console.log('✅ /api/events-rest SUCCESS for embed generator:', { 
-          name: event.name, 
-          fieldsCount: event.formFields?.length 
-        });
-        setOriginalEventData(event);
-        setError(false);
-      })
-      .catch(err => {
-        console.warn('⚠️ /api/events-rest failed for embed generator, trying /api/events:', err.message);
-        
-        // Fallback to original API
-        return eventApi.getEventInfo(eventId);
-      })
-      .then(res => {
-        if (res) {
+      setLoading(true);
+      setError(false);
+      
+      // Test new API endpoint first, fallback to old API if it fails
+      eventApi.getEventInfoRest(eventId)
+        .then(res => {
           const event = res.event;
-          console.log('✅ /api/events SUCCESS (fallback) for embed generator:', { 
-            name: event.name, 
-            fieldsCount: event.formFields?.length 
-          });
           setOriginalEventData(event);
           setError(false);
-        }
-      })
-      .catch(err => {
-        console.error('❌ Both APIs failed for embed generator:', {
-          error: err.message,
-          code: err.code,
-          status: err.response?.status,
-          url: err.config?.url,
-          baseURL: err.config?.baseURL,
-          isNetworkError: err.code === 'NETWORK_ERROR' || err.message === 'Network Error'
-        });
-        
-        // For development: Use mock data if backend is not available
-        if (err.message === 'Network Error' && process.env.NODE_ENV === 'development') {
-          console.log('🔧 Using mock data for embed generator development');
+        })
+        .catch(err => {
+          // Fallback to original API
+          return eventApi.getEventInfo(eventId);
+        })
+        .then(res => {
+          if (res) {
+            const event = res.event;
+            setOriginalEventData(event);
+            setError(false);
+          }
+        })
+        .catch(err => {
+          // For development: Use mock data if backend is not available
+          if (err.message === 'Network Error' && process.env.NODE_ENV === 'development') {
           const mockEvent: EventData = {
             id: eventId,
             name: 'Sample Technology Exhibition - Embed Generator Demo',
@@ -242,9 +220,7 @@ ${config.autoResize ? `
       await navigator.clipboard.writeText(code);
       setCopied(true);
       setTimeout(() => setCopied(false), 3000);
-      console.log('📋 Embed code copied to clipboard');
     } catch (err) {
-      console.error('❌ Failed to copy embed code:', err);
       // Fallback: create textarea and select
       const textarea = document.createElement('textarea');
       textarea.value = code;
@@ -295,8 +271,6 @@ ${config.autoResize ? `
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
-    console.log('⬇️ HTML file downloaded');
   };
 
   // Modern Icon Component
@@ -578,6 +552,16 @@ ${config.autoResize ? `
                   <h2 className="text-lg font-semibold text-gray-900">
                     Live Preview
                   </h2>
+                  {/* Event Status Indicator */}
+                  {originalEventData?.status && (
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      originalEventData.status === 'Active' || originalEventData.status === 'active'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {originalEventData.status === 'Active' || originalEventData.status === 'active' ? 'Active' : 'Inactive'}
+                    </span>
+                  )}
                 </div>
                 <Button
                   onClick={() => window.open(generateEmbedUrl(), '_blank')}

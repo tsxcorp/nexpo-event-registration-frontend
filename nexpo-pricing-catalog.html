@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NEXPO — Pricing Catalog</title>
+  <style>
+    :root {
+      --primary: #0F62FE;
+      --text: #111827;
+      --muted: #4B5563;
+      --bg: #FFFFFF;
+      --card: #FFFFFF;
+      --border: #E5E7EB;
+      --rowalt: #FAFAFA;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text);
+      background: linear-gradient(180deg, #F8FAFF 0%, #FFFFFF 60%);
+    }
+    .container { max-width: 960px; margin: 40px auto; padding: 0 20px; }
+    .hero { padding: 24px 24px 8px; border-radius: 20px; }
+    .title { font-size: 32px; font-weight: 800; color: var(--primary); margin: 0 0 6px; }
+    .subtitle { color: var(--muted); margin: 0 0 16px; }
+    .updated { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      margin: 16px 0;
+      box-shadow: 0 8px 24px rgba(15, 98, 254, 0.06);
+    }
+    h2 { font-size: 20px; margin: 0 0 12px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 10px 12px; border: 1px solid var(--border); }
+    th { background: #F3F4F6; font-weight: 700; }
+    tr:nth-child(even) td { background: var(--rowalt); }
+    .caption { color: var(--muted); font-size: 14px; margin-top: 8px; }
+    .footer { color: var(--muted); font-size: 13px; margin-top: 12px; }
+    .badge { display: inline-block; background: #EEF2FF; color: #3730A3; border: 1px solid #C7D2FE; padding: 4px 10px; border-radius: 999px; font-size: 12px; }
+    .download { margin-top: 16px; display: flex; gap: 10px; }
+    .btn {
+      display: inline-block; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--primary);
+      color: white; background: var(--primary); text-decoration: none; font-weight: 600;
+    }
+    .btn.secondary { background: white; color: var(--primary); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <div class="badge">NEXPO Pricing</div>
+      <h1 class="title">Pricing Catalog</h1>
+      <p class="subtitle">Full-features + Onsite services menu</p>
+      <p class="updated">Cập nhật: 23/09/2025</p>
+    </section>
+    
+    <section class="card">
+      <h2>1) SaaS Fee theo loại sự kiện</h2>
+      <table>
+        <thead>
+          <tr><th>Loại sự kiện</th><th>Quy mô tham khảo</th><th>Gói SaaS (Full Features)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Event</td><td>300 – 2.000 khách</td><td><b>10 – 15 triệu VND / sự kiện</b></td></tr>
+          <tr><td>Conference</td><td>500 – 5.000 khách</td><td><b>18 – 25 triệu VND / sự kiện</b></td></tr>
+          <tr><td>Exhibition</td><td>2.000 – 20.000+ khách</td><td><b>25 – 40 triệu VND / sự kiện</b></td></tr>
+        </tbody>
+      </table>
+      <p class="caption">Bao gồm: registration, ticketing, landing page, QR check-in, exhibitor/sponsor portal, session & speaker, website builder, email/SMS automation, báo cáo.</p>
+    </section>
+
+    <section class="card">
+      <h2>2) Onsite Services (thuê theo nhu cầu)</h2>
+      <table>
+        <thead>
+          <tr><th>Dịch vụ / Thiết bị</th><th>Đơn giá tham khảo</th><th>Ghi chú</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Máy quét QR cầm tay</td><td>1 – 1.5 triệu / thiết bị / ngày</td><td>Gợi ý 3–20 thiết bị tuỳ quy mô</td></tr>
+          <tr><td>Máy in badge onsite</td><td>2 – 3 triệu / máy / ngày</td><td>Gợi ý 2–10 máy</td></tr>
+          <tr><td>Vật tư in ấn (mực + giấy badge)</td><td>5.000 – 7.000đ / badge</td><td>Tính theo số lượng khách</td></tr>
+          <tr><td>Kiosk self check-in</td><td>5 – 7 triệu / kiosk / ngày</td><td>Gợi ý 2–10 kiosk</td></tr>
+          <tr><td>Nhân sự onsite support</td><td>1.5 – 2.5 triệu / người / ngày</td><td>Gợi ý 2–15 người</td></tr>
+          <tr><td>Lead scanner app (exhibitor)</td><td>2 – 5 triệu / booth</td><td>Thu theo booth đăng ký</td></tr>
+          <tr><td>White-label domain + branding</td><td>15 – 30 triệu / gói</td><td>Thiết lập một lần</td></tr>
+          <tr><td>Tích hợp CRM/MA nâng cao</td><td>10 – 20 triệu / gói</td><td>Thiết lập một lần</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>3) Gói trọn gói (ước lượng trung bình)</h2>
+      <table>
+        <thead>
+          <tr><th>Gói trọn gói</th><th>Khoảng giá</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Event (300–2.000 khách)</td><td><b>25 – 45 triệu / sự kiện</b></td></tr>
+          <tr><td>Conference (500–5.000 khách)</td><td><b>60 – 100 triệu / sự kiện</b></td></tr>
+          <tr><td>Exhibition (2.000–20.000+ khách)</td><td><b>180 – 400 triệu / sự kiện</b></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>4) Gói thuê bao (Multi-Event Plan)</h2>
+      <table>
+        <thead>
+          <tr><th>Mục</th><th>Chi tiết</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Monthly SaaS</td><td>12 – 18 triệu VND / tháng (bao gồm 1 event active, 2.000 registrants)</td></tr>
+          <tr><td>Event vượt</td><td>+8 – 12 triệu / sự kiện</td></tr>
+          <tr><td>Conference vượt</td><td>+12 – 15 triệu / sự kiện</td></tr>
+          <tr><td>Exhibition vượt</td><td>+20 – 25 triệu / sự kiện</td></tr>
+          <tr><td>Registrant vượt</td><td>+2.000 – 3.000đ / người</td></tr>
+        </tbody>
+      </table>
+      <p class="footer">Ghi chú: Giá có thể thay đổi theo địa điểm, thời gian, số ngày, số lượng thiết bị/nhân sự. Phí ticketing có thể áp dụng theo % doanh thu (2–3%) với trần phí theo từng deal. Chưa bao gồm VAT.</p>
+    </section>
+
+    <section class="download">
+      <a class="btn" href="nexpo-pricing-catalog.pdf" download>Tải PDF</a>
+      <a class="btn secondary" href="nexpo-pricing-catalog.html">Xem bản HTML</a>
+    </section>
+  </div>
+</body>
+</html>

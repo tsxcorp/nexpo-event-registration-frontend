@@ -41,51 +41,30 @@ export default function EmbedFormPage() {
   useEffect(() => {
     if (!eventId) return;
     
-    console.log('🔄 Loading event data for embed form:', eventId);
-    console.log('🔗 API URL:', process.env.NEXT_PUBLIC_BACKEND_API_URL);
-    setLoading(true);
-    setError(false);
-    
-    // Test new API endpoint first, fallback to old API if it fails
-    eventApi.getEventInfoRest(eventId)
-      .then(res => {
-        const event = res.event;
-        console.log('✅ /api/events-rest SUCCESS for embed form:', { 
-          name: event.name, 
-          fieldsCount: event.formFields?.length 
-        });
-        setOriginalEventData(event);
-        setError(false);
-      })
-      .catch(err => {
-        console.warn('⚠️ /api/events-rest failed for embed form, trying /api/events:', err.message);
-        
-        // Fallback to original API
-        return eventApi.getEventInfo(eventId);
-      })
-      .then(res => {
-        if (res) {
+      setLoading(true);
+      setError(false);
+      
+      // Test new API endpoint first, fallback to old API if it fails
+      eventApi.getEventInfoRest(eventId)
+        .then(res => {
           const event = res.event;
-          console.log('✅ /api/events SUCCESS (fallback) for embed form:', { 
-            name: event.name, 
-            fieldsCount: event.formFields?.length 
-          });
           setOriginalEventData(event);
           setError(false);
-        }
-      })
-      .catch(err => {
-        console.error('❌ Both APIs failed for embed form:', {
-          error: err.message,
-          code: err.code,
-          status: err.response?.status,
-          url: err.config?.url,
-          baseURL: err.config?.baseURL
-        });
-        
-        // For development: Use mock data if backend is not available
-        if (err.message === 'Network Error' && process.env.NODE_ENV === 'development') {
-          console.log('🔧 Using mock data for embed form development');
+        })
+        .catch(err => {
+          // Fallback to original API
+          return eventApi.getEventInfo(eventId);
+        })
+        .then(res => {
+          if (res) {
+            const event = res.event;
+            setOriginalEventData(event);
+            setError(false);
+          }
+        })
+        .catch(err => {
+          // For development: Use mock data if backend is not available
+          if (err.message === 'Network Error' && process.env.NODE_ENV === 'development') {
           const mockEvent: EventData = {
             id: eventId,
             name: 'Sample Technology Exhibition - Embed Demo',
@@ -209,7 +188,6 @@ export default function EmbedFormPage() {
 
   const handleLanguageChange = async (newLanguage: string) => {
     if (originalEventData) {
-      console.log('🔄 Language change in embed:', { from: currentLanguage, to: newLanguage });
       await translateEventData(newLanguage);
     }
   };
@@ -380,18 +358,36 @@ export default function EmbedFormPage() {
           </div>
         )}
 
-        {/* Registration Form */}
-        <div className="registration-form-container">
-          <RegistrationForm
-            fields={displayData.formFields || []}
-            eventId={eventId}
-            eventData={displayData}
-            currentLanguage={currentLanguage}
-            onRegisterFormMigration={setFormMigrationCallback}
-            isEmbedded={true}
-            embedConfig={embedConfig}
-          />
-        </div>
+        {/* Registration Form or Inactive Message */}
+        {displayData.status === 'Active' || displayData.status === 'active' || !displayData.status ? (
+          <div className="registration-form-container">
+            <RegistrationForm
+              fields={displayData.formFields || []}
+              eventId={eventId}
+              eventData={displayData}
+              currentLanguage={currentLanguage}
+              onRegisterFormMigration={setFormMigrationCallback}
+              isEmbedded={true}
+              embedConfig={embedConfig}
+            />
+          </div>
+        ) : (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg shadow-lg p-6">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-yellow-800 mb-2">
+                Sự kiện tạm thời không khả dụng
+              </h3>
+              <p className="text-yellow-700 text-sm">
+                Đăng ký cho sự kiện này hiện tại không khả dụng. Vui lòng quay lại sau.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Footer (if enabled) */}
         {embedConfig.showFooter && (

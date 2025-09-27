@@ -168,7 +168,6 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
   // Language change handler
   const handleLanguageChange = async (newLanguage: string) => {
     if (originalEventData && (newLanguage === 'en' || newLanguage === 'vi')) {
-      console.log('🔄 Language change requested:', { from: currentLanguage, to: newLanguage });
       await translateEventData(newLanguage as 'en' | 'vi');
     }
   };
@@ -189,66 +188,44 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
   // Load Easy AI Chat widget for specific event
   useEffect(() => {
     if (eventId === '4433256000013547003') {
-      console.log('🚀 Loading Easy AI Chat for specific event:', eventId);
       
       const loadEasyAIChat = () => {
         // Check if script is already loaded
         if (document.querySelector('script[src*="easyaichat.app"]')) {
-          console.log('✅ Easy AI Chat script already loaded');
           initializeWidget();
           return;
         }
 
-        console.log('📦 Loading Easy AI Chat script...');
         const script = document.createElement('script');
         script.src = 'https://widget.easyaichat.app/dist/widget/main.js';
         script.async = true;
         script.onload = () => {
-          console.log('✅ Easy AI Chat script loaded successfully');
           initializeWidget();
         };
         script.onerror = (error) => {
-          console.error('❌ Failed to load Easy AI Chat script:', error);
+          // Silent error handling
         };
         
         document.head.appendChild(script);
       };
 
       const initializeWidget = () => {
-        console.log('🔧 Attempting to initialize Easy AI Chat widget...');
         let retryCount = 0;
         const maxRetries = 30;
         
         const checkAndInit = () => {
           retryCount++;
-          console.log(`🔄 Checking for EasyAIChat object (attempt ${retryCount}/${maxRetries})`);
           
           if (typeof window !== 'undefined' && (window as any).EasyAIChat) {
-            console.log('✅ EasyAIChat object found, initializing...');
             try {
               (window as any).EasyAIChat.init({ handle: "nexpovn" });
-              console.log('🎉 Easy AI Chat initialized successfully!');
               
-              // Check for widget elements after initialization
-              setTimeout(() => {
-                const allElements = document.querySelectorAll('*');
-                console.log('🔍 Total elements on page:', allElements.length);
-                
-                // Look for common chat widget patterns
-                const chatElements = document.querySelectorAll('[class*="chat"], [id*="chat"], [class*="widget"], [class*="ai"], [class*="easy"]');
-                console.log('🔍 Found chat-related elements:', chatElements.length);
-                chatElements.forEach((el, index) => {
-                  console.log(`Chat element ${index}:`, el.tagName, el.className, el.id);
-                });
-              }, 3000);
               
             } catch (error) {
-              console.error('❌ Failed to initialize Easy AI Chat widget:', error);
+              // Silent error handling
             }
           } else if (retryCount < maxRetries) {
             setTimeout(checkAndInit, 200);
-          } else {
-            console.error('❌ EasyAIChat object not found after maximum retries');
           }
         };
         
@@ -489,7 +466,6 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
   const loadInitialData = async () => {
     // Prevent concurrent calls
     if (isLoadingData) {
-      console.log('🚫 Already loading data, skipping...');
       return;
     }
     
@@ -500,16 +476,12 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       setIsInvalidVisitorId(false);
 
       // Load event data first
-      console.log('🔄 Loading event data for ID:', eventId);
       const eventResponse = await eventApi.getEventInfo(eventId);
-      console.log('📥 Event data loaded:', eventResponse.event);
       setOriginalEventData(eventResponse.event);
 
       // Load visitor data - critical validation step
-      console.log('🔄 Loading visitor data for ID:', visitorId);
       try {
         const visitorResponse = await visitorApi.getVisitorInfo(visitorId);
-        console.log('📥 Visitor data loaded:', visitorResponse.visitor);
         
         // Additional safety check in case API doesn't throw error but returns invalid data
         const visitor = visitorResponse.visitor;

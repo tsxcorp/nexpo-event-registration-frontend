@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
 
     // If eventId is provided, get specific event
     if (eventId) {
-      const response = await fetch(`${process.env.BACKEND_URL}/api/events/?eventId=${eventId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/events/?eventId=${eventId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     }
 
     // If no eventId, get all events using NEXPO
-    const response = await fetch(`${process.env.BACKEND_URL}/api/events/?eventId=NEXPO`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/events/?eventId=NEXPO`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

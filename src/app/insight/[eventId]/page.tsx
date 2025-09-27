@@ -48,7 +48,6 @@ export default function InsightAccessPage({ params }: InsightAccessPageProps) {
   // Language change handler
   const handleLanguageChange = async (newLanguage: string) => {
     if (originalEventData && (newLanguage === 'en' || newLanguage === 'vi')) {
-      console.log('🔄 Language change requested:', { from: currentLanguage, to: newLanguage });
       await translateEventData(newLanguage as 'en' | 'vi');
     }
   };

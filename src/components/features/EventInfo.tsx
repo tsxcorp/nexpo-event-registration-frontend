@@ -69,10 +69,25 @@ const EventInfo: FC<EventInfoProps> = ({
 
   // Format date for display
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
+    let date: Date;
+    
+    // Handle DD/MM/YYYY format
+    if (dateStr.includes('/') && dateStr.split('/').length === 3) {
+      const parts = dateStr.split(' ');
+      const datePart = parts[0]; // "27/08/2025"
+      const timePart = parts[1] || '00:00:00'; // "09:00:00"
+      
+      const [day, month, year] = datePart.split('/');
+      const [hours, minutes, seconds] = timePart.split(':');
+      
+      // Create date in MM/DD/YYYY format for Date constructor
+      date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 
+                     parseInt(hours) || 0, parseInt(minutes) || 0, parseInt(seconds) || 0);
+    } else {
+      date = new Date(dateStr);
+    }
     
     if (isNaN(date.getTime())) {
-      console.warn('Invalid date string, using current date:', dateStr);
       const fallbackDate = new Date();
       if (currentLanguage === 'en') {
         return {
@@ -129,15 +144,6 @@ const EventInfo: FC<EventInfoProps> = ({
   const bannerUrl = buildBannerUrl(eventData);
   const logoUrl = buildLogoUrl(eventData);
 
-  // Special logging for event 4433256000013547003
-  if (eventId === '4433256000013547003') {
-    console.log('🎯 EventInfo - Banner processing:');
-    console.log('Raw event.banner:', eventData.banner);
-    console.log('Raw event.header:', eventData.header);
-    console.log('buildBannerUrl result:', bannerUrl);
-    console.log('bannerUrl type:', typeof bannerUrl);
-    console.log('bannerUrl truthy?', !!bannerUrl);
-  }
 
   return (
     <div className="min-h-screen bg-white overflow-hidden">
@@ -163,14 +169,22 @@ const EventInfo: FC<EventInfoProps> = ({
             <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
               {logoUrl && (
                 <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden bg-gray-100 transform transition-transform duration-300 hover:scale-110 flex-shrink-0">
-                  <Image
-                    src={logoUrl}
-                    alt={`${eventData.name} logo`}
-                    fill
-                    sizes="40px"
-                    className="object-contain p-1"
-                    quality={95}
-                  />
+                  {logoUrl.includes('/api/proxy-image') ? (
+                    <img
+                      src={logoUrl}
+                      alt={`${eventData.name} logo`}
+                      className="w-full h-full object-contain p-1"
+                    />
+                  ) : (
+                    <Image
+                      src={logoUrl}
+                      alt={`${eventData.name} logo`}
+                      fill
+                      sizes="40px"
+                      className="object-contain p-1"
+                      quality={95}
+                    />
+                  )}
                 </div>
               )}
               <h1 className="text-sm sm:text-lg lg:text-xl font-semibold text-gray-900 truncate animate-fade-in">
@@ -195,18 +209,30 @@ const EventInfo: FC<EventInfoProps> = ({
       <section className="relative w-full mt-16 sm:mt-20">
         {bannerUrl ? (
           <div className="relative w-full aspect-[16/9] sm:aspect-[21/9] lg:aspect-[3/1] overflow-hidden">
-            <Image
-              src={bannerUrl}
-              alt={eventData.name}
-              fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 100vw"
-              className="object-cover object-center"
-              quality={95}
-              priority
-              style={{
-                transform: `translateY(${scrollY * 0.2}px)`,
-              }}
-            />
+            {/* Use img tag for proxy URLs to avoid Next.js Image optimization issues */}
+            {bannerUrl.includes('/api/proxy-image') ? (
+              <img
+                src={bannerUrl}
+                alt={eventData.name}
+                className="w-full h-full object-cover object-center"
+                style={{
+                  transform: `translateY(${scrollY * 0.2}px)`,
+                }}
+              />
+            ) : (
+              <Image
+                src={bannerUrl}
+                alt={eventData.name}
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 100vw"
+                className="object-cover object-center"
+                quality={95}
+                priority
+                style={{
+                  transform: `translateY(${scrollY * 0.2}px)`,
+                }}
+              />
+            )}
             {/* Enhanced gradient overlay for better text readability */}
             <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/40"></div>
             
@@ -356,7 +382,7 @@ const EventInfo: FC<EventInfoProps> = ({
           </div>
           
           {/* Registration Form with entrance animation */}
-          {eventId && (
+          {eventId && (eventData.status === 'Active' || eventData.status === 'active' || !eventData.status) && (
             <div className={`bg-white rounded-2xl shadow-xl p-4 md:p-6 transform transition-all duration-1000 delay-500 hover:shadow-2xl ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
               <RegistrationForm 
                 fields={eventData.formFields || []} 
@@ -365,6 +391,25 @@ const EventInfo: FC<EventInfoProps> = ({
                 currentLanguage={currentLanguage}
                 onRegisterFormMigration={onRegisterFormMigration}
               />
+            </div>
+          )}
+          
+          {/* Event Inactive Message */}
+          {eventId && eventData.status && eventData.status !== 'Active' && eventData.status !== 'active' && (
+            <div className={`bg-yellow-50 border border-yellow-200 rounded-2xl shadow-xl p-6 md:p-8 transform transition-all duration-1000 delay-500 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-yellow-800 mb-2">
+                  {i18n[currentLanguage]?.event_inactive_title || 'Sự kiện tạm thời không khả dụng'}
+                </h3>
+                <p className="text-yellow-700">
+                  {i18n[currentLanguage]?.event_inactive_message || 'Đăng ký cho sự kiện này hiện tại không khả dụng. Vui lòng quay lại sau.'}
+                </p>
+              </div>
             </div>
           )}
         </div>
@@ -379,14 +424,22 @@ const EventInfo: FC<EventInfoProps> = ({
               <div className="flex items-center space-x-3">
                 {logoUrl && (
                   <div className="relative w-12 h-12 rounded-full overflow-hidden bg-white">
-                    <Image
-                      src={logoUrl}
-                      alt={`${eventData.name} logo`}
-                      fill
-                      sizes="48px"
-                      className="object-contain p-2"
-                      quality={95}
-                    />
+                    {logoUrl.includes('/api/proxy-image') ? (
+                      <img
+                        src={logoUrl}
+                        alt={`${eventData.name} logo`}
+                        className="w-full h-full object-contain p-2"
+                      />
+                    ) : (
+                      <Image
+                        src={logoUrl}
+                        alt={`${eventData.name} logo`}
+                        fill
+                        sizes="48px"
+                        className="object-contain p-2"
+                        quality={95}
+                      />
+                    )}
                   </div>
                 )}
                 <h3 className="text-xl font-semibold">{eventData.name}</h3>

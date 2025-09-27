@@ -67,6 +67,10 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     status_active: "Đang hoạt động",
     status_ready: "Sẵn sàng",
     
+    // Event Status
+    event_inactive_title: "Sự kiện tạm thời không khả dụng",
+    event_inactive_message: "Đăng ký cho sự kiện này hiện tại không khả dụng. Vui lòng quay lại sau.",
+    
     // QR Section
     qr_mode_personal: "Cá nhân",
     qr_mode_group: "Nhóm", 
@@ -354,6 +358,10 @@ export const i18n: { [lang: string]: { [key: string]: string } } = {
     registered_date: "Registered:",
     status_active: "Active",
     status_ready: "Ready",
+    
+    // Event Status
+    event_inactive_title: "Event Temporarily Unavailable",
+    event_inactive_message: "Registration for this event is currently unavailable. Please check back later.",
     
     // QR Section
     qr_mode_personal: "Personal",

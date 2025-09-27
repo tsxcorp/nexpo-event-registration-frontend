@@ -41,66 +41,36 @@ export default function RegisterPage() {
   useEffect(() => {
     if (!eventId) return;
     
-    console.log('🔄 Loading event data for ID:', eventId);
-    setLoading(true);
-    setError(false);
-    
-    // Test new API endpoint first, fallback to old API if it fails
-    eventApi.getEventInfoRest(eventId)
-      .then(res => {
-        const event = res.event;
-        console.log('✅ /api/events-rest SUCCESS:', { 
-          name: event.name, 
-          fieldsCount: event.formFields?.length 
-        });
-        setOriginalEventData(event);
+        setLoading(true);
         setError(false);
-      })
-      .catch(err => {
-        console.warn('⚠️ /api/events-rest failed, trying /api/events:', err.message);
         
-        // Fallback to original API
-        return eventApi.getEventInfo(eventId);
-      })
-      .then(res => {
-        if (res) {
-          const event = res.event;
-          console.log('✅ /api/events SUCCESS (fallback):', { 
-            name: event.name, 
-            fieldsCount: event.formFields?.length 
-          });
-          setOriginalEventData(event);
-          setError(false);
-        }
-      })
-      .catch(err => {
-        console.error('❌ Both APIs failed:', err);
-        setError(true);
-      })
+        // Test new API endpoint first, fallback to old API if it fails
+        eventApi.getEventInfoRest(eventId)
+          .then(res => {
+            const event = res.event;
+            setOriginalEventData(event);
+            setError(false);
+          })
+          .catch(err => {
+            // Fallback to original API
+            return eventApi.getEventInfo(eventId);
+          })
+          .then(res => {
+            if (res) {
+              const event = res.event;
+              setOriginalEventData(event);
+              setError(false);
+            }
+          })
+          .catch(err => {
+            setError(true);
+          })
       .finally(() => setLoading(false));
   }, [eventId]);
 
-  // Debug: Log eventData changes
+  // Force re-render when eventData changes
   useEffect(() => {
     if (eventData) {
-      console.log('🔄 RegisterPage: eventData updated:', {
-        name: eventData.name,
-        description: eventData.description?.substring(0, 100) + '...',
-        fieldsCount: eventData.formFields?.length,
-      });
-      
-      // Special banner logging for event 4433256000013547003
-      if (eventId === '4433256000013547003') {
-        console.log('🎯 RegisterPage - Banner check:');
-        console.log('Banner URL:', eventData.banner);
-        console.log('Banner type:', typeof eventData.banner);
-        console.log('Banner empty?', !eventData.banner);
-        console.log('Banner length:', eventData.banner?.length);
-        console.log('Banner starts with http:', eventData.banner?.startsWith('http'));
-        console.log('Banner starts with /:', eventData.banner?.startsWith('/'));
-      }
-      
-      // Force re-render by updating key
       setForceUpdateKey(prev => prev + 1);
     }
   }, [eventData, eventId]);
@@ -114,7 +84,6 @@ export default function RegisterPage() {
 
   const handleLanguageChange = async (newLanguage: string) => {
     if (originalEventData) {
-      console.log('🔄 Language change requested:', { from: currentLanguage, to: newLanguage });
       await translateEventData(newLanguage);
     }
   };

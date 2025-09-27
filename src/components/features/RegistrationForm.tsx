@@ -13,7 +13,6 @@ import DynamicFormFields from './DynamicFormFields';
 import SubFormFields from './SubFormFields';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
-import ThankYouPopup from '@/components/common/ThankYouPopup';
 import { i18n } from '@/lib/translation/i18n';
 
 interface FormData {
@@ -81,8 +80,6 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
   const [isNew, setIsNew] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isFreeRegistration, setIsFreeRegistration] = useState(false);
-  const [showThankYouPopup, setShowThankYouPopup] = useState(false);
-  const [popupData, setPopupData] = useState<any>(null);
   
 
   
@@ -498,11 +495,161 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
             Email: coreData.Email
           };
           
-          setPopupData({
-            eventData: popupEventData,
-            registrationData: popupRegistrationData
-          });
-          setShowThankYouPopup(true);
+          // Create popup element and append to body (outside of RegistrationForm)
+          const popupElement = document.createElement('div');
+          popupElement.id = 'thankYouPopup';
+          popupElement.innerHTML = `
+            <div class="fixed inset-0 z-[9999] bg-black/30 flex items-center justify-center p-4 transition-opacity duration-300 opacity-100">
+              <div class="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-md w-full mx-auto max-h-[90vh] overflow-y-auto transform transition-all duration-300 scale-100 translate-y-0">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-4 py-4 rounded-t-3xl text-center">
+                  <div class="w-12 h-12 mx-auto mb-3 bg-white/20 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  </div>
+                  <h2 class="text-lg font-bold text-white mb-1">Đăng ký thành công!</h2>
+                  <p class="text-green-100 text-xs">Cảm ơn bạn đã đăng ký tham gia sự kiện</p>
+                </div>
+
+                <!-- Content -->
+                <div class="px-4 py-4">
+                  ${popupEventData ? `
+                  <!-- Event Info -->
+                  <div class="mb-4">
+                    <h3 class="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                      <div class="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span class="text-blue-600 text-xs">📅</span>
+                      </div>
+                      Thông tin sự kiện
+                    </h3>
+                    <div class="bg-gray-50 rounded-lg p-3 space-y-1">
+                      ${popupEventData.name ? `
+                      <div class="flex items-center gap-2">
+                        <span class="text-gray-600 text-xs font-medium">Sự kiện:</span>
+                        <span class="text-gray-900 font-semibold text-xs">${popupEventData.name}</span>
+                      </div>
+                      ` : ''}
+                      ${popupEventData.date ? `
+                      <div class="flex items-center gap-2">
+                        <span class="text-gray-600 text-xs font-medium">Ngày:</span>
+                        <span class="text-gray-900 text-xs">${popupEventData.date}</span>
+                      </div>
+                      ` : ''}
+                      ${popupEventData.location ? `
+                      <div class="flex items-center gap-2">
+                        <span class="text-gray-600 text-xs font-medium">Địa điểm:</span>
+                        <span class="text-gray-900 text-xs">${popupEventData.location}</span>
+                      </div>
+                      ` : ''}
+                    </div>
+                  </div>
+                  ` : ''}
+
+                  ${popupRegistrationData ? `
+                  <!-- Registration Info -->
+                  <div class="mb-4">
+                    <h3 class="text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                      <div class="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center">
+                        <span class="text-green-600 text-xs">👤</span>
+                      </div>
+                      Thông tin đăng ký
+                    </h3>
+                    <div class="bg-gray-50 rounded-lg p-3 space-y-1">
+                      ${popupRegistrationData.Full_Name ? `
+                      <div class="flex items-center gap-2">
+                        <span class="text-gray-600 text-xs font-medium">Họ tên:</span>
+                        <span class="text-gray-900 font-semibold text-xs">${popupRegistrationData.Full_Name}</span>
+                      </div>
+                      ` : ''}
+                      ${popupRegistrationData.Email ? `
+                      <div class="flex items-center gap-2">
+                        <span class="text-gray-600 text-xs font-medium">Email:</span>
+                        <span class="text-gray-900 text-xs">${popupRegistrationData.Email}</span>
+                      </div>
+                      ` : ''}
+                    </div>
+                  </div>
+                  ` : ''}
+
+                  <!-- Success Message -->
+                  <div class="text-center mb-4">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <p class="text-green-800 text-xs font-medium leading-relaxed">
+                        Bạn sẽ nhận được email xác nhận đăng ký sau khi BTC kiểm tra thông tin thành viên là chính xác. Vui lòng kiểm tra hộp thư của bạn để cập nhật.
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Close Button -->
+                  <div class="text-center">
+                    <button id="closePopupBtn" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-2 rounded-lg font-bold text-xs transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+                      Đóng
+                    </button>
+                  </div>
+
+                  <!-- Auto close countdown -->
+                  <div class="text-center mt-3">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                      <p class="text-blue-700 text-xs font-medium">
+                        Popup sẽ tự động đóng sau <span class="font-bold text-blue-800 ml-1" id="countdown">10</span>s
+                      </p>
+                      <div class="w-full bg-blue-200 rounded-full h-1.5 mt-1.5">
+                        <div id="progress" class="bg-blue-600 h-1.5 rounded-full transition-all duration-1000 ease-linear" style="width: 100%"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+          
+          // Append to body (outside of any component)
+          document.body.appendChild(popupElement);
+          
+          // Add event listeners
+          const closePopup = () => {
+            const popup = document.getElementById('thankYouPopup');
+            if (popup) {
+              popup.remove();
+              // Refresh the page after popup closes
+              window.location.reload();
+            }
+          };
+          
+          // Close button event
+          const closeBtn = popupElement.querySelector('#closePopupBtn');
+          if (closeBtn) {
+            closeBtn.addEventListener('click', closePopup);
+          }
+          
+          // Backdrop click event
+          const backdrop = popupElement.querySelector('.fixed.inset-0');
+          if (backdrop) {
+            backdrop.addEventListener('click', (e) => {
+              if (e.target === backdrop) {
+                closePopup();
+              }
+            });
+          }
+          
+          // Auto close after 10 seconds
+          let countdown = 10;
+          const countdownElement = popupElement.querySelector('#countdown');
+          const progressElement = popupElement.querySelector('#progress');
+          
+          const timer = setInterval(() => {
+            countdown--;
+            if (countdownElement) countdownElement.textContent = countdown.toString();
+            if (progressElement && progressElement instanceof HTMLElement) {
+              progressElement.style.width = (countdown / 10 * 100) + '%';
+            }
+            
+            if (countdown <= 0) {
+              clearInterval(timer);
+              closePopup();
+            }
+          }, 1000);
           
           return; // Exit early, don't continue with normal redirect logic
         }
@@ -1207,20 +1354,6 @@ export default function RegistrationForm({ fields, eventId, eventData, currentLa
           </div>
         )}
 
-        {/* Thank You Popup */}
-        <ThankYouPopup
-          isOpen={showThankYouPopup}
-          onClose={() => {
-            setShowThankYouPopup(false);
-            // Refresh the page after popup closes
-            window.location.reload();
-          }}
-          eventData={popupData?.eventData}
-          registrationData={popupData?.registrationData}
-          currentLanguage={currentLanguage}
-          showCloseButton={true}
-          autoCloseDelay={10000}
-        />
 
       </form>
     </FormProvider>
