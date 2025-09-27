@@ -34,8 +34,14 @@ class TranslationService {
   // Load custom translations from JSON file
   private async loadCustomTranslations() {
     try {
+      // Skip loading during build time (server-side rendering)
+      if (typeof window === 'undefined') {
+        this.customTranslations = {};
+        return;
+      }
+      
       // Use absolute URL for production builds
-      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const baseUrl = window.location.origin;
       const url = `${baseUrl}/api/translations/custom`;
       const response = await fetch(url);
       if (response.ok) {
@@ -53,8 +59,13 @@ class TranslationService {
   // Save custom translations to JSON file
   private async saveCustomTranslations() {
     try {
+      // Skip saving during build time (server-side rendering)
+      if (typeof window === 'undefined') {
+        return;
+      }
+      
       // Use absolute URL for production builds
-      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const baseUrl = window.location.origin;
       const url = `${baseUrl}/api/translations/custom`;
       await fetch(url, {
         method: 'POST',
