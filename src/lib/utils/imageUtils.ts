@@ -15,8 +15,18 @@ export function buildImageUrl(imageUrl?: string): string | null {
   }
   
   // If it's a relative path, prepend the API base URL
-  const result = `${process.env.NEXT_PUBLIC_API_BASE_URL}/uploads/${imageUrl}`;
-  return result;
+  const baseURL = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:3000';
+  
+  // Handle different types of relative paths
+  if (imageUrl.includes('/api/proxy-image')) {
+    // If it's already a proxy-image path, just prepend the base URL
+    const result = `${baseURL}/${imageUrl}`;
+    return result;
+  } else {
+    // For other relative paths, prepend /uploads/
+    const result = `${baseURL}/uploads/${imageUrl}`;
+    return result;
+  }
 }
 
 /**
