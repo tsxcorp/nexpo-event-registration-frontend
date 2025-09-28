@@ -579,13 +579,6 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           names: exhibitorNames
         });
         
-        // Debug exhibitor logos
-        console.log('🖼️ Exhibitor logos debug:', eventResponse.event.exhibitors.map(ex => ({
-          display_name: ex.display_name,
-          company_logo: ex.company_logo,
-          company_logo_type: typeof ex.company_logo,
-          company_logo_length: ex.company_logo?.length
-        })));
         
         setExhibitors(eventResponse.event.exhibitors);
         setFilteredExhibitors(eventResponse.event.exhibitors);

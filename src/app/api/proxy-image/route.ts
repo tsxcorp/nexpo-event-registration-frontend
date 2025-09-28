@@ -6,27 +6,46 @@ export async function GET(request: NextRequest) {
     const recordId = searchParams.get('recordId');
     const fieldName = searchParams.get('fieldName');
     const filename = searchParams.get('filename');
+    const directUrl = searchParams.get('directUrl');
     const format = searchParams.get('format');
     const quality = searchParams.get('quality');
 
-    if (!recordId || !fieldName || !filename) {
+    // Handle both formats: directUrl (production) or recordId/fieldName/filename (local)
+    if (!directUrl && (!recordId || !fieldName || !filename)) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
         { status: 400 }
       );
     }
 
-    // Build backend URL
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:3000';
-    const backendParams = new URLSearchParams({
-      recordId,
-      fieldName,
-      filename,
-      ...(format && { format }),
-      ...(quality && { quality })
-    });
+    // Build backend URL - handle both local and production
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL || 
+                      (process.env.NODE_ENV === 'production' 
+                        ? 'https://nexpo-event-registration-backend-production.up.railway.app'
+                        : 'http://localhost:3000');
     
-    const backendImageUrl = `${backendUrl}/api/proxy-image?${backendParams.toString()}`;
+    let backendImageUrl: string;
+    
+    if (directUrl) {
+      // Production format: directUrl parameter
+      const backendParams = new URLSearchParams({
+        directUrl,
+        ...(format && { format }),
+        ...(quality && { quality })
+      });
+      backendImageUrl = `${backendUrl}/api/proxy-image?${backendParams.toString()}`;
+    } else {
+      // Local format: recordId, fieldName, filename parameters
+      const backendParams = new URLSearchParams({
+        recordId,
+        fieldName,
+        filename,
+        ...(format && { format }),
+        ...(quality && { quality })
+      });
+      backendImageUrl = `${backendUrl}/api/proxy-image?${backendParams.toString()}`;
+    }
+    
     
     // Fetch image from backend
     const response = await fetch(backendImageUrl, {

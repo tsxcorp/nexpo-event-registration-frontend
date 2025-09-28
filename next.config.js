@@ -38,6 +38,12 @@ const nextConfig = {
         port: '3001',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'nexpo-event-registration-backend-production.up.railway.app',
+        port: '',
+        pathname: '/**',
+      },
     ],
     // Enable modern formats
     formats: ['image/webp', 'image/avif'],
