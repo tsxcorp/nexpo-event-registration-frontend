@@ -32,6 +32,15 @@ export default function ZohoImage({
 
   // Build image URL using utility function for consistency
   const processedImageUrl = buildImageUrl(src);
+  
+  // Debug logging for image URL processing
+  console.log('🖼️ ZohoImage debug:', {
+    originalSrc: src,
+    processedUrl: processedImageUrl,
+    hasSrc: !!src,
+    hasProcessedUrl: !!processedImageUrl,
+    imageError: imageError
+  });
 
   // If no src provided, no processed URL, or error occurred, show fallback
   if (!src || !processedImageUrl || imageError) {

@@ -19,8 +19,22 @@ export function buildImageUrl(imageUrl?: string): string | null {
     return `https://${imageUrl}`;
   }
   
+  // If it's a backend proxy-image URL, convert to frontend proxy
+  if (imageUrl.includes('/api/proxy-image') && (imageUrl.startsWith('http://localhost:3000') || imageUrl.startsWith('http://localhost:3001'))) {
+    const url = new URL(imageUrl);
+    const params = new URLSearchParams(url.search);
+    return `/api/proxy-image?${params.toString()}`;
+  }
+  
   // If it's a relative path, prepend the API base URL
   const baseURL = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:3000';
+  
+  // Debug logging
+  console.log('🖼️ buildImageUrl debug:', {
+    originalImageUrl: imageUrl,
+    baseURL: baseURL,
+    envVar: process.env.NEXT_PUBLIC_BACKEND_API_URL
+  });
   
   // Handle different types of relative paths
   if (imageUrl.includes('/api/proxy-image')) {

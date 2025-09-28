@@ -69,7 +69,7 @@ export default function InsightAccessPage({ params }: InsightAccessPageProps) {
         setLoading(true);
         setError('');
         
-        const response = await eventApi.getEventInfo(eventId);
+        const response = await eventApi.getEventInfo(eventId, 'insight');
         setOriginalEventData(response.event);
         
         // Trigger entrance animation

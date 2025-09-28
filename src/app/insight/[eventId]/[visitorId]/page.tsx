@@ -476,7 +476,7 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
       setIsInvalidVisitorId(false);
 
       // Load event data first
-      const eventResponse = await eventApi.getEventInfo(eventId);
+      const eventResponse = await eventApi.getEventInfo(eventId, 'insight');
       setOriginalEventData(eventResponse.event);
 
       // Load visitor data - critical validation step
@@ -578,6 +578,15 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
           count: eventResponse.event.exhibitors.length,
           names: exhibitorNames
         });
+        
+        // Debug exhibitor logos
+        console.log('🖼️ Exhibitor logos debug:', eventResponse.event.exhibitors.map(ex => ({
+          display_name: ex.display_name,
+          company_logo: ex.company_logo,
+          company_logo_type: typeof ex.company_logo,
+          company_logo_length: ex.company_logo?.length
+        })));
+        
         setExhibitors(eventResponse.event.exhibitors);
         setFilteredExhibitors(eventResponse.event.exhibitors);
       } else {

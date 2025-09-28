@@ -54,23 +54,12 @@ export default function EmbedGeneratorPage() {
       setLoading(true);
       setError(false);
       
-      // Test new API endpoint first, fallback to old API if it fails
-      eventApi.getEventInfoRest(eventId)
+      // Use single API endpoint
+      eventApi.getEventInfo(eventId)
         .then(res => {
           const event = res.event;
           setOriginalEventData(event);
           setError(false);
-        })
-        .catch(err => {
-          // Fallback to original API
-          return eventApi.getEventInfo(eventId);
-        })
-        .then(res => {
-          if (res) {
-            const event = res.event;
-            setOriginalEventData(event);
-            setError(false);
-          }
         })
         .catch(err => {
           // For development: Use mock data if backend is not available

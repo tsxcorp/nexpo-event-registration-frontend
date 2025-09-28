@@ -146,62 +146,11 @@ export interface EventData {
 }
 
 export const eventApi = {
-  // Test new API endpoint
-  getEventInfoRest: async (eventId: string): Promise<{ event: EventData }> => {
-    try {
-      const timestamp = Date.now(); // Cache busting
-      const requestUrl = `/api/events-rest/?eventId=${eventId}&_t=${timestamp}`;
-      
-      const response = await apiClient.get(requestUrl);
-      
-      
-      // Check if response has event object first
-      let event = response.data.event;
-      
-      // If no event object, try to construct from response.data
-      if (!event && response.data) {
-        event = {
-          id: response.data.id || eventId,
-          name: response.data.name || '',
-          description: response.data.description || '',
-          start_date: response.data.start_date || '',
-          end_date: response.data.end_date || '',
-          banner: response.data.banner || '',
-          logo: response.data.logo || '',
-          header: response.data.header || '',
-          footer: response.data.footer || '',
-          favicon: response.data.favicon || '',
-          email: response.data.email || '',
-          phone: response.data.phone || '',
-          address: response.data.address || '',
-          website: response.data.website || '',
-          formFields: response.data.formFields || [],
-          matching_enabled: response.data.matching_enabled || false,
-          matching_fields: response.data.matching_fields || [],
-          badge_template: response.data.badge_template || '',
-          badge_size: response.data.badge_size || '',
-          badge_printing: response.data.badge_printing || false,
-          ticket_mode: response.data.ticket_mode || false,
-          floor_plan_pdf: response.data.floor_plan_pdf || '',
-          directory_url: response.data.directory_url || ''
-        };
-      }
-      
-      if (!event) {
-        throw new Error('Event not found in /api/events-rest response');
-      }
-      
-      
-      return { event };
-    } catch (error: any) {
-      throw error;
-    }
-  },
 
-  getEventInfo: async (eventId: string): Promise<{ event: EventData }> => {
-    // Use unified API with automatic fallback (REST API -> Custom API)
+  getEventInfo: async (eventId: string, source: 'frontend' | 'insight' | 'admin' = 'frontend'): Promise<{ event: EventData }> => {
+    // Use unified API with conditional API selection
     const timestamp = Date.now(); // Cache busting
-    const response = await apiClient.get(`/api/events/?eventId=${eventId}&_t=${timestamp}`);
+    const response = await apiClient.get(`/api/events/?eventId=${eventId}&source=${source}&_t=${timestamp}`);
     
     
     // Check if response has event object first
@@ -284,10 +233,10 @@ export const eventApi = {
     return { event };
   },
 
-  getAllEvents: async (): Promise<{ events: EventData[] }> => {
-    // Use unified API with automatic fallback (REST API -> Custom API)
+  getAllEvents: async (source: 'frontend' | 'insight' | 'admin' = 'frontend'): Promise<{ events: EventData[] }> => {
+    // Use unified API with conditional API selection
     const timestamp = Date.now(); // Cache busting
-    const response = await apiClient.get(`/api/events/?eventId=NEXPO&detailed=true&_t=${timestamp}`);
+    const response = await apiClient.get(`/api/events/?eventId=NEXPO&detailed=true&source=${source}&_t=${timestamp}`);
     
 
     
@@ -346,9 +295,9 @@ export const eventApi = {
     return { events };
   },
 
-  getAllEventsBasic: async (): Promise<{ events: EventData[] }> => {
-    // Use unified API with automatic fallback (REST API -> Custom API)
-    const response = await apiClient.get(`/api/events/?eventId=NEXPO`);
+  getAllEventsBasic: async (source: 'frontend' | 'insight' | 'admin' = 'frontend'): Promise<{ events: EventData[] }> => {
+    // Use unified API with conditional API selection
+    const response = await apiClient.get(`/api/events/?eventId=NEXPO&source=${source}`);
     
 
     
