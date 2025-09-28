@@ -199,9 +199,9 @@ export const eventApi = {
   },
 
   getEventInfo: async (eventId: string): Promise<{ event: EventData }> => {
-    // Use REST API with proxy images to avoid Mixed Content issues
+    // Use unified API with automatic fallback (REST API -> Custom API)
     const timestamp = Date.now(); // Cache busting
-    const response = await apiClient.get(`/api/events-rest/?eventId=${eventId}&_t=${timestamp}`);
+    const response = await apiClient.get(`/api/events/?eventId=${eventId}&_t=${timestamp}`);
     
     
     // Check if response has event object first
@@ -285,9 +285,9 @@ export const eventApi = {
   },
 
   getAllEvents: async (): Promise<{ events: EventData[] }> => {
-    // Use REST API with proxy images to avoid Mixed Content issues
+    // Use unified API with automatic fallback (REST API -> Custom API)
     const timestamp = Date.now(); // Cache busting
-    const response = await apiClient.get(`/api/events-rest/?eventId=NEXPO&detailed=true&_t=${timestamp}`);
+    const response = await apiClient.get(`/api/events/?eventId=NEXPO&detailed=true&_t=${timestamp}`);
     
 
     
@@ -347,8 +347,8 @@ export const eventApi = {
   },
 
   getAllEventsBasic: async (): Promise<{ events: EventData[] }> => {
-    // Use REST API with proxy images to avoid Mixed Content issues
-    const response = await apiClient.get(`/api/events-rest/?eventId=NEXPO`);
+    // Use unified API with automatic fallback (REST API -> Custom API)
+    const response = await apiClient.get(`/api/events/?eventId=NEXPO`);
     
 
     
