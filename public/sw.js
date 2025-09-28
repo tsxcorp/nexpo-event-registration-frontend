@@ -118,6 +118,13 @@ async function handleDocumentRequest(request) {
 // Handle static asset requests
 async function handleStaticAssetRequest(request) {
   try {
+    // Skip caching for unsupported schemes (chrome-extension, etc.)
+    if (request.url.startsWith('chrome-extension://') || 
+        request.url.startsWith('moz-extension://') || 
+        request.url.startsWith('safari-extension://')) {
+      return fetch(request);
+    }
+    
     // Try cache first
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
@@ -127,11 +134,15 @@ async function handleStaticAssetRequest(request) {
     // If not in cache, fetch from network
     const networkResponse = await fetch(request);
     
-    // Cache the response
-    const responseClone = networkResponse.clone();
-    caches.open(DYNAMIC_CACHE).then(cache => {
-      cache.put(request, responseClone);
-    });
+    // Cache the response (only for supported schemes)
+    if (!request.url.startsWith('chrome-extension://') && 
+        !request.url.startsWith('moz-extension://') && 
+        !request.url.startsWith('safari-extension://')) {
+      const responseClone = networkResponse.clone();
+      caches.open(DYNAMIC_CACHE).then(cache => {
+        cache.put(request, responseClone);
+      });
+    }
     
     return networkResponse;
   } catch (error) {
