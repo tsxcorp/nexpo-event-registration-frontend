@@ -44,6 +44,12 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'creatorexport.zoho.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
     // Enable modern formats
     formats: ['image/webp', 'image/avif'],

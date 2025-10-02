@@ -3900,17 +3900,14 @@ export default function InsightDashboardPage({ params }: DashboardPageProps) {
                                           >
                                             {/* Square container for better banner display */}
                                             <div className="w-full aspect-square relative">
-                                              <img
+                                              <ZohoImage
                                                 src={session.session_banner}
                                                 alt={`${session.title} banner`}
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                  // Hide the entire banner container if image fails to load
-                                                  const bannerContainer = e.currentTarget.closest('.mb-3');
-                                                  if (bannerContainer) {
-                                                    (bannerContainer as HTMLElement).style.display = 'none';
-                                                  }
-                                                }}
+                                                className="w-full h-full"
+                                                objectFit="cover"
+                                                fallbackText={session.title.charAt(0)}
+                                                fallbackClassName="w-full h-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center text-2xl font-bold text-purple-600"
+                                                sizes="100vw"
                                               />
                                               
                                               {/* Gradient overlay for better text readability */}
