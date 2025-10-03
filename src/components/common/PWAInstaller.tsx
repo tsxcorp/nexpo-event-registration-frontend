@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePWAManifest } from '@/hooks/usePWAManifest';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -15,21 +16,13 @@ export default function PWAInstaller() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [currentPage, setCurrentPage] = useState('');
+  const { manifestConfig, currentPageType } = usePWAManifest();
+  
+  const currentPage = currentPageType === 'checkin' ? 'Check-in Kiosk' :
+                     currentPageType === 'register' ? 'Registration' :
+                     currentPageType === 'insight' ? 'Dashboard' : 'App';
 
   useEffect(() => {
-    // Detect current page type
-    const path = window.location.pathname;
-    if (path.includes('/checkin/')) {
-      setCurrentPage('Check-in Kiosk');
-    } else if (path.includes('/register/')) {
-      setCurrentPage('Registration');
-    } else if (path.includes('/insight/')) {
-      setCurrentPage('Dashboard');
-    } else {
-      setCurrentPage('App');
-    }
-    
     // Check if app is already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
@@ -152,6 +145,16 @@ export default function PWAInstaller() {
         {currentPage === 'Check-in Kiosk' && (
           <span className="text-xs text-blue-100">
             📱 Kiosk mode - Opens directly to this check-in page
+          </span>
+        )}
+        {currentPage === 'Registration' && (
+          <span className="text-xs text-blue-100">
+            📝 Registration - Opens directly to this registration page
+          </span>
+        )}
+        {currentPage === 'Dashboard' && (
+          <span className="text-xs text-blue-100">
+            📊 Dashboard - Opens directly to this dashboard page
           </span>
         )}
       </button>

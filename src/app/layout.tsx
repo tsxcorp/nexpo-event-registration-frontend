@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import PWAInstaller from '@/components/common/PWAInstaller';
+import PWAManager from '@/components/common/PWAManager';
 import '@/styles/globals.css';
 import Script from 'next/script';
 
@@ -156,9 +157,11 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <ErrorBoundary>
-          {children}
+          <PWAManager>
+            {children}
+            <PWAInstaller />
+          </PWAManager>
         </ErrorBoundary>
-        <PWAInstaller />
       </body>
     </html>
   );

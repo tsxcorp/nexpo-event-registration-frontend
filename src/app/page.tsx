@@ -30,7 +30,7 @@ export default function HomePage() {
         })));
       } catch (err: any) {
         console.error('Error loading events:', err);
-        setError(i18n[currentLanguage]?.unable_to_load_event_list || 'Không thể tải danh sách sự kiện. Vui lòng thử lại.');
+        setError('Không thể tải danh sách sự kiện. Vui lòng thử lại.');
       } finally {
         setLoading(false);
       }
