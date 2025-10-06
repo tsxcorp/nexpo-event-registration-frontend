@@ -104,8 +104,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/nexpo-logo-192.png" />
         <link rel="mask-icon" href="/nexpo-logo.svg" color="#3b82f6" />
         
-        {/* PWA Manifest */}
-        <link rel="manifest" href="/manifest.json" />
+        {/* PWA Manifest - Will be dynamically injected by page-specific layouts or default to /manifest.json */}
         
         {/* Google Analytics */}
         <Script
@@ -162,6 +161,30 @@ export default function RootLayout({
               window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js').catch(() => {});
               });
+            }
+          `}
+        </Script>
+        
+        {/* Inject default manifest if not already present */}
+        <Script id="default-manifest-injector" strategy="beforeInteractive">
+          {`
+            if (typeof window !== 'undefined') {
+              // Check if manifest link exists
+              const checkAndInjectManifest = () => {
+                let manifestLink = document.querySelector('link[rel="manifest"]');
+                if (!manifestLink) {
+                  manifestLink = document.createElement('link');
+                  manifestLink.setAttribute('rel', 'manifest');
+                  manifestLink.setAttribute('href', '/manifest.json');
+                  document.head.appendChild(manifestLink);
+                }
+              };
+              
+              if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', checkAndInjectManifest);
+              } else {
+                checkAndInjectManifest();
+              }
             }
           `}
         </Script>
