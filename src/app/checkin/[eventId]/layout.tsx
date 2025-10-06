@@ -29,29 +29,17 @@ export default async function CheckinLayout({ children, params }: CheckinLayoutP
   
   return (
     <>
-      {/* Inject dynamic manifest link */}
-      <head>
-        <link 
-          rel="manifest" 
-          href={`/api/manifest?start_url=/checkin/${eventId}&page_name=Check-in - Event ${eventId}`}
-        />
-      </head>
-      
       {/* Page-specific script to update service worker scope */}
       <Script id="checkin-pwa-config" strategy="afterInteractive">
         {`
           // Update PWA configuration for this specific page
           if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-              console.log('[PWA] Checkin page - Dynamic manifest configured for /checkin/${eventId}');
-              
-              // Update manifest link if not already updated
               const manifestLink = document.querySelector('link[rel="manifest"]');
               if (manifestLink) {
                 const expectedHref = '/api/manifest?start_url=/checkin/${eventId}&page_name=Check-in - Event ${eventId}';
                 if (manifestLink.getAttribute('href') !== expectedHref) {
                   manifestLink.setAttribute('href', expectedHref);
-                  console.log('[PWA] Manifest link updated to:', expectedHref);
                 }
               }
             });

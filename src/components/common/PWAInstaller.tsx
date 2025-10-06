@@ -16,6 +16,7 @@ export default function PWAInstaller() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { manifestConfig, currentPageType } = usePWAManifest();
   
   const currentPage = currentPageType === 'checkin' ? 'Check-in Kiosk' :
@@ -23,6 +24,8 @@ export default function PWAInstaller() {
                      currentPageType === 'insight' ? 'Dashboard' : 'App';
 
   useEffect(() => {
+    setMounted(true);
+    
     // Check if app is already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
@@ -33,8 +36,6 @@ export default function PWAInstaller() {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setIsInstallable(true);
-      
-      console.log('[PWA] Install prompt available for current page:', window.location.pathname);
     };
 
     // Listen for appinstalled event
@@ -49,7 +50,6 @@ export default function PWAInstaller() {
       if ('serviceWorker' in navigator) {
         try {
           const registration = await navigator.serviceWorker.register('/sw.js');
-          console.log('[PWA] Service Worker registered successfully:', registration);
           
           // Check for updates
           registration.addEventListener('updatefound', () => {
@@ -66,7 +66,7 @@ export default function PWAInstaller() {
             }
           });
         } catch (error) {
-          console.error('[PWA] Service Worker registration failed:', error);
+          // Service Worker registration failed
         }
       }
     };
@@ -93,21 +93,20 @@ export default function PWAInstaller() {
       await deferredPrompt.prompt();
       
       // Wait for user choice
-      const { outcome } = await deferredPrompt.userChoice;
-      
-      if (outcome === 'accepted') {
-        console.log('[PWA] User accepted the install prompt');
-      } else {
-        console.log('[PWA] User dismissed the install prompt');
-      }
+      await deferredPrompt.userChoice;
       
       // Clear the deferred prompt
       setDeferredPrompt(null);
       setIsInstallable(false);
     } catch (error) {
-      console.error('[PWA] Error showing install prompt:', error);
+      // Error showing install prompt
     }
   };
+
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return null;
+  }
 
   // Don't show anything if app is already installed
   if (isInstalled) {

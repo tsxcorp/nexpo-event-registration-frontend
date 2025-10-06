@@ -63,12 +63,6 @@ export function usePWAManifest() {
           
           if (manifestLink.getAttribute('href') !== newHref) {
             manifestLink.setAttribute('href', newHref);
-            console.log('[PWA] Manifest updated:', {
-              pathname,
-              startUrl: config.startUrl,
-              pageName: config.pageName,
-              scope: config.scope
-            });
           }
         }
       }

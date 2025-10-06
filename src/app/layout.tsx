@@ -154,6 +154,17 @@ export default function RootLayout({
             }
           `}
         </Script>
+        
+        {/* Service Worker Registration */}
+        <Script id="service-worker-registration" strategy="afterInteractive">
+          {`
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
+              });
+            }
+          `}
+        </Script>
       </head>
       <body className={inter.className}>
         <ErrorBoundary>

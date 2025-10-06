@@ -11,16 +11,6 @@ export default function PWAManager({ children }: PWAManagerProps) {
   const { manifestConfig, isEventPage } = usePWAManifest();
 
   useEffect(() => {
-    // Log PWA configuration for debugging
-    if (manifestConfig) {
-      console.log('[PWA Manager] Current configuration:', {
-        startUrl: manifestConfig.startUrl,
-        pageName: manifestConfig.pageName,
-        scope: manifestConfig.scope,
-        isEventPage
-      });
-    }
-
     // Update page title based on PWA configuration
     if (manifestConfig && isEventPage) {
       document.title = manifestConfig.pageName;
