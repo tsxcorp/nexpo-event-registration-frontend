@@ -56,6 +56,8 @@ function ExhibitorRegistrationContent() {
             src={iframeUrl}
             title="Exhibitor Registration Form"
             className="w-full border-0 rounded-lg shadow-lg bg-white"
+            allow="forms, scripts, same-origin"
+            sandbox="allow-forms allow-scripts allow-same-origin allow-top-navigation allow-top-navigation-by-user-activation"
           />
         </div>
       </main>
