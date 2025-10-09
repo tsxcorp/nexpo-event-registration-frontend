@@ -1,16 +1,64 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { CheckCircleIcon, EnvelopeIcon, PhoneIcon } from '@heroicons/react/24/solid';
+import { CheckCircleIcon, EnvelopeIcon, PhoneIcon, LanguageIcon } from '@heroicons/react/24/solid';
 
 function ExhibitorThankYouContent() {
   const searchParams = useSearchParams();
   const exhibitorName = searchParams.get('name') || 'Exhibitor';
   const email = searchParams.get('email') || '';
   const company = searchParams.get('company') || '';
+  const [language, setLanguage] = useState<'vi' | 'en'>('vi');
+
+  const translations = {
+    vi: {
+      title: 'Đăng ký thành công!',
+      subtitle: 'Cảm ơn bạn đã đăng ký làm nhà trưng bày',
+      whatsNext: 'Các bước tiếp theo',
+      step1Title: 'Xét duyệt hồ sơ',
+      step1Desc: 'Đội ngũ của chúng tôi sẽ xem xét đơn đăng ký của bạn trong vòng 2-3 ngày làm việc.',
+      step2Title: 'Email xác nhận',
+      step2Desc: email 
+        ? `Chúng tôi đã gửi email xác nhận đến ${email}. Vui lòng kiểm tra hộp thư (và thư mục spam) để biết thêm chi tiết. Đội ngũ chúng tôi sẽ liên hệ với bạn sớm.`
+        : 'Chúng tôi đã gửi email xác nhận đến địa chỉ email bạn đã đăng ký. Đội ngũ chúng tôi sẽ liên hệ với bạn sớm.',
+      step3Title: 'Thông tin gian hàng',
+      step3Desc: 'Sau khi được phê duyệt, bạn sẽ nhận được thông tin chi tiết về việc thiết lập gian hàng, lịch trình sự kiện và hướng dẫn dành cho nhà trưng bày.',
+      registrationDetails: 'Thông tin đăng ký',
+      contactPerson: 'Người liên hệ',
+      needHelp: 'Cần hỗ trợ?',
+      backHome: 'Về trang chủ',
+      registerAnother: 'Đăng ký nhà trưng bày khác',
+      noteTitle: 'Trang xác nhận này dành cho đăng ký nhà trưng bày.',
+      noteVisitor: 'Để đăng ký tham dự sự kiện, vui lòng truy cập',
+      noteLink: 'trang đăng ký chính',
+    },
+    en: {
+      title: 'Registration Successful!',
+      subtitle: 'Thank you for registering as an exhibitor',
+      whatsNext: "What's Next?",
+      step1Title: 'Application Review',
+      step1Desc: 'Our team will review your application within 2-3 business days.',
+      step2Title: 'Confirmation Email',
+      step2Desc: email
+        ? `We've sent a confirmation email to ${email}. Please check your inbox (and spam folder) for more details. Our team will contact you soon.`
+        : "We've sent a confirmation email to your registered address. Our team will contact you soon.",
+      step3Title: 'Booth Setup Information',
+      step3Desc: "Once approved, you'll receive detailed information about booth setup, event schedule, and exhibitor guidelines.",
+      registrationDetails: 'Registration Details',
+      contactPerson: 'Contact Person',
+      needHelp: 'Need Help?',
+      backHome: 'Back to Home',
+      registerAnother: 'Register Another Exhibitor',
+      noteTitle: 'This confirmation page is for exhibitor registration only.',
+      noteVisitor: 'For visitor registration, please visit our',
+      noteLink: 'main registration page',
+    },
+  };
+
+  const t = translations[language];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
@@ -29,6 +77,16 @@ function ExhibitorThankYouContent() {
               />
             </Link>
           </div>
+          {/* Language Switcher */}
+          <button
+            onClick={() => setLanguage(language === 'vi' ? 'en' : 'vi')}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors duration-200"
+            aria-label="Switch language"
+          >
+            <LanguageIcon className="w-5 h-5" />
+            <span className="hidden sm:inline">{language === 'vi' ? 'English' : 'Tiếng Việt'}</span>
+            <span className="sm:hidden">{language === 'vi' ? 'EN' : 'VI'}</span>
+          </button>
         </nav>
       </header>
 
@@ -43,10 +101,10 @@ function ExhibitorThankYouContent() {
                 <CheckCircleIcon className="w-24 h-24 text-white animate-bounce" />
               </div>
               <h1 className="text-4xl font-bold text-white mb-4">
-                Registration Successful!
+                {t.title}
               </h1>
               <p className="text-xl text-green-50">
-                Thank you for registering as an exhibitor
+                {t.subtitle}
               </p>
             </div>
 
@@ -54,9 +112,10 @@ function ExhibitorThankYouContent() {
             <div className="px-8 py-10">
               <div className="mb-8">
                 <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                  What's Next?
+                  {t.whatsNext}
                 </h2>
                 <div className="space-y-4 text-gray-600">
+                  {/* Step 1: Application Review */}
                   <div className="flex items-start">
                     <div className="flex-shrink-0 mr-4">
                       <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -65,15 +124,13 @@ function ExhibitorThankYouContent() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-800 mb-1">
-                        Confirmation Email
+                        {t.step1Title}
                       </h3>
-                      <p>
-                        We've sent a confirmation email to <strong>{email || 'your registered email'}</strong>. 
-                        Please check your inbox (and spam folder) for more details.
-                      </p>
+                      <p>{t.step1Desc}</p>
                     </div>
                   </div>
 
+                  {/* Step 2: Confirmation Email */}
                   <div className="flex items-start">
                     <div className="flex-shrink-0 mr-4">
                       <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -82,15 +139,13 @@ function ExhibitorThankYouContent() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-800 mb-1">
-                        Application Review
+                        {t.step2Title}
                       </h3>
-                      <p>
-                        Our team will review your application within 2-3 business days. 
-                        You will receive an update via email.
-                      </p>
+                      <p>{t.step2Desc}</p>
                     </div>
                   </div>
 
+                  {/* Step 3: Booth Setup Information */}
                   <div className="flex items-start">
                     <div className="flex-shrink-0 mr-4">
                       <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -99,12 +154,9 @@ function ExhibitorThankYouContent() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-800 mb-1">
-                        Booth Setup Information
+                        {t.step3Title}
                       </h3>
-                      <p>
-                        Once approved, you'll receive detailed information about booth setup, 
-                        event schedule, and exhibitor guidelines.
-                      </p>
+                      <p>{t.step3Desc}</p>
                     </div>
                   </div>
                 </div>
@@ -114,17 +166,17 @@ function ExhibitorThankYouContent() {
               {(exhibitorName !== 'Exhibitor' || company) && (
                 <div className="bg-gray-50 rounded-lg p-6 mb-8">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                    Registration Details
+                    {t.registrationDetails}
                   </h3>
                   <div className="space-y-2 text-gray-600">
                     {exhibitorName !== 'Exhibitor' && (
                       <p>
-                        <span className="font-medium">Contact Person:</span> {exhibitorName}
+                        <span className="font-medium">{t.contactPerson}:</span> {exhibitorName}
                       </p>
                     )}
                     {company && (
                       <p>
-                        <span className="font-medium">Company:</span> {company}
+                        <span className="font-medium">{language === 'vi' ? 'Công ty' : 'Company'}:</span> {company}
                       </p>
                     )}
                     {email && (
@@ -139,25 +191,25 @@ function ExhibitorThankYouContent() {
               {/* Contact Section */}
               <div className="bg-blue-50 rounded-lg p-6 mb-8">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                  Need Help?
+                  {t.needHelp}
                 </h3>
                 <div className="space-y-3 text-gray-600">
                   <div className="flex items-center">
                     <EnvelopeIcon className="w-5 h-5 text-blue-600 mr-3" />
                     <a 
-                      href="mailto:exhibitor@nexpo.com" 
+                      href="mailto:contact@nexpo.com" 
                       className="text-blue-600 hover:text-blue-800 font-medium"
                     >
-                      exhibitor@nexpo.com
+                      contact@nexpo.com
                     </a>
                   </div>
                   <div className="flex items-center">
                     <PhoneIcon className="w-5 h-5 text-blue-600 mr-3" />
                     <a 
-                      href="tel:+841234567890" 
+                      href="tel:02866827794" 
                       className="text-blue-600 hover:text-blue-800 font-medium"
                     >
-                      +84 123 456 7890
+                      028 6682 7794
                     </a>
                   </div>
                 </div>
@@ -169,13 +221,13 @@ function ExhibitorThankYouContent() {
                   href="/"
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg text-center transition-colors duration-200"
                 >
-                  Back to Home
+                  {t.backHome}
                 </Link>
                 <Link
                   href="/exhibitor-registration"
                   className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 px-6 rounded-lg text-center transition-colors duration-200"
                 >
-                  Register Another Exhibitor
+                  {t.registerAnother}
                 </Link>
               </div>
             </div>
@@ -184,12 +236,12 @@ function ExhibitorThankYouContent() {
           {/* Additional Info */}
           <div className="text-center mt-8 text-gray-600">
             <p className="text-sm">
-              This confirmation page is for exhibitor registration only.
+              {t.noteTitle}
             </p>
             <p className="text-sm mt-2">
-              For visitor registration, please visit our{' '}
+              {t.noteVisitor}{' '}
               <Link href="/" className="text-blue-600 hover:text-blue-800 font-medium">
-                main registration page
+                {t.noteLink}
               </Link>
               .
             </p>
