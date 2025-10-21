@@ -13,6 +13,10 @@ import { useGoogleAnalytics } from '@/hooks/useGoogleAnalytics';
 import { Html5Qrcode } from 'html5-qrcode';
 import QRCode from 'qrcode';
 import { i18n } from '@/lib/translation/i18n';
+import { unifiedPrintService, type BadgeData, type BadgeLayout } from '@/lib/print/unified-print-service';
+import PrintWizard from '@/components/features/PrintWizard';
+import BixolonDriverGuide from '@/components/features/BixolonDriverGuide';
+import AndroidBixolonGuide from '@/components/features/AndroidBixolonGuide';
 
 interface CheckinPageProps {
   params: Promise<{
@@ -140,6 +144,22 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   const [continuousMode, setContinuousMode] = useState(false);
   const [autoPrintEnabled, setAutoPrintEnabled] = useState(true); // User-controlled auto-print toggle (only shown when backend allows printing)
   const [currentLanguage, setCurrentLanguage] = useState<'vi' | 'en'>('vi');
+  
+  // Native Print Service states
+  const [isNativePrintAvailable, setIsNativePrintAvailable] = useState(false);
+  const [showPrintWizard, setShowPrintWizard] = useState(false);
+  const [nativePrintEnabled, setNativePrintEnabled] = useState(false);
+  const [showBixolonGuide, setShowBixolonGuide] = useState(false);
+  const [showAndroidGuide, setShowAndroidGuide] = useState(false);
+  const [bixolonStatus, setBixolonStatus] = useState<{
+    hasBixolon: boolean;
+    hasAnyPrinter: boolean;
+    needsDriver: boolean;
+  }>({
+    hasBixolon: false,
+    hasAnyPrinter: false,
+    needsDriver: false
+  });
 
   const { generateShareUrls } = useEventMetadata({ 
     event: eventData, 
@@ -186,7 +206,18 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         <svg className={className} fill={fill} stroke="currentColor" viewBox="0 0 24 24" {...props}>
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
         </svg>
-      )
+      ),
+  CogIcon: (
+    <svg className={className} fill={fill} stroke="currentColor" viewBox="0 0 24 24" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  ),
+  ExclamationTriangleIcon: (
+    <svg className={className} fill={fill} stroke="currentColor" viewBox="0 0 24 24" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+    </svg>
+  )
     };
     
     return icons[name as keyof typeof icons] || icons.QrCodeIcon;
@@ -209,6 +240,50 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     };
 
     checkCameraPermission();
+  }, []);
+
+  // Check native print availability
+  useEffect(() => {
+    const checkNativePrint = async () => {
+      try {
+        const isAvailable = await unifiedPrintService.isAvailable();
+        setIsNativePrintAvailable(isAvailable);
+        
+        if (isAvailable) {
+          // Check BIXOLON printer status
+          const bixolonCheck = await unifiedPrintService.checkBixolonPrinter();
+          setBixolonStatus({
+            hasBixolon: bixolonCheck.hasBixolon,
+            hasAnyPrinter: bixolonCheck.hasAnyPrinter,
+            needsDriver: bixolonCheck.needsDriver
+          });
+          
+          if (bixolonCheck.hasBixolon) {
+            setNativePrintEnabled(true);
+            console.log('✅ Native print service available with BIXOLON printer');
+          } else if (bixolonCheck.needsDriver) {
+            console.log('⚠️ Native print available but BIXOLON driver needed');
+            // Auto-show appropriate guide based on platform
+            const platformInfo = unifiedPrintService.getPlatformInfo();
+            if (platformInfo?.isAndroid) {
+              setShowAndroidGuide(true);
+            } else {
+              setShowBixolonGuide(true);
+            }
+          } else {
+            setNativePrintEnabled(true);
+            console.log('✅ Native print service available');
+          }
+        } else {
+          console.log('ℹ️ Native print service not available, using popup print');
+        }
+      } catch (error) {
+        console.log('Native print check failed:', error);
+        setIsNativePrintAvailable(false);
+      }
+    };
+
+    checkNativePrint();
   }, []);
 
   // Load event data
@@ -1599,6 +1674,41 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     }, 1000);
   };
 
+  // Native print function using Nexpo Print SDK
+  const printBadgeNative = async (visitorData: VisitorData, qrData: string) => {
+    try {
+      console.log('🖨️ Using native print service');
+      
+      const badgeData: BadgeData = {
+        visitorData,
+        eventData: eventData!,
+        qrData,
+        customContent: getCustomContent(visitorData)
+      };
+      
+      const badgeLayout: BadgeLayout = getBadgeLayout();
+      
+      const result = await unifiedPrintService.printBadge(badgeData, badgeLayout);
+      const success = result.result === 'OK';
+      
+      if (success) {
+        console.log('✅ Native print successful');
+        setSuccess(`✅ Check-in thành công! 🖨️ Đã in thẻ tự động!`);
+        setIsPrinting(false);
+        
+        // Track successful native print
+        if (trackBadgePrint) {
+          trackBadgePrint(eventData?.id || '', eventData?.name || '');
+        }
+      } else {
+        throw new Error('Native print returned false');
+      }
+    } catch (error) {
+      console.error('❌ Native print failed:', error);
+      throw error; // Re-throw to trigger fallback
+    }
+  };
+
   // Print badge using pre-rendered approach with QR validation
   const printBadge = async (visitorData: VisitorData) => {
     // Prevent multiple print calls
@@ -1655,6 +1765,17 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       setError('🔄 Hệ thống đang xử lý thông tin QR code.\n\n💡 Hướng dẫn:\n• Chờ 1-2 phút để hệ thống xử lý\n• Thử scan lại QR code sau khi chờ\n• Hoặc liên hệ ban tổ chức để được hỗ trợ\n\n✅ Check-in đã thành công!');
       setIsPrinting(false);
       return;
+    }
+    
+    // Try native print first, fallback to popup print
+    if (nativePrintEnabled && isNativePrintAvailable) {
+      try {
+        await printBadgeNative(visitorData, finalQrData);
+        return;
+      } catch (nativeError) {
+        console.warn('Native print failed, falling back to popup print:', nativeError);
+        setSuccess(`✅ Check-in thành công! 🖨️ Đang in thẻ (chế độ popup)...`);
+      }
     }
     
     // Detect mobile device
@@ -2207,7 +2328,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                 
                 {/* Auto-Print Status */}
                 {eventData?.badge_printing && (
-                  <div className="mt-2 flex items-center justify-center gap-2">
+                  <div className="mt-2 flex items-center justify-center gap-2 flex-wrap">
                     <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                       autoPrintEnabled 
                         ? 'bg-green-100 text-green-700 border border-green-200' 
@@ -2218,6 +2339,44 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                         {autoPrintEnabled ? 'Auto-print: Bật' : 'Auto-print: Tắt'}
                       </span>
                     </div>
+                    
+                    {/* Native Print Status */}
+           {isNativePrintAvailable ? (
+             bixolonStatus.hasBixolon ? (
+               <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
+                 <Icon name="CheckCircleIcon" className="w-3 h-3" />
+                 <span>Native Print: Sẵn sàng</span>
+               </div>
+             ) : bixolonStatus.needsDriver ? (
+               <button
+                 onClick={() => {
+                   const platformInfo = unifiedPrintService.getPlatformInfo();
+                   if (platformInfo?.isAndroid) {
+                     setShowAndroidGuide(true);
+                   } else {
+                     setShowBixolonGuide(true);
+                   }
+                 }}
+                 className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200 hover:bg-orange-200 transition-colors"
+               >
+                 <Icon name="ExclamationTriangleIcon" className="w-3 h-3" />
+                 <span>Cài BIXOLON Driver</span>
+               </button>
+             ) : (
+               <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
+                 <Icon name="CheckCircleIcon" className="w-3 h-3" />
+                 <span>Native Print: Sẵn sàng</span>
+               </div>
+             )
+           ) : (
+             <button
+               onClick={() => setShowPrintWizard(true)}
+               className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200 hover:bg-orange-200 transition-colors"
+             >
+               <Icon name="CogIcon" className="w-3 h-3" />
+               <span>Setup Native Print</span>
+             </button>
+           )}
                   </div>
                 )}
                 
@@ -2613,6 +2772,70 @@ export default function CheckinPage({ params }: CheckinPageProps) {
             </Card>
           </div>
         )}
+
+        {/* Print Wizard Modal */}
+      <PrintWizard
+        isOpen={showPrintWizard}
+        onClose={() => setShowPrintWizard(false)}
+        onAgentReady={() => {
+          setNativePrintEnabled(true);
+          setIsNativePrintAvailable(true);
+          setShowPrintWizard(false);
+        }}
+        currentLanguage={currentLanguage}
+      />
+
+      <BixolonDriverGuide
+        isOpen={showBixolonGuide}
+        onClose={() => setShowBixolonGuide(false)}
+        onDriverInstalled={() => {
+          // Refresh BIXOLON status
+          const refreshBixolonStatus = async () => {
+            try {
+              const bixolonCheck = await unifiedPrintService.checkBixolonPrinter();
+              setBixolonStatus({
+                hasBixolon: bixolonCheck.hasBixolon,
+                hasAnyPrinter: bixolonCheck.hasAnyPrinter,
+                needsDriver: bixolonCheck.needsDriver
+              });
+              if (bixolonCheck.hasBixolon) {
+                setNativePrintEnabled(true);
+              }
+            } catch (error) {
+              console.error('Failed to refresh BIXOLON status:', error);
+            }
+          };
+          refreshBixolonStatus();
+          setShowBixolonGuide(false);
+        }}
+        currentLanguage={currentLanguage}
+      />
+
+      <AndroidBixolonGuide
+        isOpen={showAndroidGuide}
+        onClose={() => setShowAndroidGuide(false)}
+        onSetupComplete={() => {
+          // Refresh BIXOLON status
+          const refreshBixolonStatus = async () => {
+            try {
+              const bixolonCheck = await unifiedPrintService.checkBixolonPrinter();
+              setBixolonStatus({
+                hasBixolon: bixolonCheck.hasBixolon,
+                hasAnyPrinter: bixolonCheck.hasAnyPrinter,
+                needsDriver: bixolonCheck.needsDriver
+              });
+              if (bixolonCheck.hasBixolon) {
+                setNativePrintEnabled(true);
+              }
+            } catch (error) {
+              console.error('Failed to refresh BIXOLON status:', error);
+            }
+          };
+          refreshBixolonStatus();
+          setShowAndroidGuide(false);
+        }}
+        currentLanguage={currentLanguage}
+      />
       </div>
     </>
   );

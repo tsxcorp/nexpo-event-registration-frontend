@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexpo Native Print Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .test-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Nexpo Native Print Service Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Test Agent Connection</h2>
+        <button class="test-button" onclick="testAgentConnection()">Test Connection</button>
+        <div id="connection-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test List Printers</h2>
+        <button class="test-button" onclick="testListPrinters()">List Printers</button>
+        <div id="printers-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Test Print Badge</h2>
+        <button class="test-button" onclick="testPrintBadge()">Print Test Badge</button>
+        <div id="print-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Test Native Print Service</h2>
+        <button class="test-button" onclick="testNativePrintService()">Test Service</button>
+        <div id="service-result" class="result"></div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:18082';
+
+        async function makeRequest(path, method = 'GET', data = null) {
+            try {
+                const options = {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+
+                if (data) {
+                    options.body = JSON.stringify(data);
+                }
+
+                const response = await fetch(`${BASE_URL}${path}`, options);
+                const result = await response.json();
+                
+                return {
+                    status: response.status,
+                    data: result
+                };
+            } catch (error) {
+                return {
+                    status: 'error',
+                    data: { error: error.message }
+                };
+            }
+        }
+
+        function showResult(elementId, result, isError = false) {
+            const element = document.getElementById(elementId);
+            element.textContent = JSON.stringify(result, null, 2);
+            element.className = `result ${isError ? 'error' : 'success'}`;
+        }
+
+        async function testAgentConnection() {
+            const result = await makeRequest('/v1/health');
+            showResult('connection-result', result, result.status !== 200);
+        }
+
+        async function testListPrinters() {
+            const result = await makeRequest('/v1/printers');
+            showResult('printers-result', result, result.status !== 200);
+        }
+
+        async function testPrintBadge() {
+            const printData = {
+                requestId: 'test_' + Date.now(),
+                printer: 'BIXOLON SLP-TX403',
+                template: 'visitor_v1',
+                data: {
+                    fullName: 'Nguyen Van Test',
+                    company: 'Test Company',
+                    qr: 'NEXPO:TEST:' + Date.now(),
+                    customContent: ['TEST PRINT', 'DEMO BADGE']
+                },
+                options: {
+                    dither: true,
+                    speed: 5,
+                    density: 10,
+                    orientation: 'portrait'
+                },
+                copies: 1
+            };
+
+            const result = await makeRequest('/v1/print', 'POST', printData);
+            showResult('print-result', result, result.status !== 200);
+        }
+
+        async function testNativePrintService() {
+            try {
+                // Test if native print service is available
+                const response = await fetch('http://localhost:18082/v1/health');
+                const isAvailable = response.ok;
+                
+                const result = {
+                    nativePrintAvailable: isAvailable,
+                    agentStatus: isAvailable ? 'Connected' : 'Not Connected',
+                    timestamp: new Date().toISOString()
+                };
+
+                if (isAvailable) {
+                    // Test printers
+                    const printersResponse = await makeRequest('/v1/printers');
+                    result.printers = printersResponse.data;
+                }
+
+                showResult('service-result', result, !isAvailable);
+            } catch (error) {
+                showResult('service-result', { error: error.message }, true);
+            }
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            testAgentConnection();
+        };
+    </script>
+</body>
+</html>
