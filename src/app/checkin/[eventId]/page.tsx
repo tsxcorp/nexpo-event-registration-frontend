@@ -1365,7 +1365,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
 
 
   // Generate QR using Canvas with qrcode library (fast and reliable)
-  const generateQRFallback = async (qrData: string): Promise<string> => {
+  const generateQRCodeDataUrl = async (qrData: string): Promise<string> => {
     try {
       console.log('🎨 Generating Canvas QR with qrcode library for:', qrData);
       
@@ -1395,12 +1395,11 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   };
 
   // Enhanced mobile print with local QR generation only
-  const printBadgeWithProgressiveLoading = async (visitorData: VisitorData) => {
+  const printBadgeWithProgressiveLoading = async (visitorData: VisitorData, qrData: string, precomputedQrDataUrl?: string) => {
     console.log('📱 Using local QR generation for mobile print');
     
     const badgeSize = getBadgeSize();
     const contentHeight = badgeSize.height - 30;
-    const qrData = (visitorData as any)?.badge_qr || '';
     
     // Validate QR data for mobile printing
     if (!qrData || qrData === '') {
@@ -1414,7 +1413,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     // Generate QR using local library only (no external APIs)
     try {
       console.log('🚀 Generating QR with local library...');
-      const canvasQR = await generateQRFallback(qrData);
+      const canvasQR = precomputedQrDataUrl || await generateQRCodeDataUrl(qrData);
       if (canvasQR) {
         console.log('✅ Local QR generated successfully, printing immediately');
         printBadgeWithQR(visitorData, canvasQR);
@@ -1782,327 +1781,29 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     console.log('📱 Device type:', isMobile ? 'Mobile' : 'Desktop');
     
-    // Use progressive loading for mobile devices
+    // Generate QR data URL locally for printing
+    const qrDataUrl = await generateQRCodeDataUrl(finalQrData);
+    
+    if (!qrDataUrl) {
+      console.error('❌ Local QR generation failed, using text fallback');
+      setSuccess(`✅ Check-in thành công cho ${visitorData.name}!`);
+      setError('⚠️ Không thể tạo QR code tự động để in.\n\n💡 Hướng dẫn:\n• Thử lại sau vài giây\n• Nếu vẫn lỗi, hãy in thủ công hoặc liên hệ hỗ trợ\n\n✅ Check-in đã thành công!');
+      printBadgeWithTextQR(visitorData, finalQrData);
+      return;
+    }
+    
+    setSuccess(`✅ Check-in thành công! 🖨️ QR code đã sẵn sàng, đang in thẻ...`);
+    
     if (isMobile) {
-      // Update visitor data with final QR data for mobile printing
       const updatedVisitorData = {
         ...visitorData,
         badge_qr: finalQrData
       };
-      await printBadgeWithProgressiveLoading(updatedVisitorData);
+      await printBadgeWithProgressiveLoading(updatedVisitorData, finalQrData, qrDataUrl);
       return;
     }
     
-    // Original desktop approach for backward compatibility
-    try {
-      console.log('🎨 Print badge for visitor:', visitorData.name);
-      
-      const badgeLayout = getBadgeLayout();
-      const contentHeight = badgeLayout.height - 30; // Reserve space for header/footer
-      
-      console.log('🖨️ Print QR data:', finalQrData);
-      
-      // Create hidden staging area to pre-render badge
-      const stagingDiv = document.createElement('div');
-      stagingDiv.style.cssText = `
-        position: absolute; 
-        top: -9999px; 
-        left: -9999px; 
-        width: ${badgeLayout.width}mm; 
-        height: ${contentHeight}mm;
-        padding: 4mm;
-        display: flex;
-        flex-direction: ${badgeLayout.isVerticalLayout ? 'column' : 'row'};
-        align-items: center;
-        justify-content: ${badgeLayout.isVerticalLayout ? 'center' : 'flex-start'};
-        gap: 4mm;
-        box-sizing: border-box;
-        background: white;
-        font-family: Arial, sans-serif;
-      `;
-      
-      // Auto-resize logic based on layout
-      const nameSize = badgeLayout.isVerticalLayout ? 
-        (visitorData.name.length > 20 ? '16px' : visitorData.name.length > 15 ? '18px' : '20px') :
-        (visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px');
-      
-      // Generate QR code URL with mobile-friendly settings
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(finalQrData)}&format=png&ecc=M`;
-      console.log('🔗 Print QR URL:', qrUrl);
-      
-      // QR size for print - larger for vertical layout
-      const printQrContainerSize = badgeLayout.isVerticalLayout ? '28mm' : '20mm';
-      const printQrImageSize = badgeLayout.isVerticalLayout ? '26mm' : '18mm';
-      
-      // Extract custom content for print
-      const customContent = getCustomContent(visitorData);
-      console.log('🎨 Print custom content:', customContent);
-      
-      stagingDiv.innerHTML = `
-        <!-- QR Code -->
-        <div style="width: ${printQrContainerSize}; height: ${printQrContainerSize}; display: flex; align-items: center; justify-content: center; background: #fff; flex-shrink: 0; order: ${badgeLayout.isVerticalLayout ? '1' : '0'};">
-          <img 
-            id="print-qr-img"
-            src="${qrUrl}" 
-            alt="QR Code: ${finalQrData}"
-            style="width: ${printQrImageSize}; height: ${printQrImageSize}; object-fit: contain;"
-            crossorigin="anonymous"
-          />
-        </div>
-        
-        <!-- Visitor Info -->
-        <div style="
-          flex: ${badgeLayout.isVerticalLayout ? '0' : '1'}; 
-          display: flex; 
-          flex-direction: column; 
-          justify-content: center; 
-          align-items: ${badgeLayout.isVerticalLayout ? 'center' : 'flex-start'};
-          text-align: ${badgeLayout.isVerticalLayout ? 'center' : 'left'};
-          min-width: 0;
-          margin-top: ${badgeLayout.isVerticalLayout ? '4mm' : '0'};
-          order: ${badgeLayout.isVerticalLayout ? '2' : '1'};
-        ">
-          <div style="font-size: ${nameSize}; font-weight: bold; margin-bottom: 2mm; color: #1F2937; word-wrap: break-word; line-height: 1.2;">
-            ${visitorData.name}
-          </div>
-          ${customContent.map(content => `<div style="font-size: 15px; font-weight: 400; color: #000000; word-wrap: break-word; line-height: 1.1; margin-bottom: 1mm;">${content}</div>`).join('')}
-        </div>
-      `;
-      
-      // Add to DOM temporarily
-      document.body.appendChild(stagingDiv);
-      
-      // Wait for QR image to load, then print
-      const qrImg = stagingDiv.querySelector('#print-qr-img') as HTMLImageElement;
-      let printExecuted = false;
-      
-      const handleQRLoad = () => {
-        if (printExecuted) return;
-        printExecuted = true;
-        
-        console.log('✅ QR image pre-loaded, starting print...');
-        
-        // Additional verification: ensure QR image is actually loaded
-        if (!qrImg.complete || qrImg.naturalWidth === 0) {
-          console.warn('⚠️ QR image not fully loaded, waiting a bit more...');
-          setTimeout(() => {
-            if (!printExecuted) {
-              handleQRLoad();
-            }
-          }, 500);
-          return;
-        }
-        
-        console.log('✅ QR image verified as fully loaded:', {
-          complete: qrImg.complete,
-          naturalWidth: qrImg.naturalWidth,
-          naturalHeight: qrImg.naturalHeight,
-          src: qrImg.src
-        });
-        
-        // Update success message to show QR is ready
-        setSuccess(`✅ Check-in thành công! 🖨️ QR code đã sẵn sàng, đang mở cửa sổ in...`);
-        
-        // Create print window with better popup handling
-        let printWindow: Window | null = null;
-        
-        try {
-          // Try to open print window
-          printWindow = window.open('', '_blank', 'width=800,height=600');
-          
-          // Check if popup was blocked
-          if (!printWindow || printWindow.closed || typeof printWindow.closed === 'undefined') {
-            console.warn('⚠️ Popup blocked, trying alternative print method');
-            
-            // Show user-friendly message about popup blocker
-            if (typeof window !== 'undefined' && window.confirm('Popup bị chặn. Bạn có muốn in trong cửa sổ hiện tại không?')) {
-              printWindow = window;
-            } else {
-              console.log('❌ User cancelled print due to popup blocker');
-              document.body.removeChild(stagingDiv);
-              setIsPrinting(false);
-              return;
-            }
-          }
-        } catch (error) {
-          console.warn('⚠️ Error opening print window, using current window:', error);
-          printWindow = window;
-        }
-        
-        if (!printWindow) {
-          console.error('❌ Failed to open print window');
-          document.body.removeChild(stagingDiv);
-          setIsPrinting(false);
-          return;
-        }
-        
-        // Write HTML with pre-rendered content
-        printWindow.document.write(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>Badge - ${visitorData.name}</title>
-            <style>
-              @media print {
-                @page {
-                  size: ${badgeLayout.width}mm ${contentHeight}mm;
-                  margin: 0;
-                }
-                body {
-                  margin: 0;
-                  padding: 0;
-                  font-family: Arial, sans-serif;
-                }
-              }
-              body {
-                margin: 0;
-                padding: 0;
-                font-family: Arial, sans-serif;
-                background: white;
-              }
-              .badge-content {
-                width: ${badgeLayout.width}mm;
-                height: ${contentHeight}mm;
-                padding: 4mm;
-                display: flex;
-                flex-direction: ${badgeLayout.isVerticalLayout ? 'column' : 'row'};
-                align-items: center;
-                justify-content: ${badgeLayout.isVerticalLayout ? 'center' : 'flex-start'};
-                gap: 4mm;
-                box-sizing: border-box;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="badge-content">
-              ${stagingDiv.innerHTML}
-            </div>
-          </body>
-          </html>
-        `);
-        
-        printWindow.document.close();
-        
-        // Wait a bit for content to render, then print
-        setTimeout(() => {
-          try {
-            if (printWindow !== window) {
-              // New window - focus and print
-              printWindow.focus();
-              printWindow.print();
-              printWindow.close();
-            } else {
-              // Current window - just print
-              printWindow.print();
-            }
-            console.log('🖨️ Print completed');
-          } catch (printError) {
-            console.error('❌ Print error:', printError);
-            // Show user-friendly message
-            alert('Không thể in tự động. Vui lòng nhấn Ctrl+P để in thủ công.');
-          }
-        }, isMobile ? 1000 : 500); // Longer wait on mobile
-        
-        // Clean up staging div
-        document.body.removeChild(stagingDiv);
-        
-        // Clear printing flag
-        setTimeout(() => {
-          setIsPrinting(false);
-        }, 1000);
-      };
-      
-      const handleQRError = () => {
-        if (printExecuted) return;
-        printExecuted = true;
-        
-        console.error('❌ QR image failed to load, using text fallback');
-        
-        // Replace QR image with text fallback
-        const qrContainer = stagingDiv.querySelector('div:first-child');
-        if (qrContainer) {
-          qrContainer.innerHTML = `
-            <div style="
-              width: ${printQrImageSize}; 
-              height: ${printQrImageSize}; 
-              border: 2px solid #000; 
-              display: flex; 
-              flex-direction: column;
-              align-items: center; 
-              justify-content: center; 
-              font-size: ${printQrImageSize === '26mm' ? '8px' : '6px'}; 
-              text-align: center; 
-              color: #000; 
-              background: #fff; 
-              font-weight: bold;
-            ">
-              QR<br/>
-              <small style="word-break: break-all; line-height: 1.1;">${finalQrData.slice(-12)}</small>
-            </div>
-          `;
-        }
-        
-        // Proceed with print
-        handleQRLoad();
-      };
-      
-      // Force QR image loading with better mobile support
-      if (qrImg.complete && qrImg.naturalWidth > 0) {
-        console.log('✅ QR image already loaded');
-        handleQRLoad();
-      } else {
-        console.log('⏳ Waiting for QR image to load...');
-        
-        qrImg.onload = () => {
-          console.log('✅ QR image onload event fired');
-          handleQRLoad();
-        };
-        
-        qrImg.onerror = () => {
-          console.error('❌ QR image onerror event fired');
-          handleQRError();
-        };
-        
-        // Mobile-friendly timeout with progressive retry
-        const timeoutDuration = isMobile ? 15000 : 8000;
-        let retryCount = 0;
-        const maxRetries = 3;
-        
-        const timeoutHandler = () => {
-          if (!printExecuted) {
-            retryCount++;
-            console.log(`⏰ QR load attempt ${retryCount}/${maxRetries} after ${timeoutDuration}ms`);
-            
-            if (retryCount >= maxRetries) {
-              console.log(`❌ QR load failed after ${maxRetries} attempts, proceeding with fallback`);
-              handleQRError();
-            } else {
-              // Retry with new timestamp
-              console.log('🔄 Retrying QR image load...');
-              qrImg.src = qrUrl + '&t=' + Date.now() + '&retry=' + retryCount;
-              
-              // Set timeout for next retry
-              setTimeout(timeoutHandler, timeoutDuration);
-            }
-          }
-        };
-        
-        setTimeout(timeoutHandler, timeoutDuration);
-        
-        // Progressive loading check
-        const checkProgress = () => {
-          if (!printExecuted && !qrImg.complete) {
-            console.log('⏳ QR image still loading, checking progress...');
-            setTimeout(checkProgress, 1000);
-          }
-        };
-        
-        setTimeout(checkProgress, 2000);
-      }
-    } catch (error) {
-      console.error('❌ Error in printBadge:', error);
-      setIsPrinting(false);
-    }
+    printBadgeWithQR(visitorData, qrDataUrl);
   };
 
   // Demo function to test company extraction with different formats
