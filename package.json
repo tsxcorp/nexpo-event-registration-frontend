@@ -23,7 +23,7 @@
         "axios": "^1.9.0",
         "file-saver": "^2.0.5",
         "html5-qrcode": "^2.3.8",
-        "next": "^15.3.1",
+        "next": "15.3.6",
         "papaparse": "^5.5.2",
         "pdfjs-dist": "^5.3.93",
         "postcss": "^8.4.21",
