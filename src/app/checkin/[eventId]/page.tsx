@@ -28,7 +28,7 @@ interface CheckinPageProps {
 const QRCodeComponent = ({ qrData, imageSize }: { qrData: string; imageSize: string }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(true);
-  
+
   useEffect(() => {
     const generateQR = async () => {
       try {
@@ -49,10 +49,10 @@ const QRCodeComponent = ({ qrData, imageSize }: { qrData: string; imageSize: str
         setIsGenerating(false);
       }
     };
-    
+
     generateQR();
   }, [qrData]);
-  
+
   if (isGenerating) {
     // Show loading state
     return (
@@ -74,7 +74,7 @@ const QRCodeComponent = ({ qrData, imageSize }: { qrData: string; imageSize: str
       </div>
     );
   }
-  
+
   if (!qrDataUrl) {
     // Show fallback
     return (
@@ -92,13 +92,13 @@ const QRCodeComponent = ({ qrData, imageSize }: { qrData: string; imageSize: str
         background: '#f8f9fa',
         fontWeight: 'bold'
       }}>
-        QR<br/><small style={{wordBreak: 'break-all', lineHeight: 1.1}}>{qrData.slice(-12)}</small>
+        QR<br /><small style={{ wordBreak: 'break-all', lineHeight: 1.1 }}>{qrData.slice(-12)}</small>
       </div>
     );
   }
-  
+
   return (
-    <img 
+    <img
       src={qrDataUrl}
       alt={`QR Code: ${qrData}`}
       style={{
@@ -144,7 +144,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   const [continuousMode, setContinuousMode] = useState(false);
   const [autoPrintEnabled, setAutoPrintEnabled] = useState(true); // User-controlled auto-print toggle (only shown when backend allows printing)
   const [currentLanguage, setCurrentLanguage] = useState<'vi' | 'en'>('vi');
-  
+
   // Native Print Service states
   const [isNativePrintAvailable, setIsNativePrintAvailable] = useState(false);
   const [showPrintWizard, setShowPrintWizard] = useState(false);
@@ -161,9 +161,9 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     needsDriver: false
   });
 
-  const { generateShareUrls } = useEventMetadata({ 
-    event: eventData, 
-    currentLanguage: 'vi' 
+  const { generateShareUrls } = useEventMetadata({
+    event: eventData,
+    currentLanguage: 'vi'
   });
 
   const { trackCheckin, trackQRScan, trackBadgePrint } = useGoogleAnalytics();
@@ -207,19 +207,19 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
         </svg>
       ),
-  CogIcon: (
-    <svg className={className} fill={fill} stroke="currentColor" viewBox="0 0 24 24" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  ),
-  ExclamationTriangleIcon: (
-    <svg className={className} fill={fill} stroke="currentColor" viewBox="0 0 24 24" {...props}>
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-    </svg>
-  )
+      CogIcon: (
+        <svg className={className} fill={fill} stroke="currentColor" viewBox="0 0 24 24" {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+      ),
+      ExclamationTriangleIcon: (
+        <svg className={className} fill={fill} stroke="currentColor" viewBox="0 0 24 24" {...props}>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+        </svg>
+      )
     };
-    
+
     return icons[name as keyof typeof icons] || icons.QrCodeIcon;
   };
 
@@ -248,7 +248,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       try {
         const isAvailable = await unifiedPrintService.isAvailable();
         setIsNativePrintAvailable(isAvailable);
-        
+
         if (isAvailable) {
           // Check BIXOLON printer status
           const bixolonCheck = await unifiedPrintService.checkBixolonPrinter();
@@ -257,7 +257,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
             hasAnyPrinter: bixolonCheck.hasAnyPrinter,
             needsDriver: bixolonCheck.needsDriver
           });
-          
+
           if (bixolonCheck.hasBixolon) {
             setNativePrintEnabled(true);
             console.log('✅ Native print service available with BIXOLON printer');
@@ -292,13 +292,13 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       try {
         setLoading(true);
         setError('');
-        
+
         // Test backend connection first
         await visitorApi.checkBackendConnection();
-        
+
         const response = await eventApi.getEventInfo(eventId);
         setEventData(response.event);
-        
+
         console.log('📥 Event data loaded:', response.event);
         console.log('🖨️ Badge printing setting:', {
           badge_printing: response.event.badge_printing,
@@ -322,10 +322,20 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           oneTimeCheckInFalse: response.event.one_time_check_in === false,
           oneTimeCheckInTrue: response.event.one_time_check_in === true
         });
-        
+        console.log('🎨 Badge custom content field check:', {
+          hasBadgeCustomContent: 'badge_custom_content' in response.event,
+          badgeCustomContentValue: (response.event as any).badge_custom_content,
+          badgeCustomContentType: typeof (response.event as any).badge_custom_content,
+          isObject: typeof (response.event as any).badge_custom_content === 'object',
+          isString: typeof (response.event as any).badge_custom_content === 'string',
+          isEmptyObject: typeof (response.event as any).badge_custom_content === 'object' &&
+            (response.event as any).badge_custom_content !== null &&
+            Object.keys((response.event as any).badge_custom_content).length === 0
+        });
+
         // Trigger entrance animation
         setTimeout(() => setIsVisible(true), 100);
-        
+
         // Focus input after page load for immediate scanner readiness
         setTimeout(() => {
           if (inputRef.current) {
@@ -336,7 +346,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       } catch (err: any) {
         console.error('Error loading event data:', err);
         setError(i18n[currentLanguage]?.unable_to_load_event_info || 'Không thể tải thông tin sự kiện. Vui lòng thử lại.');
-        
+
         // Even on error, focus input for retry
         setTimeout(() => {
           if (inputRef.current) {
@@ -399,46 +409,46 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         config,
         (decodedText) => {
           console.log('🔍 Camera QR Code detected:', decodedText);
-          
+
           // Track camera QR scan
           trackQRScan('camera');
-          
+
           // Prevent duplicate scans in cooldown period
           if (scanCooldown) {
             console.log('🚫 Camera scan ignored - cooldown period active');
             return;
           }
-          
+
           // Prevent duplicate scans of same code within 3 seconds
           const now = Date.now();
           if (lastScannedCode === decodedText && now - lastScanTime < 3000) {
             console.log('🚫 Camera scan ignored - duplicate code within 3s');
             return;
           }
-          
+
           // Set cooldown to prevent rapid scanning
           setScanCooldown(true);
           setLastScannedCode(decodedText);
           setLastScanTime(now);
-          
+
           console.log('✅ Processing camera scan:', decodedText);
-          
+
           // Stop camera only if not in continuous mode
           if (!continuousMode) {
             stopCamera();
           }
-          
+
           // Visual feedback for successful scan
           setSuccess('📷 Camera QR được quét thành công!');
-          
+
           // Haptic feedback
           if ('vibrate' in navigator) {
             navigator.vibrate([100, 50, 100]);
           }
-          
+
           // Process the scanned code
           processCheckin(decodedText);
-          
+
           // Clear cooldown after processing (shorter in continuous mode)
           setTimeout(() => {
             setScanCooldown(false);
@@ -451,7 +461,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
 
       setCameraEnabled(true);
       console.log('📹 Camera initialized successfully');
-      
+
       // IMPORTANT: Keep focus on manual input for barcode scanner
       setTimeout(() => {
         if (inputRef.current) {
@@ -462,7 +472,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
 
     } catch (err: any) {
       console.error('Camera initialization error:', err);
-              setError(i18n[currentLanguage]?.unable_to_initialize_camera || 'Không thể khởi tạo camera. Vui lòng sử dụng manual input.');
+      setError(i18n[currentLanguage]?.unable_to_initialize_camera || 'Không thể khởi tạo camera. Vui lòng sử dụng manual input.');
       setScanning(false);
     }
   };
@@ -480,13 +490,13 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     }
     setCameraEnabled(false);
     setScanning(false);
-    
+
     // Always refocus input after stopping camera
     setTimeout(() => {
       if (inputRef.current) {
         inputRef.current.focus();
         console.log('🎯 Manual input refocused after stopping camera');
-        
+
         // Double-check focus stability
         setTimeout(() => {
           if (inputRef.current && document.activeElement !== inputRef.current) {
@@ -523,39 +533,39 @@ export default function CheckinPage({ params }: CheckinPageProps) {
 
     try {
       console.log('🔍 Processing visitor/group ID:', trimmedId);
-      
+
       // Check if this is a group ID
       const isGroupId = trimmedId.includes('GRP');
       console.log('🏷️ Processing type:', isGroupId ? 'Group' : 'Single Visitor');
-      
+
       // For single event check-in, we support both single visitors and groups
       // But groups will only process visitors that belong to the current event
-      
+
       const response = await visitorApi.getVisitorInfo(trimmedId);
-      
+
       if (isGroupId) {
         // Handle group check-in for single event
         const groupResponse = response as any;
         if (groupResponse.visitors && Array.isArray(groupResponse.visitors)) {
           console.log('✅ Group found with', groupResponse.count, 'visitors:', groupResponse.visitors);
-          
+
           // Initial delay after successful scan to ensure QR data is ready
           setSuccess(`🔄 Đang chuẩn bị xử lý nhóm ${groupResponse.count} visitors cho sự kiện "${eventData?.name}"...`);
           await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5s delay after scan
-          
+
           // Process each visitor in the group that belongs to current event
           let successCount = 0;
           let errorCount = 0;
           const results = [];
-          
+
           setSuccess(`🔄 Đang xử lý nhóm ${groupResponse.count} visitors cho sự kiện "${eventData?.name}"...`);
-          
+
           for (let i = 0; i < groupResponse.visitors.length; i++) {
             const visitorEntry = groupResponse.visitors[i];
             const visitor = visitorEntry.visitor;
-            
+
             console.log(`📋 Processing visitor ${i + 1}/${groupResponse.count}:`, visitor.name);
-            
+
             // Check if visitor belongs to the current event
             const visitorEventId = String(visitor.event_id);
             if (visitorEventId !== eventId) {
@@ -568,7 +578,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
               });
               continue;
             }
-            
+
             try {
               // Check one-time check-in restriction for group visitors
               if (eventData?.one_time_check_in) {
@@ -582,13 +592,13 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                   isArray: Array.isArray(checkInHistory),
                   type: typeof checkInHistory
                 });
-                
+
                 if (checkInHistory && Array.isArray(checkInHistory)) {
                   // Filter check-in history for current event only
-                  const currentEventCheckIns = checkInHistory.filter((checkIn: any) => 
+                  const currentEventCheckIns = checkInHistory.filter((checkIn: any) =>
                     String(checkIn.event_id) === String(eventId)
                   );
-                  
+
                   console.log(`🔍 Group visitor ${i + 1} check-in history:`, {
                     name: visitor.name,
                     totalCheckIns: checkInHistory.length,
@@ -596,7 +606,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                     currentEventId: eventId,
                     allEventIds: checkInHistory.map((c: any) => c.event_id)
                   });
-                  
+
                   if (currentEventCheckIns.length >= 1) {
                     console.log(`🚫 Visitor ${i + 1} already checked in - skipping`);
                     errorCount++;
@@ -609,30 +619,30 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                   }
                 }
               }
-              
+
               // Submit check-in for this visitor
               console.log(`📝 Submitting check-in for visitor ${i + 1}:`, visitor.name);
               await visitorApi.submitCheckin(visitor);
-              
+
               // Track successful checkin
               trackCheckin(eventId, eventData?.name || 'Unknown Event', visitor.id);
-              
+
               // Auto-print badge if enabled
               if (eventData?.badge_printing && autoPrintEnabled) {
                 console.log(`🖨️ Auto-printing badge for visitor ${i + 1}:`, visitor.name);
                 await printBadge(visitor);
               }
-              
+
               successCount++;
               results.push({
                 visitor: visitor.name,
                 status: 'success',
                 printed: eventData?.badge_printing && autoPrintEnabled
               });
-              
+
               // Increased delay between visitors to ensure QR data is ready
               await new Promise(resolve => setTimeout(resolve, 1000));
-              
+
             } catch (error) {
               console.error(`❌ Error processing visitor ${i + 1}:`, error);
               errorCount++;
@@ -643,10 +653,10 @@ export default function CheckinPage({ params }: CheckinPageProps) {
               });
             }
           }
-          
+
           // Show group results
           const successMessage = `✅ Nhóm check-in hoàn thành cho sự kiện "${eventData?.name}"!\n\n📊 Kết quả:\n• Thành công: ${successCount}/${groupResponse.count}\n• Lỗi: ${errorCount}/${groupResponse.count}`;
-          
+
           if (errorCount > 0) {
             const errorDetails = results.filter(r => r.status === 'error')
               .map(r => `• ${r.visitor}: ${r.message}`)
@@ -655,23 +665,23 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           } else {
             setSuccess(successMessage);
           }
-          
+
           // Show success screen with group info
           setTimeout(() => {
             setShowSuccessScreen(true);
             startAutoReturnCountdown();
           }, 1000);
-          
+
         } else {
           setError('❌ Dữ liệu nhóm không hợp lệ. Vui lòng thử lại.');
         }
       } else if ('visitor' in response && response.visitor) {
         console.log('✅ Visitor found:', response.visitor);
-        
+
         // CRITICAL: Validate that visitor belongs to current event
         const visitorEventId = String(response.visitor.event_id);
         const currentEventId = String(eventId);
-        
+
         console.log('🔒 Event validation in check-in:', {
           visitorEventId,
           currentEventId,
@@ -679,7 +689,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           visitorName: response.visitor.name,
           visitorEventName: response.visitor.event_name
         });
-        
+
         if (visitorEventId !== currentEventId) {
           console.error('🚫 Event ID mismatch - Security violation in check-in:', {
             visitor: response.visitor.name,
@@ -689,27 +699,27 @@ export default function CheckinPage({ params }: CheckinPageProps) {
             currentEventName: eventData?.name,
             securityAction: 'CHECKIN_DENIED'
           });
-          
+
           setError(`❌ Visitor không thuộc sự kiện này.\n\n• Visitor: ${response.visitor.name}\n• Thuộc sự kiện: ${response.visitor.event_name}\n• Hiện tại: ${eventData?.name}\n\n💡 Vui lòng kiểm tra lại QR code hoặc visitor ID.`);
           setIsProcessing(false);
-          
+
           // Reset input immediately for security violations
           setManualInput('');
           console.log('🔄 Input reset after security violation');
-          
+
           // Strong haptic feedback for security violation
           if ('vibrate' in navigator) {
             navigator.vibrate([200, 100, 200, 100, 200]);
           }
-          
+
           return;
         }
-        
+
         console.log('✅ Event validation passed in check-in - visitor belongs to current event');
-        
+
         // Type guard to ensure this is a single visitor response
         const visitorResponse = response as VisitorResponse;
-        
+
         // Check one-time check-in restriction
         console.log('🔒 One-time check-in validation:', {
           eventId: eventId,
@@ -724,7 +734,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           conditionResult: !!eventData?.one_time_check_in,
           willEnterIfBlock: !!(eventData?.one_time_check_in)
         });
-        
+
         if (eventData?.one_time_check_in) {
           const checkInHistory = (visitorResponse.visitor as any)?.check_in_history;
           console.log('🔒 One-time check-in enabled, checking history:', {
@@ -734,18 +744,18 @@ export default function CheckinPage({ params }: CheckinPageProps) {
             isArray: Array.isArray(checkInHistory),
             type: typeof checkInHistory
           });
-          
+
           // Debug: Check all possible check-in history field names
           const possibleHistoryFields = [
             'check_in_history',
-            'checkin_history', 
+            'checkin_history',
             'checkInHistory',
             'checkinHistory',
             'history',
             'check_ins',
             'checkins'
           ];
-          
+
           console.log('🔍 Checking all possible check-in history fields:');
           possibleHistoryFields.forEach(field => {
             const value = (visitorResponse.visitor as any)?.[field];
@@ -758,34 +768,34 @@ export default function CheckinPage({ params }: CheckinPageProps) {
               });
             }
           });
-          
+
           if (checkInHistory && Array.isArray(checkInHistory)) {
             // Filter check-in history for current event only
-            const currentEventCheckIns = checkInHistory.filter((checkIn: any) => 
+            const currentEventCheckIns = checkInHistory.filter((checkIn: any) =>
               String(checkIn.event_id) === String(eventId)
             );
-            
+
             console.log('🔍 Check-in history analysis:', {
               totalCheckIns: checkInHistory.length,
               currentEventCheckIns: currentEventCheckIns.length,
               currentEventId: eventId,
               allEventIds: checkInHistory.map((c: any) => c.event_id)
             });
-            
+
             if (currentEventCheckIns.length >= 1) {
               console.log('🚫 Visitor already checked in - one-time restriction active');
               setError(`❌ Visitor đã check-in rồi!\n\n• Visitor: ${visitorResponse.visitor.name}\n• Số lần check-in: ${currentEventCheckIns.length}\n• Event này chỉ cho phép check-in 1 lần\n\n💡 Liên hệ ban tổ chức nếu cần hỗ trợ.`);
               setIsProcessing(false);
-              
+
               // Reset input immediately for one-time restriction
               setManualInput('');
               console.log('🔄 Input reset after one-time check-in restriction');
-              
+
               // Strong haptic feedback for restriction violation
               if ('vibrate' in navigator) {
                 navigator.vibrate([200, 100, 200, 100, 200]);
               }
-              
+
               return;
             }
           }
@@ -794,12 +804,12 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           console.log('🔍 One-time check-in disabled details:', {
             eventData: !!eventData,
             oneTimeCheckIn: eventData?.one_time_check_in,
-            reason: eventData?.one_time_check_in === undefined ? 'Field not found in event data' : 
-                   eventData?.one_time_check_in === false ? 'Field is false' : 
-                   eventData?.one_time_check_in === null ? 'Field is null' : 'Unknown reason'
+            reason: eventData?.one_time_check_in === undefined ? 'Field not found in event data' :
+              eventData?.one_time_check_in === false ? 'Field is false' :
+                eventData?.one_time_check_in === null ? 'Field is null' : 'Unknown reason'
           });
         }
-        
+
         // Submit check-in to Zoho Creator
         try {
           console.log('📝 Submitting check-in history to Zoho...');
@@ -810,7 +820,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           // Don't fail the whole process if check-in submission fails
           // We still show success to user but log the error
         }
-        
+
         // Test custom content extraction immediately after getting visitor data
         console.log('🔍 Testing custom content extraction for visitor:', visitorResponse.visitor.id);
         const testCustomContent = getCustomContent(visitorResponse.visitor);
@@ -819,21 +829,21 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           customContent: testCustomContent,
           willShowOnBadge: testCustomContent.length > 0
         });
-        
+
         setVisitor(visitorResponse.visitor);
         setSuccess(`✅ Check-in thành công cho ${visitorResponse.visitor.name}!`);
-        
+
         // Track successful checkin
         trackCheckin(eventId, eventData?.name || 'Unknown Event', visitorResponse.visitor.id);
-        
+
         // Auto-print badge only if backend allows AND user has toggle enabled
         if (eventData?.badge_printing && autoPrintEnabled) {
           setTimeout(async () => {
             console.log('🖨️ Auto-printing badge for visitor (backend=true, user-toggle=true):', visitorResponse.visitor);
-            
+
             // Show printing status to user
             setSuccess(`✅ Check-in thành công cho ${visitorResponse.visitor.name}! 🖨️ Đang chuẩn bị in thẻ...`);
-            
+
             // Track badge printing
             trackBadgePrint(eventId, eventData?.name || 'Unknown Event');
             await printBadge(visitorResponse.visitor);
@@ -844,14 +854,14 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         } else {
           console.log('🚫 Badge printing disabled by backend (badge_printing=false)');
         }
-        
+
         // Show success screen
         setTimeout(() => {
           console.log('🎉 Setting showSuccessScreen to true');
           setShowSuccessScreen(true);
           startAutoReturnCountdown();
         }, 1000);
-        
+
         // Haptic feedback
         if ('vibrate' in navigator) {
           navigator.vibrate([100, 50, 100]);
@@ -864,12 +874,12 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       }
     } catch (error: any) {
       console.error('❌ Check-in error:', error);
-      
+
       // Handle specific error types
-              let errorMessage = `❌ ${i18n[currentLanguage]?.['Có lỗi xảy ra khi check-in. Vui lòng thử lại.'] || 'Có lỗi xảy ra khi check-in. Vui lòng thử lại.'}`;
-      
+      let errorMessage = `❌ ${i18n[currentLanguage]?.['Có lỗi xảy ra khi check-in. Vui lòng thử lại.'] || 'Có lỗi xảy ra khi check-in. Vui lòng thử lại.'}`;
+
       if (error.message === 'Visitor not found') {
-                  errorMessage = `❌ ${i18n[currentLanguage]?.['Không tìm thấy visitor với ID này. Vui lòng kiểm tra lại mã QR hoặc ID.'] || 'Không tìm thấy visitor với ID này. Vui lòng kiểm tra lại mã QR hoặc ID.'}`;
+        errorMessage = `❌ ${i18n[currentLanguage]?.['Không tìm thấy visitor với ID này. Vui lòng kiểm tra lại mã QR hoặc ID.'] || 'Không tìm thấy visitor với ID này. Vui lòng kiểm tra lại mã QR hoặc ID.'}`;
       } else if (error.message === 'Visitor ID is required') {
         errorMessage = `❌ ${i18n[currentLanguage]?.['Vui lòng nhập ID visitor.'] || 'Vui lòng nhập ID visitor.'}`;
       } else if (error.message.includes('Server error')) {
@@ -877,19 +887,19 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       } else if (error.message.includes('Failed to fetch visitor data')) {
         errorMessage = `❌ ${i18n[currentLanguage]?.['Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.'] || 'Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.'}`;
       }
-      
+
       setError(errorMessage);
-      
+
       // Reset input for all other errors
       setManualInput('');
       console.log('🔄 Input reset after API error');
-      
+
       if ('vibrate' in navigator) {
         navigator.vibrate([200, 100, 200]);
       }
     } finally {
       setIsProcessing(false);
-      
+
       // Always refocus input after processing completes (success or error)
       // This ensures barcode scanner and manual input remain functional
       setTimeout(() => {
@@ -906,10 +916,10 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     e.preventDefault();
     if (manualInput.trim()) {
       console.log('🔍 Manual/Barcode QR Code detected:', manualInput.trim());
-      
+
       // Distinguish between manual typing and barcode scanner
       const isLikelyBarcodeScanner = manualInput.length > 8 && /^[A-Za-z0-9+/=]+$/.test(manualInput);
-      
+
       if (isLikelyBarcodeScanner) {
         console.log('📟 Detected barcode scanner input');
         setSuccess('📟 Barcode scanner QR được quét thành công!');
@@ -919,7 +929,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         setSuccess('⌨️ Manual input được xử lý thành công!');
         trackQRScan('manual');
       }
-      
+
       processCheckin(manualInput.trim());
     }
   };
@@ -928,13 +938,13 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   const handleManualInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setManualInput(value);
-    
+
     // Clear error when user starts typing again
     if (error) {
       setError('');
       console.log('🎯 Error cleared by user input, maintaining focus');
     }
-    
+
     // Auto-submit for barcode scanner (when input looks complete)
     // Only trigger if input length suggests barcode scanner and not already processing
     if (value.length > 15 && /^[A-Za-z0-9+/=]+$/.test(value) && !isProcessing) {
@@ -943,7 +953,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         // Double check conditions before auto-submit
         if (manualInput === value && !isProcessing && value.trim()) {
           console.log('📟 Executing auto-submit for barcode scanner');
-          const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+          const fakeEvent = { preventDefault: () => { } } as React.FormEvent;
           handleManualSubmit(fakeEvent);
         }
       }, 200); // Slightly longer delay to ensure input is complete
@@ -959,7 +969,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           console.log('🎯 Auto-refocused manual input for barcode scanner');
         }
       }, 2000); // Check every 2 seconds
-      
+
       return () => clearInterval(interval);
     }
   }, [cameraEnabled]);
@@ -974,7 +984,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           console.log('🎯 Auto-focused input after error for immediate retry');
         }
       }, 500); // Reduced delay for faster retry
-      
+
       return () => clearTimeout(focusTimer);
     }
   }, [error, isProcessing]);
@@ -986,7 +996,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       e.preventDefault();
       handleManualSubmit(e as any);
     }
-    
+
     // Handle Escape key to clear input
     if (e.key === 'Escape') {
       setManualInput('');
@@ -1000,11 +1010,11 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     // Shorter countdown in continuous mode for faster batch processing
     let countdown = continuousMode ? 2 : 4;
     setAutoReturnCountdown(countdown);
-    
+
     const timer = setInterval(() => {
       countdown--;
       setAutoReturnCountdown(countdown);
-      
+
       if (countdown === 0) {
         clearInterval(timer);
         resetForNextCheckin();
@@ -1027,21 +1037,21 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     setShowSuccessScreen(false);
     setAutoReturnCountdown(0);
     setManualInput('');
-    
+
     // Reset camera states for next scan only if not in continuous mode
     if (!continuousMode) {
       setScanning(false);
       setCameraEnabled(false);
     }
-    
+
     // Reset scan protection states
     setScanCooldown(false);
     setLastScannedCode('');
     setLastScanTime(0);
-    
+
     // Reset printing state
     setIsPrinting(false);
-    
+
     // Restart camera immediately if in continuous mode
     if (continuousMode && !scanning) {
       setTimeout(() => {
@@ -1051,13 +1061,13 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         }, 100);
       }, 500);
     }
-    
+
     // ALWAYS focus back to input (critical for barcode scanner)
     setTimeout(() => {
       if (inputRef.current) {
         inputRef.current.focus();
         console.log('🎯 Manual input refocused after reset');
-        
+
         // Ensure input stays focused by checking again after a bit
         setTimeout(() => {
           if (inputRef.current && document.activeElement !== inputRef.current) {
@@ -1086,7 +1096,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       console.log('🎫 Parsed badge size:', size);
       return size;
     }
-    
+
     console.log('🎫 Using default badge size');
     return { width: 85, height: 54 };
   };
@@ -1095,17 +1105,17 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   const getBadgeLayout = () => {
     const badgeSize = getBadgeSize();
     const aspectRatio = badgeSize.height / badgeSize.width;
-    
+
     // If height is significantly more than width (aspect ratio > 1.2), use vertical layout
     const isVerticalLayout = aspectRatio > 1.2;
-    
+
     console.log('🎫 Badge layout decision:', {
       width: badgeSize.width,
       height: badgeSize.height,
       aspectRatio: aspectRatio.toFixed(2),
       layout: isVerticalLayout ? 'vertical' : 'horizontal'
     });
-    
+
     return {
       ...badgeSize,
       isVerticalLayout
@@ -1117,31 +1127,31 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   // Generate QR code for visitor  
   const generateQRCode = (visitorData: VisitorData) => {
     console.log('🎯 generateQRCode called with visitor:', visitorData);
-    
+
     // Use badge_qr field directly (no decoding)
     const qrData = (visitorData as any)?.badge_qr || visitorData.id || '';
-    
-    console.log('🎫 QR Data for badge:', { 
-      raw_badge_qr: (visitorData as any)?.badge_qr, 
-      visitor_id: visitorData.id, 
+
+    console.log('🎫 QR Data for badge:', {
+      raw_badge_qr: (visitorData as any)?.badge_qr,
+      visitor_id: visitorData.id,
       final_qr_data: qrData,
       qr_data_length: qrData.length,
       visitor_keys: Object.keys(visitorData)
     });
-    
+
     // Get badge layout to determine QR size
     const badgeLayout = getBadgeLayout();
-    
+
     // Larger QR for vertical layout (more space available)
     const qrContainerSize = badgeLayout.isVerticalLayout ? '28mm' : '20mm';
     const qrImageSize = badgeLayout.isVerticalLayout ? '26mm' : '18mm';
-    
+
     console.log('🎫 QR size decision:', {
       layout: badgeLayout.isVerticalLayout ? 'vertical' : 'horizontal',
       containerSize: qrContainerSize,
       imageSize: qrImageSize
     });
-    
+
     return (
       <div style={{
         width: qrContainerSize,
@@ -1165,21 +1175,21 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   // Generate badge content
   const generateBadgeContent = (visitorData: VisitorData) => {
     console.log('🎨 generateBadgeContent called with visitor:', visitorData);
-    
+
     const customContent = getCustomContent(visitorData);
     console.log('🎨 Badge custom content extraction result:', {
       hasCustomContent: customContent.length > 0,
       customContent: customContent
     });
-    
+
     const badgeLayout = getBadgeLayout();
-    
+
     // Reserve space for header and footer (about 15mm each)
     const contentHeight = badgeLayout.height - 30; // 30mm total for header + footer
     const headerFooterHeight = 15; // 15mm each
 
     return (
-      <div 
+      <div
         className="badge-container"
         style={{
           width: `${badgeLayout.width}mm`,
@@ -1224,7 +1234,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           }}>
             {generateQRCode(visitorData)}
           </div>
-          
+
           {/* Visitor Info */}
           <div style={{
             order: badgeLayout.isVerticalLayout ? 2 : 1,
@@ -1248,7 +1258,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
             }}>
               {visitorData.name}
             </div>
-            
+
             {/* Custom Content (if available) */}
             {customContent.map((content, index) => (
               <div key={index} style={{
@@ -1284,7 +1294,27 @@ export default function CheckinPage({ params }: CheckinPageProps) {
 
   // Extract custom content from visitor data based on event's badge_custom_content
   const getCustomContent = (visitorData: VisitorData): string[] => {
-    const customContentField = (eventData as any)?.badge_custom_content;
+    let customContentField = (eventData as any)?.badge_custom_content;
+
+    // Handle case where badge_custom_content is an empty object {} instead of string
+    if (typeof customContentField === 'object' && customContentField !== null) {
+      if (Object.keys(customContentField).length === 0) {
+        console.log('🎨 badge_custom_content is empty object, treating as no config');
+        return [];
+      }
+      // If object has keys, try to convert to string or extract value
+      console.log('⚠️ badge_custom_content is object with keys:', Object.keys(customContentField));
+      // Try to get first value if it's a key-value object
+      const firstKey = Object.keys(customContentField)[0];
+      if (firstKey && typeof customContentField[firstKey] === 'string') {
+        customContentField = customContentField[firstKey];
+        console.log('🔄 Extracted string from object:', customContentField);
+      } else {
+        console.log('❌ Cannot extract valid string from object');
+        return [];
+      }
+    }
+
     if (!customContentField || typeof customContentField !== 'string') {
       console.log('🎨 No badge_custom_content configured for event');
       return [];
@@ -1292,14 +1322,14 @@ export default function CheckinPage({ params }: CheckinPageProps) {
 
     console.log('🎨 Extracting custom content for fields:', customContentField);
     console.log('🎨 Visitor data custom_fields:', visitorData.custom_fields);
-    
+
     // Split by comma to handle multiple fields
     const fieldNames = customContentField.split(',').map(field => field.trim());
     const results: string[] = [];
-    
+
     for (const fieldName of fieldNames) {
       console.log('🎨 Processing field:', fieldName);
-      
+
       // Try direct field first
       if (visitorData[fieldName as keyof VisitorData]) {
         const value = visitorData[fieldName as keyof VisitorData];
@@ -1309,23 +1339,23 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           continue;
         }
       }
-      
+
       // Try custom_fields
       try {
-        const customFields = typeof visitorData.custom_fields === 'string' 
-          ? JSON.parse(visitorData.custom_fields) 
+        const customFields = typeof visitorData.custom_fields === 'string'
+          ? JSON.parse(visitorData.custom_fields)
           : visitorData.custom_fields;
-          
+
         console.log('🎨 Looking for field:', fieldName, 'in custom_fields');
         console.log('🎨 Available keys:', Object.keys(customFields));
-        
+
         // Check exact match first
         if (customFields[fieldName] && String(customFields[fieldName]).trim()) {
           console.log('✅ Found custom content in custom_fields (exact match):', fieldName, customFields[fieldName]);
           results.push(String(customFields[fieldName]).trim().toUpperCase());
           continue;
         }
-        
+
         // Check with space prefix
         const spacePrefixedKey = ` ${fieldName}`;
         if (customFields[spacePrefixedKey] && String(customFields[spacePrefixedKey]).trim()) {
@@ -1333,7 +1363,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           results.push(String(customFields[spacePrefixedKey]).trim().toUpperCase());
           continue;
         }
-        
+
         // Check with space suffix
         const spaceSuffixedKey = `${fieldName} `;
         if (customFields[spaceSuffixedKey] && String(customFields[spaceSuffixedKey]).trim()) {
@@ -1341,7 +1371,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           results.push(String(customFields[spaceSuffixedKey]).trim().toUpperCase());
           continue;
         }
-        
+
         // Check case insensitive match
         const lowerFieldName = fieldName.toLowerCase();
         for (const key of Object.keys(customFields)) {
@@ -1351,13 +1381,13 @@ export default function CheckinPage({ params }: CheckinPageProps) {
             break;
           }
         }
-        
+
         console.log('❌ Field not found or empty in custom_fields:', fieldName);
       } catch (error) {
         console.log('⚠️ Error parsing custom_fields for field:', fieldName, error);
       }
     }
-    
+
     console.log('🎨 Final custom content results:', results);
     return results;
   };
@@ -1368,12 +1398,12 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   const generateQRCodeDataUrl = async (qrData: string): Promise<string> => {
     try {
       console.log('🎨 Generating Canvas QR with qrcode library for:', qrData);
-      
+
       const canvas = document.createElement('canvas');
       const size = 200;
       canvas.width = size;
       canvas.height = size;
-      
+
       // Generate QR code using qrcode library
       await QRCode.toCanvas(canvas, qrData, {
         width: size,
@@ -1384,7 +1414,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         },
         errorCorrectionLevel: 'M'
       });
-      
+
       const dataUrl = canvas.toDataURL('image/png');
       console.log('✅ Canvas QR generated successfully with qrcode library');
       return dataUrl;
@@ -1397,10 +1427,10 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   // Enhanced mobile print with local QR generation only
   const printBadgeWithProgressiveLoading = async (visitorData: VisitorData, qrData: string, precomputedQrDataUrl?: string) => {
     console.log('📱 Using local QR generation for mobile print');
-    
+
     const badgeSize = getBadgeSize();
     const contentHeight = badgeSize.height - 30;
-    
+
     // Validate QR data for mobile printing
     if (!qrData || qrData === '') {
       console.error('❌ No valid QR data for mobile printing');
@@ -1409,7 +1439,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       setIsPrinting(false);
       return;
     }
-    
+
     // Generate QR using local library only (no external APIs)
     try {
       console.log('🚀 Generating QR with local library...');
@@ -1422,7 +1452,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     } catch (error) {
       console.error('❌ Local QR generation failed:', error);
     }
-    
+
     // If local generation fails, use text fallback
     console.log('⚠️ Local QR failed, using text fallback');
     printBadgeWithTextQR(visitorData, qrData);
@@ -1433,26 +1463,26 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   const printBadgeWithQR = (visitorData: VisitorData, qrUrl: string) => {
     const badgeLayout = getBadgeLayout();
     const contentHeight = badgeLayout.height - 30;
-    
+
     // Extract custom content
     const customContent = getCustomContent(visitorData);
-    
+
     // QR size for print - larger for vertical layout
     const printQrContainerSize = badgeLayout.isVerticalLayout ? '28mm' : '20mm';
     const printQrImageSize = badgeLayout.isVerticalLayout ? '26mm' : '18mm';
-    
+
     const customContentSize = '15px';
-    
+
     // Create print window with better popup handling
     let printWindow: Window | null = null;
-    
+
     try {
       printWindow = window.open('', '_blank', 'width=800,height=600');
-      
+
       // Check if popup was blocked
       if (!printWindow || printWindow.closed || typeof printWindow.closed === 'undefined') {
         console.warn('⚠️ Popup blocked, trying alternative print method');
-        
+
         // Show user-friendly message about popup blocker
         if (typeof window !== 'undefined' && window.confirm('Popup bị chặn. Bạn có muốn in trong cửa sổ hiện tại không?')) {
           printWindow = window;
@@ -1466,13 +1496,13 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       console.warn('⚠️ Error opening print window, using current window:', error);
       printWindow = window;
     }
-    
+
     if (!printWindow) {
       console.error('❌ Failed to open print window');
       setIsPrinting(false);
       return;
     }
-    
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -1523,9 +1553,9 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       </body>
       </html>
     `);
-    
+
     printWindow.document.close();
-    
+
     setTimeout(() => {
       try {
         if (printWindow !== window) {
@@ -1550,32 +1580,32 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   // Helper function to print with text QR fallback
   const printBadgeWithTextQR = (visitorData: VisitorData, qrData: string) => {
     console.log('📝 Printing with text QR fallback');
-    
+
     const badgeLayout = getBadgeLayout();
     const contentHeight = badgeLayout.height - 30;
-    
+
     // QR size for print - larger for vertical layout
     const printQrContainerSize = badgeLayout.isVerticalLayout ? '28mm' : '20mm';
     const printQrImageSize = badgeLayout.isVerticalLayout ? '26mm' : '18mm';
-    
-    const nameSize = badgeLayout.isVerticalLayout ? 
+
+    const nameSize = badgeLayout.isVerticalLayout ?
       (visitorData.name.length > 20 ? '16px' : visitorData.name.length > 15 ? '18px' : '20px') :
       (visitorData.name.length > 20 ? '14px' : visitorData.name.length > 15 ? '16px' : '18px');
-    
+
     // Extract custom content for text QR fallback
     const customContent = getCustomContent(visitorData);
     console.log('🎨 Text QR fallback custom content:', customContent);
-    
+
     // Create print window with better popup handling
     let printWindow: Window | null = null;
-    
+
     try {
       printWindow = window.open('', '_blank', 'width=800,height=600');
-      
+
       // Check if popup was blocked
       if (!printWindow || printWindow.closed || typeof printWindow.closed === 'undefined') {
         console.warn('⚠️ Popup blocked, trying alternative print method');
-        
+
         // Show user-friendly message about popup blocker
         if (typeof window !== 'undefined' && window.confirm('Popup bị chặn. Bạn có muốn in trong cửa sổ hiện tại không?')) {
           printWindow = window;
@@ -1589,13 +1619,13 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       console.warn('⚠️ Error opening print window, using current window:', error);
       printWindow = window;
     }
-    
+
     if (!printWindow) {
       console.error('❌ Failed to open print window');
       setIsPrinting(false);
       return;
     }
-    
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -1649,9 +1679,9 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       </body>
       </html>
     `);
-    
+
     printWindow.document.close();
-    
+
     setTimeout(() => {
       try {
         if (printWindow !== window) {
@@ -1677,24 +1707,24 @@ export default function CheckinPage({ params }: CheckinPageProps) {
   const printBadgeNative = async (visitorData: VisitorData, qrData: string) => {
     try {
       console.log('🖨️ Using native print service');
-      
+
       const badgeData: BadgeData = {
         visitorData,
         eventData: eventData!,
         qrData,
         customContent: getCustomContent(visitorData)
       };
-      
+
       const badgeLayout: BadgeLayout = getBadgeLayout();
-      
+
       const result = await unifiedPrintService.printBadge(badgeData, badgeLayout);
       const success = result.result === 'OK';
-      
+
       if (success) {
         console.log('✅ Native print successful');
         setSuccess(`✅ Check-in thành công! 🖨️ Đã in thẻ tự động!`);
         setIsPrinting(false);
-        
+
         // Track successful native print
         if (trackBadgePrint) {
           trackBadgePrint(eventData?.id || '', eventData?.name || '');
@@ -1715,24 +1745,24 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       console.log('🚫 printBadge ignored - already printing');
       return;
     }
-    
+
     setIsPrinting(true);
     console.log('🖨️ printBadge called with visitor:', visitorData);
-    
+
     // Update success message to show QR loading status
     setSuccess(`✅ Check-in thành công! 🖨️ Đang kiểm tra QR code từ Zoho...`);
-    
+
     // Check if badge_qr exists, if not fetch from Zoho
     let finalQrData = (visitorData as any)?.badge_qr;
-    
+
     if (!finalQrData || finalQrData === '') {
       console.log('⚠️ badge_qr not found, fetching from Zoho...');
       setSuccess(`✅ Check-in thành công! 🖨️ Đang fetch QR code từ Zoho cho "${visitorData.name}"...`);
-      
+
       try {
         // Fetch fresh visitor data from Zoho to get badge_qr
         const freshVisitorResponse = await visitorApi.getVisitorInfo(visitorData.id);
-        
+
         const freshResponse = freshVisitorResponse as VisitorResponse;
         if (freshResponse.visitor && (freshResponse.visitor as any)?.badge_qr) {
           finalQrData = (freshResponse.visitor as any).badge_qr;
@@ -1756,7 +1786,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       console.log('✅ badge_qr already available:', finalQrData);
       setSuccess(`✅ Check-in thành công! 🖨️ Đang tải QR code để in thẻ...`);
     }
-    
+
     // Validate QR data
     if (!finalQrData || finalQrData === '') {
       console.error('❌ No valid QR data available for printing');
@@ -1765,7 +1795,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       setIsPrinting(false);
       return;
     }
-    
+
     // Try native print first, fallback to popup print
     if (nativePrintEnabled && isNativePrintAvailable) {
       try {
@@ -1776,14 +1806,14 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         setSuccess(`✅ Check-in thành công! 🖨️ Đang in thẻ (chế độ popup)...`);
       }
     }
-    
+
     // Detect mobile device
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     console.log('📱 Device type:', isMobile ? 'Mobile' : 'Desktop');
-    
+
     // Generate QR data URL locally for printing
     const qrDataUrl = await generateQRCodeDataUrl(finalQrData);
-    
+
     if (!qrDataUrl) {
       console.error('❌ Local QR generation failed, using text fallback');
       setSuccess(`✅ Check-in thành công cho ${visitorData.name}!`);
@@ -1791,9 +1821,9 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       printBadgeWithTextQR(visitorData, finalQrData);
       return;
     }
-    
+
     setSuccess(`✅ Check-in thành công! 🖨️ QR code đã sẵn sàng, đang in thẻ...`);
-    
+
     if (isMobile) {
       const updatedVisitorData = {
         ...visitorData,
@@ -1802,14 +1832,14 @@ export default function CheckinPage({ params }: CheckinPageProps) {
       await printBadgeWithProgressiveLoading(updatedVisitorData, finalQrData, qrDataUrl);
       return;
     }
-    
+
     printBadgeWithQR(visitorData, qrDataUrl);
   };
 
   // Demo function to test company extraction with different formats
   const testCompanyExtractionFormats = () => {
     console.log('🧪 Testing company extraction with different formats:');
-    
+
     const testCases = [
       {
         name: 'Current Event (cng_company)',
@@ -1828,18 +1858,18 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         custom_fields: '{"Job Function":"Developer","Event":"Conference 2024"}'
       }
     ];
-    
+
     testCases.forEach((testCase, index) => {
       const mockVisitor = {
         name: `Test User ${index + 1}`,
         company: '',
         custom_fields: testCase.custom_fields
       } as unknown as VisitorData;
-      
+
       const result = getCustomContent(mockVisitor);
       console.log(`📋 ${testCase.name}:`, result || '(no company found)');
     });
-    
+
     // Test event validation scenarios
     console.log('🧪 Testing event validation scenarios:');
     console.log('📋 Current Event ID:', eventId);
@@ -1869,9 +1899,9 @@ export default function CheckinPage({ params }: CheckinPageProps) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <LoadingSpinner 
-            size="lg" 
-            showLogo={true} 
+          <LoadingSpinner
+            size="lg"
+            showLogo={true}
             text="Đang tải thông tin sự kiện..."
           />
         </div>
@@ -1888,7 +1918,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
             <h2 className="text-lg font-semibold text-gray-900 mb-2">Không tìm thấy sự kiện</h2>
             <p className="text-sm text-gray-600">{error || 'Sự kiện không tồn tại hoặc đã kết thúc'}</p>
           </div>
-          <Button 
+          <Button
             onClick={() => router.push('/')}
             variant="primary"
             className="w-full min-h-[48px]"
@@ -1923,7 +1953,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
           border-radius: 1rem !important;
         }
       `}</style>
-      
+
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-gray-50 relative overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-slate-600 to-slate-700 shadow-xl sticky top-0 z-10">
@@ -1932,8 +1962,8 @@ export default function CheckinPage({ params }: CheckinPageProps) {
               <div className="flex items-center space-x-3">
                 {eventData.logo && (
                   <div className="w-10 h-10 rounded-xl bg-white flex-shrink-0 shadow-sm p-1">
-                    <img 
-                      src={eventData.logo} 
+                    <img
+                      src={eventData.logo}
                       alt={eventData.name}
                       className="w-full h-full object-contain"
                     />
@@ -1946,7 +1976,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                   <p className="text-xs text-white/80">
                     {eventData.name}
                   </p>
-                  
+
                   {/* Badge Printing Status */}
                   <div className="flex items-center gap-1 mt-1">
                     {eventData.badge_printing ? (
@@ -1961,7 +1991,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* One-time Check-in Status */}
                   {eventData.one_time_check_in && (
                     <div className="flex items-center gap-1 mt-1">
@@ -1983,19 +2013,17 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                     </div>
                     <button
                       onClick={() => setAutoPrintEnabled(!autoPrintEnabled)}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                        autoPrintEnabled ? 'bg-green-500' : 'bg-gray-400'
-                      }`}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${autoPrintEnabled ? 'bg-green-500' : 'bg-gray-400'
+                        }`}
                     >
                       <span
-                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                          autoPrintEnabled ? 'translate-x-5' : 'translate-x-1'
-                        }`}
+                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${autoPrintEnabled ? 'translate-x-5' : 'translate-x-1'
+                          }`}
                       />
                     </button>
                   </div>
                 )}
-                
+
                 <Button
                   onClick={() => router.push(`/insight/${eventId}`)}
                   variant="outline"
@@ -2021,66 +2049,65 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                   Check-in Visitor
                 </h2>
                 <p className="text-sm text-gray-600">
-                  {cameraEnabled 
+                  {cameraEnabled
                     ? "Sử dụng máy scan barcode HOẶC camera để quét QR code"
                     : "Nhập Visitor ID hoặc quét QR code để check-in"
                   }
                 </p>
-                
+
                 {/* Auto-Print Status */}
                 {eventData?.badge_printing && (
                   <div className="mt-2 flex items-center justify-center gap-2 flex-wrap">
-                    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                      autoPrintEnabled 
-                        ? 'bg-green-100 text-green-700 border border-green-200' 
-                        : 'bg-blue-100 text-blue-700 border border-blue-200'
-                    }`}>
+                    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${autoPrintEnabled
+                      ? 'bg-green-100 text-green-700 border border-green-200'
+                      : 'bg-blue-100 text-blue-700 border border-blue-200'
+                      }`}>
                       <Icon name="PrinterIcon" className="w-3 h-3" />
                       <span>
                         {autoPrintEnabled ? 'Auto-print: Bật' : 'Auto-print: Tắt'}
                       </span>
                     </div>
-                    
+
                     {/* Native Print Status */}
-           {isNativePrintAvailable ? (
-             bixolonStatus.hasBixolon ? (
-               <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
-                 <Icon name="CheckCircleIcon" className="w-3 h-3" />
-                 <span>Native Print: Sẵn sàng</span>
-               </div>
-             ) : bixolonStatus.needsDriver ? (
-               <button
-                 onClick={() => {
-                   const platformInfo = unifiedPrintService.getPlatformInfo();
-                   if (platformInfo?.isAndroid) {
-                     setShowAndroidGuide(true);
-                   } else {
-                     setShowBixolonGuide(true);
-                   }
-                 }}
-                 className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200 hover:bg-orange-200 transition-colors"
-               >
-                 <Icon name="ExclamationTriangleIcon" className="w-3 h-3" />
-                 <span>Cài BIXOLON Driver</span>
-               </button>
-             ) : (
-               <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
-                 <Icon name="CheckCircleIcon" className="w-3 h-3" />
-                 <span>Native Print: Sẵn sàng</span>
-               </div>
-             )
-           ) : (
-             <button
-               onClick={() => setShowPrintWizard(true)}
-               className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200 hover:bg-orange-200 transition-colors"
-             >
-               <Icon name="CogIcon" className="w-3 h-3" />
-               <span>Setup Native Print</span>
-             </button>
-           )}
+                    {isNativePrintAvailable ? (
+                      bixolonStatus.hasBixolon ? (
+                        <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
+                          <Icon name="CheckCircleIcon" className="w-3 h-3" />
+                          <span>Native Print: Sẵn sàng</span>
+                        </div>
+                      ) : bixolonStatus.needsDriver ? (
+                        <button
+                          onClick={() => {
+                            const platformInfo = unifiedPrintService.getPlatformInfo();
+                            if (platformInfo?.isAndroid) {
+                              setShowAndroidGuide(true);
+                            } else {
+                              setShowBixolonGuide(true);
+                            }
+                          }}
+                          className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200 hover:bg-orange-200 transition-colors"
+                        >
+                          <Icon name="ExclamationTriangleIcon" className="w-3 h-3" />
+                          <span>Cài BIXOLON Driver</span>
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
+                          <Icon name="CheckCircleIcon" className="w-3 h-3" />
+                          <span>Native Print: Sẵn sàng</span>
+                        </div>
+                      )
+                    ) : (
+                      <button
+                        onClick={() => setShowPrintWizard(true)}
+                        className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200 hover:bg-orange-200 transition-colors"
+                      >
+                        <Icon name="CogIcon" className="w-3 h-3" />
+                        <span>Setup Native Print</span>
+                      </button>
+                    )}
                   </div>
                 )}
-                
+
                 {/* One-time Check-in Status */}
                 {eventData?.one_time_check_in && (
                   <div className="mt-2 flex items-center justify-center gap-2">
@@ -2091,7 +2118,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                   </div>
                 )}
 
-                
+
                 {/* Hybrid Mode Indicator */}
                 {cameraEnabled && (
                   <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full text-xs text-blue-700">
@@ -2118,7 +2145,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                       value={manualInput}
                       onChange={handleManualInputChange}
                       onKeyDown={handleKeyDown}
-                      placeholder={cameraEnabled 
+                      placeholder={cameraEnabled
                         ? "Máy scan barcode sẽ tự động nhập ở đây..."
                         : "Nhập Visitor ID để check-in..."
                       }
@@ -2126,7 +2153,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                       disabled={isProcessing}
                       autoFocus
                     />
-                    
+
                     {/* Input Hints */}
                     {cameraEnabled && (
                       <div className="mt-2 text-xs text-gray-500 flex items-center gap-2">
@@ -2160,7 +2187,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                       Hybrid Scanning {cameraEnabled && "(📟 + 📷)"}
                     </h3>
                   </div>
-                  
+
                   {!scanning ? (
                     <Button
                       onClick={() => {
@@ -2233,18 +2260,16 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                     </div>
                     <button
                       onClick={() => setContinuousMode(!continuousMode)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        continuousMode ? 'bg-blue-600' : 'bg-gray-200'
-                      }`}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${continuousMode ? 'bg-blue-600' : 'bg-gray-200'
+                        }`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          continuousMode ? 'translate-x-6' : 'translate-x-1'
-                        }`}
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${continuousMode ? 'translate-x-6' : 'translate-x-1'
+                          }`}
                       />
                     </button>
                   </div>
-                  
+
                   {continuousMode && (
                     <div className="mt-2 text-xs text-blue-800 bg-blue-100 px-2 py-1 rounded">
                       💡 Camera sẽ tự động restart sau mỗi lần check-in thành công
@@ -2255,8 +2280,8 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                 {/* QR Scanner */}
                 {scanning && (
                   <div className="relative">
-                    <div 
-                      id="qr-reader" 
+                    <div
+                      id="qr-reader"
                       className="w-full max-w-sm mx-auto rounded-2xl border border-gray-200 overflow-hidden"
                       style={{ minHeight: '250px' }}
                     ></div>
@@ -2269,7 +2294,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                         </div>
                       </div>
                     )}
-                    
+
                     {/* Continuous Mode Status */}
                     {continuousMode && cameraEnabled && (
                       <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
@@ -2295,7 +2320,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                   <Icon name="CheckCircleIcon" className="w-6 h-6 text-emerald-600" />
                   <div className="flex-1">
                     <span className="text-sm text-emerald-800 font-medium">{success}</span>
-                    
+
                     {/* Show scanning method used */}
                     {success.includes('Camera') && (
                       <div className="text-xs text-emerald-700 mt-1">📷 Sử dụng camera phone để quét</div>
@@ -2329,7 +2354,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                           error
                         )}
                       </div>
-                      
+
                       {/* Additional help for event mismatch errors */}
                       {error.includes('Event ID') && (
                         <div className="mt-2 text-xs text-red-700 bg-red-100 px-2 py-1 rounded">
@@ -2384,11 +2409,11 @@ export default function CheckinPage({ params }: CheckinPageProps) {
               <div className="inline-flex items-center justify-center w-20 h-20 bg-emerald-100 rounded-full mb-6 animate-bounce">
                 <Icon name="CheckCircleIcon" className="w-10 h-10 text-emerald-600" />
               </div>
-              
+
               <h3 className="text-2xl font-bold text-gray-900 mb-3">
                 ✅ Check-in thành công!
               </h3>
-              
+
               <div className="bg-gray-50 rounded-2xl p-4 mb-6">
                 <p className="text-lg font-semibold text-gray-900 mb-2">
                   {visitor.name}
@@ -2408,14 +2433,14 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                   <Icon name="CheckCircleIcon" className="w-4 h-4" />
                   <span>✓ Check-in thành công</span>
                 </div>
-                
+
                 {eventData?.badge_printing && autoPrintEnabled && (
                   <div className="flex items-center justify-center gap-2 text-sm text-emerald-700">
                     <Icon name="PrinterIcon" className="w-4 h-4" />
                     <span>✓ Thẻ đeo đã được in tự động</span>
                   </div>
                 )}
-                
+
                 {eventData?.badge_printing && !autoPrintEnabled && (
                   <div className="flex items-center justify-center gap-2 text-sm text-blue-700">
                     <Icon name="PrinterIcon" className="w-4 h-4" />
@@ -2456,7 +2481,7 @@ export default function CheckinPage({ params }: CheckinPageProps) {
                 >
                   {continuousMode ? 'Quét tiếp ngay' : 'Check-in tiếp'}
                 </Button>
-                
+
                 {continuousMode && (
                   <Button
                     onClick={() => {
@@ -2475,68 +2500,68 @@ export default function CheckinPage({ params }: CheckinPageProps) {
         )}
 
         {/* Print Wizard Modal */}
-      <PrintWizard
-        isOpen={showPrintWizard}
-        onClose={() => setShowPrintWizard(false)}
-        onAgentReady={() => {
-          setNativePrintEnabled(true);
-          setIsNativePrintAvailable(true);
-          setShowPrintWizard(false);
-        }}
-        currentLanguage={currentLanguage}
-      />
+        <PrintWizard
+          isOpen={showPrintWizard}
+          onClose={() => setShowPrintWizard(false)}
+          onAgentReady={() => {
+            setNativePrintEnabled(true);
+            setIsNativePrintAvailable(true);
+            setShowPrintWizard(false);
+          }}
+          currentLanguage={currentLanguage}
+        />
 
-      <BixolonDriverGuide
-        isOpen={showBixolonGuide}
-        onClose={() => setShowBixolonGuide(false)}
-        onDriverInstalled={() => {
-          // Refresh BIXOLON status
-          const refreshBixolonStatus = async () => {
-            try {
-              const bixolonCheck = await unifiedPrintService.checkBixolonPrinter();
-              setBixolonStatus({
-                hasBixolon: bixolonCheck.hasBixolon,
-                hasAnyPrinter: bixolonCheck.hasAnyPrinter,
-                needsDriver: bixolonCheck.needsDriver
-              });
-              if (bixolonCheck.hasBixolon) {
-                setNativePrintEnabled(true);
+        <BixolonDriverGuide
+          isOpen={showBixolonGuide}
+          onClose={() => setShowBixolonGuide(false)}
+          onDriverInstalled={() => {
+            // Refresh BIXOLON status
+            const refreshBixolonStatus = async () => {
+              try {
+                const bixolonCheck = await unifiedPrintService.checkBixolonPrinter();
+                setBixolonStatus({
+                  hasBixolon: bixolonCheck.hasBixolon,
+                  hasAnyPrinter: bixolonCheck.hasAnyPrinter,
+                  needsDriver: bixolonCheck.needsDriver
+                });
+                if (bixolonCheck.hasBixolon) {
+                  setNativePrintEnabled(true);
+                }
+              } catch (error) {
+                console.error('Failed to refresh BIXOLON status:', error);
               }
-            } catch (error) {
-              console.error('Failed to refresh BIXOLON status:', error);
-            }
-          };
-          refreshBixolonStatus();
-          setShowBixolonGuide(false);
-        }}
-        currentLanguage={currentLanguage}
-      />
+            };
+            refreshBixolonStatus();
+            setShowBixolonGuide(false);
+          }}
+          currentLanguage={currentLanguage}
+        />
 
-      <AndroidBixolonGuide
-        isOpen={showAndroidGuide}
-        onClose={() => setShowAndroidGuide(false)}
-        onSetupComplete={() => {
-          // Refresh BIXOLON status
-          const refreshBixolonStatus = async () => {
-            try {
-              const bixolonCheck = await unifiedPrintService.checkBixolonPrinter();
-              setBixolonStatus({
-                hasBixolon: bixolonCheck.hasBixolon,
-                hasAnyPrinter: bixolonCheck.hasAnyPrinter,
-                needsDriver: bixolonCheck.needsDriver
-              });
-              if (bixolonCheck.hasBixolon) {
-                setNativePrintEnabled(true);
+        <AndroidBixolonGuide
+          isOpen={showAndroidGuide}
+          onClose={() => setShowAndroidGuide(false)}
+          onSetupComplete={() => {
+            // Refresh BIXOLON status
+            const refreshBixolonStatus = async () => {
+              try {
+                const bixolonCheck = await unifiedPrintService.checkBixolonPrinter();
+                setBixolonStatus({
+                  hasBixolon: bixolonCheck.hasBixolon,
+                  hasAnyPrinter: bixolonCheck.hasAnyPrinter,
+                  needsDriver: bixolonCheck.needsDriver
+                });
+                if (bixolonCheck.hasBixolon) {
+                  setNativePrintEnabled(true);
+                }
+              } catch (error) {
+                console.error('Failed to refresh BIXOLON status:', error);
               }
-            } catch (error) {
-              console.error('Failed to refresh BIXOLON status:', error);
-            }
-          };
-          refreshBixolonStatus();
-          setShowAndroidGuide(false);
-        }}
-        currentLanguage={currentLanguage}
-      />
+            };
+            refreshBixolonStatus();
+            setShowAndroidGuide(false);
+          }}
+          currentLanguage={currentLanguage}
+        />
       </div>
     </>
   );

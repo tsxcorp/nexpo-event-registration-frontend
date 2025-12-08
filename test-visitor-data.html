@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visitor Data Tester</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+    
+    .header p {
+      opacity: 0.9;
+      font-size: 14px;
+    }
+    
+    .content {
+      padding: 30px;
+    }
+    
+    .input-group {
+      margin-bottom: 20px;
+    }
+    
+    .input-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .input-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+    
+    .input-group input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn:active {
+      transform: translateY(0);
+    }
+    
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .result {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+    
+    .result h3 {
+      margin-bottom: 15px;
+      color: #333;
+    }
+    
+    .info-grid {
+      display: grid;
+      gap: 12px;
+    }
+    
+    .info-item {
+      display: flex;
+      padding: 10px;
+      background: white;
+      border-radius: 6px;
+      border: 1px solid #e0e0e0;
+    }
+    
+    .info-label {
+      font-weight: 600;
+      color: #667eea;
+      min-width: 150px;
+    }
+    
+    .info-value {
+      color: #333;
+      word-break: break-all;
+    }
+    
+    .custom-fields {
+      margin-top: 20px;
+      padding: 15px;
+      background: #fff3cd;
+      border-radius: 6px;
+      border: 1px solid #ffc107;
+    }
+    
+    .custom-fields h4 {
+      margin-bottom: 10px;
+      color: #856404;
+    }
+    
+    .custom-field-item {
+      padding: 8px;
+      margin: 5px 0;
+      background: white;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+    }
+    
+    .badge-content-test {
+      margin-top: 20px;
+      padding: 15px;
+      background: #d4edda;
+      border-radius: 6px;
+      border: 1px solid #28a745;
+    }
+    
+    .badge-content-test h4 {
+      margin-bottom: 10px;
+      color: #155724;
+    }
+    
+    .badge-preview {
+      padding: 10px;
+      background: white;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 18px;
+      text-align: center;
+      margin-top: 10px;
+    }
+    
+    .error {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8d7da;
+      border-radius: 6px;
+      border-left: 4px solid #dc3545;
+      color: #721c24;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #667eea;
+      font-weight: 600;
+    }
+    
+    .raw-json {
+      margin-top: 20px;
+      padding: 15px;
+      background: #2d3748;
+      color: #68d391;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 400px;
+      overflow: auto;
+    }
+    
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔍 Visitor Data Tester</h1>
+      <p>Test visitor data fetch and badge_custom_content extraction</p>
+    </div>
+    
+    <div class="content">
+      <div class="input-group">
+        <label for="backendUrl">Backend API URL:</label>
+        <input type="text" id="backendUrl" value="http://localhost:3000" placeholder="http://localhost:3000">
+      </div>
+      
+      <div class="input-group">
+        <label for="visitorId">Visitor ID:</label>
+        <input type="text" id="visitorId" value="4433256000016955057" placeholder="Enter visitor ID">
+      </div>
+      
+      <div class="input-group">
+        <label for="badgeCustomContent">Badge Custom Content Fields (comma-separated):</label>
+        <input type="text" id="badgeCustomContent" value="cng_company,Job Function" placeholder="e.g., cng_company,Job Function">
+      </div>
+      
+      <button class="btn" onclick="fetchVisitorData()">🚀 Fetch Visitor Data</button>
+      
+      <div id="result"></div>
+    </div>
+  </div>
+  
+  <script>
+    async function fetchVisitorData() {
+      const backendUrl = document.getElementById('backendUrl').value.trim();
+      const visitorId = document.getElementById('visitorId').value.trim();
+      const badgeCustomContent = document.getElementById('badgeCustomContent').value.trim();
+      const resultDiv = document.getElementById('result');
+      
+      if (!visitorId) {
+        resultDiv.innerHTML = '<div class="error">❌ Please enter a visitor ID</div>';
+        return;
+      }
+      
+      resultDiv.innerHTML = '<div class="loading">⏳ Fetching visitor data...</div>';
+      
+      try {
+        const url = `${backendUrl}/api/visitors?visid=${visitorId}`;
+        console.log('📡 Fetching from:', url);
+        
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('📥 Data received:', data);
+        
+        displayVisitorData(data, badgeCustomContent);
+      } catch (error) {
+        console.error('❌ Error:', error);
+        resultDiv.innerHTML = `
+          <div class="error">
+            <h3>❌ Error Fetching Data</h3>
+            <p><strong>Error:</strong> ${error.message}</p>
+            <p><strong>Troubleshooting:</strong></p>
+            <ul>
+              <li>Make sure backend server is running</li>
+              <li>Check the backend URL is correct</li>
+              <li>Verify visitor ID exists</li>
+              <li>Check browser console for details</li>
+            </ul>
+          </div>
+        `;
+      }
+    }
+    
+    function displayVisitorData(data, badgeCustomContentConfig) {
+      if (!data || !data.visitor) {
+        document.getElementById('result').innerHTML = '<div class="error">❌ No visitor data found</div>';
+        return;
+      }
+      
+      const visitor = data.visitor;
+      
+      // Parse custom fields
+      let customFields = visitor.custom_fields;
+      if (typeof customFields === 'string') {
+        try {
+          customFields = JSON.parse(customFields);
+        } catch (e) {
+          customFields = {};
+        }
+      }
+      
+      // Extract badge custom content
+      const badgeContent = extractBadgeContent(visitor, customFields, badgeCustomContentConfig);
+      
+      const html = `
+        <div class="result">
+          <h3>✅ Visitor Data Retrieved</h3>
+          
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">ID:</span>
+              <span class="info-value">${visitor.id}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Name:</span>
+              <span class="info-value">${visitor.name}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Email:</span>
+              <span class="info-value">${visitor.email}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Phone:</span>
+              <span class="info-value">${visitor.phone || 'N/A'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Company:</span>
+              <span class="info-value">${visitor.company || 'N/A'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Job Title:</span>
+              <span class="info-value">${visitor.job_title || 'N/A'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Event ID:</span>
+              <span class="info-value">${visitor.event_id}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Event Name:</span>
+              <span class="info-value">${visitor.event_name}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Badge QR:</span>
+              <span class="info-value">${visitor.badge_qr ? visitor.badge_qr.substring(0, 50) + '...' : '(empty)'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Badge QR Length:</span>
+              <span class="info-value">${visitor.badge_qr ? visitor.badge_qr.length : 0} characters</span>
+            </div>
+          </div>
+          
+          ${Object.keys(customFields).length > 0 ? `
+            <div class="custom-fields">
+              <h4>🎨 Custom Fields Available:</h4>
+              ${Object.keys(customFields).map(key => `
+                <div class="custom-field-item">
+                  <strong>"${key}":</strong> "${customFields[key]}"
+                </div>
+              `).join('')}
+            </div>
+          ` : '<div class="custom-fields"><h4>⚠️ No custom fields found</h4></div>'}
+          
+          <div class="badge-content-test">
+            <h4>🎫 Badge Custom Content Extraction Test</h4>
+            <p><strong>Config:</strong> "${badgeCustomContentConfig}"</p>
+            <p><strong>Extracted Content:</strong></p>
+            ${badgeContent.length > 0 ? `
+              <div class="badge-preview">
+                <div style="font-size: 24px; margin-bottom: 10px;">${visitor.name}</div>
+                ${badgeContent.map(content => `<div style="font-size: 18px; color: #667eea;">${content}</div>`).join('')}
+              </div>
+              <p style="margin-top: 10px; color: #155724;">
+                ✅ <strong>${badgeContent.length}</strong> custom content field(s) will be displayed on badge
+              </p>
+            ` : `
+              <p style="color: #856404;">⚠️ No custom content found for the configured fields</p>
+            `}
+          </div>
+          
+          <div class="raw-json">
+            <strong>📋 Full Raw JSON Data:</strong>
+            <pre>${JSON.stringify(data, null, 2)}</pre>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('result').innerHTML = html;
+    }
+    
+    function extractBadgeContent(visitor, customFields, configString) {
+      if (!configString) return [];
+      
+      const fieldNames = configString.split(',').map(f => f.trim());
+      const results = [];
+      
+      for (const fieldName of fieldNames) {
+        // Try direct field first
+        if (visitor[fieldName] && String(visitor[fieldName]).trim()) {
+          results.push(String(visitor[fieldName]).trim().toUpperCase());
+          continue;
+        }
+        
+        // Try custom_fields exact match
+        if (customFields[fieldName] && String(customFields[fieldName]).trim()) {
+          results.push(String(customFields[fieldName]).trim().toUpperCase());
+          continue;
+        }
+        
+        // Try case insensitive match
+        const lowerFieldName = fieldName.toLowerCase();
+        for (const key of Object.keys(customFields)) {
+          if (key.toLowerCase() === lowerFieldName && String(customFields[key]).trim()) {
+            results.push(String(customFields[key]).trim().toUpperCase());
+            break;
+          }
+        }
+      }
+      
+      return results;
+    }
+    
+    // Auto-fetch on page load if visitor ID is pre-filled
+    window.addEventListener('DOMContentLoaded', () => {
+      const visitorId = document.getElementById('visitorId').value;
+      if (visitorId && visitorId !== '4433256000016955057') {
+        // Only auto-fetch if it's a different ID (user might have changed it)
+      }
+    });
+  </script>
+</body>
+</html>
